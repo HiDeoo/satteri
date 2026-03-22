@@ -1,6 +1,6 @@
-use mdast_arena::{Arena, NodeType};
 use crate::context::PluginContext;
 use crate::typed_nodes::*;
+use mdast_arena::{Arena, NodeType};
 
 /// Metadata about a plugin.
 #[derive(Debug, Clone)]
@@ -12,7 +12,11 @@ pub struct PluginMeta {
 
 impl PluginMeta {
     pub fn new(name: &'static str) -> Self {
-        Self { name, version: None, description: None }
+        Self {
+            name,
+            version: None,
+            description: None,
+        }
     }
 }
 
@@ -27,9 +31,15 @@ pub enum VisitResult {
 }
 
 impl VisitResult {
-    pub fn no_change() -> Self { Self::NoChange }
-    pub fn replace(node: crate::commands::NewNode) -> Self { Self::Replace(node) }
-    pub fn remove() -> Self { Self::Remove }
+    pub fn no_change() -> Self {
+        Self::NoChange
+    }
+    pub fn replace(node: crate::commands::NewNode) -> Self {
+        Self::Replace(node)
+    }
+    pub fn remove() -> Self {
+        Self::Remove
+    }
 }
 
 /// The Rust plugin trait.
@@ -106,8 +116,12 @@ pub struct NodeView<'a> {
 }
 
 impl<'a> NodeView<'a> {
-    pub fn id(&self) -> u32 { self.node_id }
-    pub fn children(&self) -> &[u32] { self.arena.get_children(self.node_id) }
+    pub fn id(&self) -> u32 {
+        self.node_id
+    }
+    pub fn children(&self) -> &[u32] {
+        self.arena.get_children(self.node_id)
+    }
     pub fn position(&self) -> NodePosition {
         NodePosition::from_node(self.arena.get_node(self.node_id))
     }

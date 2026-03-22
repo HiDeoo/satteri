@@ -19,7 +19,9 @@ impl LineIndex {
                 offsets.push(i as u32 + 1);
             }
         }
-        LineIndex { line_offsets: offsets }
+        LineIndex {
+            line_offsets: offsets,
+        }
     }
 
     /// Convert a byte offset to a 1-based `(line, column)` pair.

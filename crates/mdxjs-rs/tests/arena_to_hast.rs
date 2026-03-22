@@ -7,8 +7,8 @@ use mdast_arena::codec::{
 };
 use mdast_arena::node::StringRef;
 use mdast_arena::{Arena, NodeType};
-use mdxjs::hast;
 use mdxjs::arena_to_hast;
+use mdxjs::hast;
 
 // ---------------------------------------------------------------------------
 // Helper: build a minimal Arena manually.
@@ -65,7 +65,11 @@ fn test_heading_and_paragraph() {
         hast::Node::Root(root) => {
             // wrap(children, false) — no leading \n for root, just \n between items
             // children: [h1, \n, p]
-            assert_eq!(root.children.len(), 3, "root should have 3 children (h1, \\n, p)");
+            assert_eq!(
+                root.children.len(),
+                3,
+                "root should have 3 children (h1, \\n, p)"
+            );
 
             match &root.children[0] {
                 hast::Node::Element(el) => {
@@ -141,12 +145,17 @@ fn test_link_reference_unresolved_returns_children() {
     match &result {
         hast::Node::Root(root) => {
             // Root children after wrap(false): just [p]  (single child, no separating \n needed)
-            let p = root.children.iter().find(|n| matches!(n, hast::Node::Element(e) if e.tag_name == "p"));
+            let p = root
+                .children
+                .iter()
+                .find(|n| matches!(n, hast::Node::Element(e) if e.tag_name == "p"));
             assert!(p.is_some(), "should have a <p> element");
             if let Some(hast::Node::Element(p_el)) = p {
                 // LinkReference was unresolved → its children ("click") were inlined
                 assert!(
-                    p_el.children.iter().any(|n| matches!(n, hast::Node::Text(t) if t.value == "click")),
+                    p_el.children
+                        .iter()
+                        .any(|n| matches!(n, hast::Node::Text(t) if t.value == "click")),
                     "p should contain the text 'click' from the unresolved link reference"
                 );
             }
@@ -190,9 +199,10 @@ fn test_unordered_list() {
 
     match &result {
         hast::Node::Root(root) => {
-            let ul = root.children.iter().find(|n| {
-                matches!(n, hast::Node::Element(e) if e.tag_name == "ul")
-            });
+            let ul = root
+                .children
+                .iter()
+                .find(|n| matches!(n, hast::Node::Element(e) if e.tag_name == "ul"));
             assert!(ul.is_some(), "should have a <ul>");
 
             if let Some(hast::Node::Element(ul_el)) = ul {
@@ -226,7 +236,10 @@ fn test_code_block_with_lang() {
     let mut arena = Arena::new(source);
     let root_id = arena.alloc_node(NodeType::Root);
     let code_id = arena.alloc_node(NodeType::Code);
-    arena.set_type_data(code_id, &encode_code_data(lang_ref, meta_ref, code_ref, b'`'));
+    arena.set_type_data(
+        code_id,
+        &encode_code_data(lang_ref, meta_ref, code_ref, b'`'),
+    );
 
     arena.set_children(root_id, &[code_id]);
 
@@ -234,15 +247,17 @@ fn test_code_block_with_lang() {
 
     match &result {
         hast::Node::Root(root) => {
-            let pre = root.children.iter().find(|n| {
-                matches!(n, hast::Node::Element(e) if e.tag_name == "pre")
-            });
+            let pre = root
+                .children
+                .iter()
+                .find(|n| matches!(n, hast::Node::Element(e) if e.tag_name == "pre"));
             assert!(pre.is_some(), "should have a <pre>");
 
             if let Some(hast::Node::Element(pre_el)) = pre {
-                let code = pre_el.children.iter().find(|n| {
-                    matches!(n, hast::Node::Element(e) if e.tag_name == "code")
-                });
+                let code = pre_el
+                    .children
+                    .iter()
+                    .find(|n| matches!(n, hast::Node::Element(e) if e.tag_name == "code"));
                 assert!(code.is_some(), "pre should have a <code> child");
 
                 if let Some(hast::Node::Element(code_el)) = code {
@@ -258,7 +273,10 @@ fn test_code_block_with_lang() {
                     assert!(has_class, "code should have class 'language-rust'");
 
                     // Content should be "fn main() {}\n"
-                    let text = code_el.children.iter().find(|n| matches!(n, hast::Node::Text(_)));
+                    let text = code_el
+                        .children
+                        .iter()
+                        .find(|n| matches!(n, hast::Node::Text(_)));
                     assert!(text.is_some(), "code should have text content");
                     if let Some(hast::Node::Text(t)) = text {
                         assert_eq!(t.value, "fn main() {}\n");
@@ -296,15 +314,17 @@ fn test_image() {
 
     match &result {
         hast::Node::Root(root) => {
-            let p = root.children.iter().find(|n| {
-                matches!(n, hast::Node::Element(e) if e.tag_name == "p")
-            });
+            let p = root
+                .children
+                .iter()
+                .find(|n| matches!(n, hast::Node::Element(e) if e.tag_name == "p"));
             assert!(p.is_some(), "should have a <p>");
 
             if let Some(hast::Node::Element(p_el)) = p {
-                let img = p_el.children.iter().find(|n| {
-                    matches!(n, hast::Node::Element(e) if e.tag_name == "img")
-                });
+                let img = p_el
+                    .children
+                    .iter()
+                    .find(|n| matches!(n, hast::Node::Element(e) if e.tag_name == "img"));
                 assert!(img.is_some(), "p should have an <img>");
 
                 if let Some(hast::Node::Element(img_el)) = img {
@@ -351,15 +371,17 @@ fn test_emphasis() {
 
     match &result {
         hast::Node::Root(root) => {
-            let p = root.children.iter().find(|n| {
-                matches!(n, hast::Node::Element(e) if e.tag_name == "p")
-            });
+            let p = root
+                .children
+                .iter()
+                .find(|n| matches!(n, hast::Node::Element(e) if e.tag_name == "p"));
             assert!(p.is_some(), "should have a <p>");
 
             if let Some(hast::Node::Element(p_el)) = p {
-                let em = p_el.children.iter().find(|n| {
-                    matches!(n, hast::Node::Element(e) if e.tag_name == "em")
-                });
+                let em = p_el
+                    .children
+                    .iter()
+                    .find(|n| matches!(n, hast::Node::Element(e) if e.tag_name == "em"));
                 assert!(em.is_some(), "p should have an <em>");
 
                 if let Some(hast::Node::Element(em_el)) = em {

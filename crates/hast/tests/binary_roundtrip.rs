@@ -12,7 +12,11 @@ fn parse_to_mdast_buf(md: &str) -> Vec<u8> {
 fn hast_buffer_has_correct_magic() {
     let mdast_buf = parse_to_mdast_buf("# Hello");
     let hast_buf = arena_to_hast_buffer(&mdast_buf).expect("conversion failed");
-    assert_eq!(&hast_buf[..4], &BUFFER_MAGIC, "HAST buffer must start with MDAR magic");
+    assert_eq!(
+        &hast_buf[..4],
+        &BUFFER_MAGIC,
+        "HAST buffer must start with MDAR magic"
+    );
 }
 
 #[test]
@@ -41,8 +45,14 @@ fn code_block_produces_pre_code() {
     let hast_buf = arena_to_hast_buffer(&mdast_buf).expect("conversion failed");
     let html = hast_buffer_to_html(&hast_buf).expect("html failed");
     assert!(html.contains("<pre>"), "expected <pre> in: {html}");
-    assert!(html.contains(r#"class="language-rust""#), "expected language class in: {html}");
-    assert!(html.contains("fn main()"), "expected code content in: {html}");
+    assert!(
+        html.contains(r#"class="language-rust""#),
+        "expected language class in: {html}"
+    );
+    assert!(
+        html.contains("fn main()"),
+        "expected code content in: {html}"
+    );
 }
 
 #[test]
@@ -50,7 +60,10 @@ fn link_produces_anchor() {
     let mdast_buf = parse_to_mdast_buf("[example](https://example.com)");
     let hast_buf = arena_to_hast_buffer(&mdast_buf).expect("conversion failed");
     let html = hast_buffer_to_html(&hast_buf).expect("html failed");
-    assert!(html.contains(r#"href="https://example.com""#), "expected href in: {html}");
+    assert!(
+        html.contains(r#"href="https://example.com""#),
+        "expected href in: {html}"
+    );
     assert!(html.contains("example"), "expected text in: {html}");
 }
 
@@ -60,8 +73,14 @@ fn image_produces_img() {
     let hast_buf = arena_to_hast_buffer(&mdast_buf).expect("conversion failed");
     let html = hast_buffer_to_html(&hast_buf).expect("html failed");
     assert!(html.contains("<img"), "expected <img in: {html}");
-    assert!(html.contains(r#"src="https://example.com/img.png""#), "expected src in: {html}");
-    assert!(html.contains(r#"alt="alt text""#), "expected alt in: {html}");
+    assert!(
+        html.contains(r#"src="https://example.com/img.png""#),
+        "expected src in: {html}"
+    );
+    assert!(
+        html.contains(r#"alt="alt text""#),
+        "expected alt in: {html}"
+    );
 }
 
 #[test]
@@ -80,7 +99,10 @@ fn thematic_break_is_void() {
     let hast_buf = arena_to_hast_buffer(&mdast_buf).expect("conversion failed");
     let html = hast_buffer_to_html(&hast_buf).expect("html failed");
     assert!(html.contains("<hr>"), "expected <hr> in: {html}");
-    assert!(!html.contains("</hr>"), "hr should be void, no </hr> in: {html}");
+    assert!(
+        !html.contains("</hr>"),
+        "hr should be void, no </hr> in: {html}"
+    );
 }
 
 #[test]
@@ -89,7 +111,10 @@ fn ordered_list_with_start() {
     let hast_buf = arena_to_hast_buffer(&mdast_buf).expect("conversion failed");
     let html = hast_buffer_to_html(&hast_buf).expect("html failed");
     assert!(html.contains("<ol"), "expected <ol in: {html}");
-    assert!(html.contains(r#"start="3""#), "expected start attr in: {html}");
+    assert!(
+        html.contains(r#"start="3""#),
+        "expected start attr in: {html}"
+    );
 }
 
 #[test]

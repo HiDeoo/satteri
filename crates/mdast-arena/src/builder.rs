@@ -85,8 +85,15 @@ impl ArenaBuilder {
             .last()
             .expect("set_position_current called with empty stack")
             .0;
-        self.arena
-            .set_position(node_id, start_offset, end_offset, start_line, start_column, end_line, end_column);
+        self.arena.set_position(
+            node_id,
+            start_offset,
+            end_offset,
+            start_line,
+            start_column,
+            end_line,
+            end_column,
+        );
     }
 
     /// Set type-specific data on the current top-of-stack node.

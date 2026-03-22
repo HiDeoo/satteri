@@ -1,8 +1,7 @@
 //! Integration tests for raw buffer export/import.
 
 use mdast_arena::{
-    Arena, ArenaBuilder, BufferError, NodeType,
-    encode_heading_data, decode_heading_data,
+    decode_heading_data, encode_heading_data, Arena, ArenaBuilder, BufferError, NodeType,
     BUFFER_MAGIC, BUFFER_VERSION, NODE_STRUCT_SIZE,
 };
 
@@ -72,7 +71,11 @@ fn all_nodes_round_trip() {
         let orig = arena.get_node(i);
         let restored = view.get_node(i);
         assert_eq!(orig.id, restored.id, "node {} id mismatch", i);
-        assert_eq!(orig.node_type, restored.node_type, "node {} type mismatch", i);
+        assert_eq!(
+            orig.node_type, restored.node_type,
+            "node {} type mismatch",
+            i
+        );
         assert_eq!(orig.parent, restored.parent, "node {} parent mismatch", i);
         assert_eq!(orig.children_count, restored.children_count);
         assert_eq!(orig.data_len, restored.data_len);
@@ -88,7 +91,11 @@ fn children_round_trip() {
     for i in 0..arena.len() as u32 {
         let orig_children = arena.get_children(i);
         let view_children = view.get_children(i);
-        assert_eq!(orig_children, view_children, "children mismatch for node {}", i);
+        assert_eq!(
+            orig_children, view_children,
+            "children mismatch for node {}",
+            i
+        );
     }
 }
 
@@ -102,8 +109,8 @@ fn type_data_round_trip() {
     let heading_node = arena.get_node(1);
     assert_eq!(heading_node.node_type, NodeType::Heading as u8);
 
-    let orig_data = &arena.arena_type_data()
-        [heading_node.data_offset as usize..][..heading_node.data_len as usize];
+    let orig_data = &arena.arena_type_data()[heading_node.data_offset as usize..]
+        [..heading_node.data_len as usize];
     let view_data = view.get_type_data(1);
 
     assert_eq!(orig_data, view_data);

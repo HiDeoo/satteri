@@ -50,8 +50,12 @@ pub fn rebuild(arena: &Arena, patches: &[Patch]) -> Arena {
     let mut deleted: HashSet<u32> = HashSet::new();
     for patch in patches {
         match patch {
-            Patch::Remove { node_id } => { deleted.insert(*node_id); }
-            Patch::Replace { node_id, .. } => { deleted.insert(*node_id); }
+            Patch::Remove { node_id } => {
+                deleted.insert(*node_id);
+            }
+            Patch::Replace { node_id, .. } => {
+                deleted.insert(*node_id);
+            }
             _ => {}
         }
     }
@@ -124,8 +128,8 @@ fn copy_node(
 
     // Open this node in the new arena
     let node = orig.get_node(node_id);
-    let node_type = NodeType::from_u8(node.node_type)
-        .expect("unknown node type in arena — corrupt data");
+    let node_type =
+        NodeType::from_u8(node.node_type).expect("unknown node type in arena — corrupt data");
 
     builder.open_node(node_type);
 
@@ -198,8 +202,8 @@ fn emit_subtree(sub_arena: &Arena, builder: &mut ArenaBuilder) {
 /// Recursively emit nodes from sub_arena starting at `node_id`.
 fn emit_subtree_node(node_id: u32, sub_arena: &Arena, builder: &mut ArenaBuilder) {
     let node = sub_arena.get_node(node_id);
-    let node_type = NodeType::from_u8(node.node_type)
-        .expect("unknown node type in sub-arena — corrupt data");
+    let node_type =
+        NodeType::from_u8(node.node_type).expect("unknown node type in sub-arena — corrupt data");
 
     builder.open_node(node_type);
 
@@ -246,8 +250,8 @@ fn emit_wrap_node(
     }
 
     let wrapper = parent_tree.get_node(0);
-    let node_type = NodeType::from_u8(wrapper.node_type)
-        .expect("unknown node type in wrapper arena");
+    let node_type =
+        NodeType::from_u8(wrapper.node_type).expect("unknown node type in wrapper arena");
 
     builder.open_node(node_type);
     builder.set_position_current(
@@ -328,7 +332,9 @@ mod tests {
         let heading_id = orig.get_children(0)[0]; // id=1
         let text_in_heading = orig.get_children(heading_id)[0]; // id=2
 
-        let patches = vec![Patch::Remove { node_id: text_in_heading }];
+        let patches = vec![Patch::Remove {
+            node_id: text_in_heading,
+        }];
         let rebuilt = rebuild(&orig, &patches);
 
         // We should have 4 nodes: Root, Heading (now empty), Paragraph, Text(World)
@@ -338,8 +344,15 @@ mod tests {
         let new_root_children = rebuilt.get_children(0);
         assert_eq!(new_root_children.len(), 2);
         let new_heading_id = new_root_children[0];
-        assert_eq!(rebuilt.get_node(new_heading_id).node_type, NodeType::Heading as u8);
-        assert_eq!(rebuilt.get_children(new_heading_id).len(), 0, "heading should have no children");
+        assert_eq!(
+            rebuilt.get_node(new_heading_id).node_type,
+            NodeType::Heading as u8
+        );
+        assert_eq!(
+            rebuilt.get_children(new_heading_id).len(),
+            0,
+            "heading should have no children"
+        );
     }
 
     #[test]
@@ -347,14 +360,19 @@ mod tests {
         let orig = build_hello_world();
         // Remove the Heading (and its Text child)
         let heading_id = orig.get_children(0)[0]; // id=1
-        let patches = vec![Patch::Remove { node_id: heading_id }];
+        let patches = vec![Patch::Remove {
+            node_id: heading_id,
+        }];
         let rebuilt = rebuild(&orig, &patches);
 
         // Root + Paragraph + Text(World) = 3 nodes
         assert_eq!(rebuilt.len(), 3);
         let new_root_children = rebuilt.get_children(0);
         assert_eq!(new_root_children.len(), 1);
-        assert_eq!(rebuilt.get_node(new_root_children[0]).node_type, NodeType::Paragraph as u8);
+        assert_eq!(
+            rebuilt.get_node(new_root_children[0]).node_type,
+            NodeType::Paragraph as u8
+        );
     }
 
     #[test]
@@ -369,7 +387,10 @@ mod tests {
         replacement_builder.close_node();
         let replacement = replacement_builder.finish();
 
-        let patches = vec![Patch::Replace { node_id: text_id, new_tree: replacement }];
+        let patches = vec![Patch::Replace {
+            node_id: text_id,
+            new_tree: replacement,
+        }];
         let rebuilt = rebuild(&orig, &patches);
 
         // Same node count (Text replaced by ThematicBreak, 1-for-1)
@@ -394,15 +415,24 @@ mod tests {
         replacement_builder.close_node();
         let replacement = replacement_builder.finish();
 
-        let patches = vec![Patch::Replace { node_id: heading_id, new_tree: replacement }];
+        let patches = vec![Patch::Replace {
+            node_id: heading_id,
+            new_tree: replacement,
+        }];
         let rebuilt = rebuild(&orig, &patches);
 
         // Root should still have 2 children; first one is now Paragraph
         let root_children = rebuilt.get_children(0);
         assert_eq!(root_children.len(), 2);
-        assert_eq!(rebuilt.get_node(root_children[0]).node_type, NodeType::Paragraph as u8);
+        assert_eq!(
+            rebuilt.get_node(root_children[0]).node_type,
+            NodeType::Paragraph as u8
+        );
         // Second child should still be the original Paragraph
-        assert_eq!(rebuilt.get_node(root_children[1]).node_type, NodeType::Paragraph as u8);
+        assert_eq!(
+            rebuilt.get_node(root_children[1]).node_type,
+            NodeType::Paragraph as u8
+        );
     }
 
     #[test]
@@ -416,15 +446,27 @@ mod tests {
         new_tree_builder.close_node();
         let new_tree = new_tree_builder.finish();
 
-        let patches = vec![Patch::InsertBefore { node_id: para_id, new_tree }];
+        let patches = vec![Patch::InsertBefore {
+            node_id: para_id,
+            new_tree,
+        }];
         let rebuilt = rebuild(&orig, &patches);
 
         // Root should now have 3 children: Heading, ThematicBreak, Paragraph
         let root_children = rebuilt.get_children(0);
         assert_eq!(root_children.len(), 3);
-        assert_eq!(rebuilt.get_node(root_children[0]).node_type, NodeType::Heading as u8);
-        assert_eq!(rebuilt.get_node(root_children[1]).node_type, NodeType::ThematicBreak as u8);
-        assert_eq!(rebuilt.get_node(root_children[2]).node_type, NodeType::Paragraph as u8);
+        assert_eq!(
+            rebuilt.get_node(root_children[0]).node_type,
+            NodeType::Heading as u8
+        );
+        assert_eq!(
+            rebuilt.get_node(root_children[1]).node_type,
+            NodeType::ThematicBreak as u8
+        );
+        assert_eq!(
+            rebuilt.get_node(root_children[2]).node_type,
+            NodeType::Paragraph as u8
+        );
     }
 
     #[test]
@@ -437,15 +479,27 @@ mod tests {
         new_tree_builder.close_node();
         let new_tree = new_tree_builder.finish();
 
-        let patches = vec![Patch::InsertAfter { node_id: heading_id, new_tree }];
+        let patches = vec![Patch::InsertAfter {
+            node_id: heading_id,
+            new_tree,
+        }];
         let rebuilt = rebuild(&orig, &patches);
 
         // Root should now have 3 children: Heading, ThematicBreak, Paragraph
         let root_children = rebuilt.get_children(0);
         assert_eq!(root_children.len(), 3);
-        assert_eq!(rebuilt.get_node(root_children[0]).node_type, NodeType::Heading as u8);
-        assert_eq!(rebuilt.get_node(root_children[1]).node_type, NodeType::ThematicBreak as u8);
-        assert_eq!(rebuilt.get_node(root_children[2]).node_type, NodeType::Paragraph as u8);
+        assert_eq!(
+            rebuilt.get_node(root_children[0]).node_type,
+            NodeType::Heading as u8
+        );
+        assert_eq!(
+            rebuilt.get_node(root_children[1]).node_type,
+            NodeType::ThematicBreak as u8
+        );
+        assert_eq!(
+            rebuilt.get_node(root_children[2]).node_type,
+            NodeType::Paragraph as u8
+        );
     }
 
     #[test]
@@ -458,15 +512,24 @@ mod tests {
         child_builder.close_node();
         let child_tree = child_builder.finish();
 
-        let patches = vec![Patch::AppendChild { node_id: heading_id, child_tree }];
+        let patches = vec![Patch::AppendChild {
+            node_id: heading_id,
+            child_tree,
+        }];
         let rebuilt = rebuild(&orig, &patches);
 
         // Heading should now have 2 children: original Text + new Break
         let new_heading_id = rebuilt.get_children(0)[0];
         let heading_children = rebuilt.get_children(new_heading_id);
         assert_eq!(heading_children.len(), 2);
-        assert_eq!(rebuilt.get_node(heading_children[0]).node_type, NodeType::Text as u8);
-        assert_eq!(rebuilt.get_node(heading_children[1]).node_type, NodeType::Break as u8);
+        assert_eq!(
+            rebuilt.get_node(heading_children[0]).node_type,
+            NodeType::Text as u8
+        );
+        assert_eq!(
+            rebuilt.get_node(heading_children[1]).node_type,
+            NodeType::Break as u8
+        );
     }
 
     #[test]
@@ -479,15 +542,24 @@ mod tests {
         child_builder.close_node();
         let child_tree = child_builder.finish();
 
-        let patches = vec![Patch::PrependChild { node_id: heading_id, child_tree }];
+        let patches = vec![Patch::PrependChild {
+            node_id: heading_id,
+            child_tree,
+        }];
         let rebuilt = rebuild(&orig, &patches);
 
         // Heading should now have 2 children: new Break + original Text
         let new_heading_id = rebuilt.get_children(0)[0];
         let heading_children = rebuilt.get_children(new_heading_id);
         assert_eq!(heading_children.len(), 2);
-        assert_eq!(rebuilt.get_node(heading_children[0]).node_type, NodeType::Break as u8);
-        assert_eq!(rebuilt.get_node(heading_children[1]).node_type, NodeType::Text as u8);
+        assert_eq!(
+            rebuilt.get_node(heading_children[0]).node_type,
+            NodeType::Break as u8
+        );
+        assert_eq!(
+            rebuilt.get_node(heading_children[1]).node_type,
+            NodeType::Text as u8
+        );
     }
 
     #[test]
@@ -503,15 +575,26 @@ mod tests {
         let new_tree = new_tree_builder.finish();
 
         let patches = vec![
-            Patch::Remove { node_id: heading_id },
-            Patch::InsertAfter { node_id: para_id, new_tree },
+            Patch::Remove {
+                node_id: heading_id,
+            },
+            Patch::InsertAfter {
+                node_id: para_id,
+                new_tree,
+            },
         ];
         let rebuilt = rebuild(&orig, &patches);
 
         // Root should have 2 children: original Paragraph + new ThematicBreak
         let root_children = rebuilt.get_children(0);
         assert_eq!(root_children.len(), 2);
-        assert_eq!(rebuilt.get_node(root_children[0]).node_type, NodeType::Paragraph as u8);
-        assert_eq!(rebuilt.get_node(root_children[1]).node_type, NodeType::ThematicBreak as u8);
+        assert_eq!(
+            rebuilt.get_node(root_children[0]).node_type,
+            NodeType::Paragraph as u8
+        );
+        assert_eq!(
+            rebuilt.get_node(root_children[1]).node_type,
+            NodeType::ThematicBreak as u8
+        );
     }
 }

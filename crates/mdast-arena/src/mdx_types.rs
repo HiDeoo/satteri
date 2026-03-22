@@ -21,7 +21,11 @@ pub struct Point {
 impl Point {
     #[must_use]
     pub fn new(line: usize, column: usize, offset: usize) -> Point {
-        Point { line, column, offset }
+        Point {
+            line,
+            column,
+            offset,
+        }
     }
 }
 
@@ -41,8 +45,12 @@ pub struct Position {
 impl Position {
     #[must_use]
     pub fn new(
-        start_line: usize, start_column: usize, start_offset: usize,
-        end_line: usize, end_column: usize, end_offset: usize,
+        start_line: usize,
+        start_column: usize,
+        start_offset: usize,
+        end_line: usize,
+        end_column: usize,
+        end_offset: usize,
     ) -> Position {
         Position {
             start: Point::new(start_line, start_column, start_offset),
@@ -53,10 +61,16 @@ impl Position {
 
 impl fmt::Debug for Position {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}-{}:{} ({}-{})",
-            self.start.line, self.start.column,
-            self.end.line, self.end.column,
-            self.start.offset, self.end.offset)
+        write!(
+            f,
+            "{}:{}-{}:{} ({}-{})",
+            self.start.line,
+            self.start.column,
+            self.end.line,
+            self.end.column,
+            self.start.offset,
+            self.end.offset
+        )
     }
 }
 
@@ -90,8 +104,11 @@ pub enum Place {
 impl fmt::Display for Place {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Place::Position(p) => write!(f, "{}:{}-{}:{}",
-                p.start.line, p.start.column, p.end.line, p.end.column),
+            Place::Position(p) => write!(
+                f,
+                "{}:{}-{}:{}",
+                p.start.line, p.start.column, p.end.line, p.end.column
+            ),
             Place::Point(p) => write!(f, "{}:{}", p.line, p.column),
         }
     }
@@ -142,7 +159,11 @@ impl Location {
                     }
                     index += 1;
                 }
-                let previous = if index > 0 { self.indices[index - 1] } else { 0 };
+                let previous = if index > 0 {
+                    self.indices[index - 1]
+                } else {
+                    0
+                };
                 return Some(Point::new(index + 1, offset + 1 - previous, offset));
             }
         }

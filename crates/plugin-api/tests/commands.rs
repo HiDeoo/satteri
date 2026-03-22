@@ -1,5 +1,5 @@
+use mdast_arena::{codec::*, Arena, ArenaBuilder, NodeType, StringRef};
 use tryckeri_plugin_api::*;
-use mdast_arena::{Arena, ArenaBuilder, NodeType, StringRef, codec::*};
 
 fn build_test_arena() -> Arena {
     let source = "# Hello\n\nWorld".to_string();
@@ -35,7 +35,9 @@ fn build_test_arena() -> Arena {
 struct ReplaceHeading;
 
 impl Plugin for ReplaceHeading {
-    fn meta(&self) -> PluginMeta { PluginMeta::new("replace-heading") }
+    fn meta(&self) -> PluginMeta {
+        PluginMeta::new("replace-heading")
+    }
 
     fn visit_heading(&mut self, node: &Heading, ctx: &mut PluginContext) -> VisitResult {
         let new_node = NodeBuilder::heading(2).build();
@@ -48,7 +50,9 @@ impl Plugin for ReplaceHeading {
 struct RemoveHeading;
 
 impl Plugin for RemoveHeading {
-    fn meta(&self) -> PluginMeta { PluginMeta::new("remove-heading") }
+    fn meta(&self) -> PluginMeta {
+        PluginMeta::new("remove-heading")
+    }
 
     fn visit_heading(&mut self, node: &Heading, ctx: &mut PluginContext) -> VisitResult {
         ctx.remove_node(node.id());
@@ -66,7 +70,10 @@ fn replace_command_is_recorded() {
     let result = runner.run(arena, &mut data_map, &mut typed_data);
 
     assert!(!result.commands.is_empty(), "commands should not be empty");
-    let has_replace = result.commands.iter().any(|c| matches!(c, Command::Replace { .. }));
+    let has_replace = result
+        .commands
+        .iter()
+        .any(|c| matches!(c, Command::Replace { .. }));
     assert!(has_replace, "should have a Replace command");
 }
 
@@ -79,7 +86,10 @@ fn remove_command_is_recorded() {
     let mut typed_data = TypedDataMap::new();
     let result = runner.run(arena, &mut data_map, &mut typed_data);
 
-    let has_remove = result.commands.iter().any(|c| matches!(c, Command::Remove { .. }));
+    let has_remove = result
+        .commands
+        .iter()
+        .any(|c| matches!(c, Command::Remove { .. }));
     assert!(has_remove, "should have a Remove command");
 }
 
@@ -88,7 +98,9 @@ fn remove_command_is_recorded() {
 fn no_mutations_when_no_commands() {
     struct NoopPlugin;
     impl Plugin for NoopPlugin {
-        fn meta(&self) -> PluginMeta { PluginMeta::new("noop") }
+        fn meta(&self) -> PluginMeta {
+            PluginMeta::new("noop")
+        }
     }
 
     let arena = build_test_arena();
@@ -140,7 +152,9 @@ fn node_builder_raw_produces_raw_node() {
 fn visit_result_replace_adds_command() {
     struct ReplaceViaVisitResult;
     impl Plugin for ReplaceViaVisitResult {
-        fn meta(&self) -> PluginMeta { PluginMeta::new("replace-via-visit") }
+        fn meta(&self) -> PluginMeta {
+            PluginMeta::new("replace-via-visit")
+        }
         fn visit_heading(&mut self, _node: &Heading, _ctx: &mut PluginContext) -> VisitResult {
             VisitResult::Replace(NodeBuilder::paragraph().build())
         }
@@ -152,6 +166,9 @@ fn visit_result_replace_adds_command() {
     let mut typed_data = TypedDataMap::new();
     let result = runner.run(arena, &mut data_map, &mut typed_data);
     assert!(result.has_mutations);
-    let has_replace = result.commands.iter().any(|c| matches!(c, Command::Replace { .. }));
+    let has_replace = result
+        .commands
+        .iter()
+        .any(|c| matches!(c, Command::Replace { .. }));
     assert!(has_replace);
 }

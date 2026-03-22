@@ -1,8 +1,8 @@
 //! Arena → HAST conversion.
 
 use mdast_arena::codec::{
-    decode_code_data, decode_heading_data, decode_image_data, decode_link_data,
-    decode_list_data, decode_list_item_data, decode_string_ref_data,
+    decode_code_data, decode_heading_data, decode_image_data, decode_link_data, decode_list_data,
+    decode_list_item_data, decode_string_ref_data,
 };
 use mdast_arena::{Arena, NodeType};
 
@@ -282,12 +282,7 @@ fn convert_children(node_id: u32, arena: &Arena, builder: &mut HastBuilder) {
     }
 }
 
-fn convert_table_row(
-    row_id: u32,
-    arena: &Arena,
-    builder: &mut HastBuilder,
-    is_header: bool,
-) {
+fn convert_table_row(row_id: u32, arena: &Arena, builder: &mut HastBuilder, is_header: bool) {
     builder.open_element("tr");
     let cell_ids = arena.get_children(row_id).to_vec();
     let cell_tag = if is_header { "th" } else { "td" };

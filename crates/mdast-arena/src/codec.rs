@@ -228,8 +228,19 @@ pub fn decode_image_data(bytes: &[u8]) -> ImageData {
 // CodeData
 // ---------------------------------------------------------------------------
 
-pub fn encode_code_data(lang: StringRef, meta: StringRef, value: StringRef, fence_char: u8) -> Vec<u8> {
-    let d = CodeData { lang, meta, value, fence_char, _pad: [0u8; 3] };
+pub fn encode_code_data(
+    lang: StringRef,
+    meta: StringRef,
+    value: StringRef,
+    fence_char: u8,
+) -> Vec<u8> {
+    let d = CodeData {
+        lang,
+        meta,
+        value,
+        fence_char,
+        _pad: [0u8; 3],
+    };
     unsafe { struct_to_bytes(&d) }.to_vec()
 }
 
@@ -242,7 +253,12 @@ pub fn decode_code_data(bytes: &[u8]) -> CodeData {
 // ---------------------------------------------------------------------------
 
 pub fn encode_list_data(ordered: bool, start: u32, spread: bool) -> Vec<u8> {
-    let d = ListData { start, ordered, spread, _pad: [0; 2] };
+    let d = ListData {
+        start,
+        ordered,
+        spread,
+        _pad: [0; 2],
+    };
     unsafe { struct_to_bytes(&d) }.to_vec()
 }
 
@@ -268,7 +284,9 @@ pub fn decode_list_item_data(bytes: &[u8]) -> ListItemData {
 // ---------------------------------------------------------------------------
 
 pub fn encode_table_data(alignments: &[ColumnAlign]) -> Vec<u8> {
-    let header = TableData { align_count: alignments.len() as u32 };
+    let header = TableData {
+        align_count: alignments.len() as u32,
+    };
     let mut bytes = unsafe { struct_to_bytes(&header) }.to_vec();
     for a in alignments {
         bytes.push(*a as u8);
@@ -297,7 +315,12 @@ pub fn encode_reference_data(
     label: StringRef,
     reference_kind: u8,
 ) -> Vec<u8> {
-    let d = ReferenceData { identifier, label, reference_kind, _pad: [0; 3] };
+    let d = ReferenceData {
+        identifier,
+        label,
+        reference_kind,
+        _pad: [0; 3],
+    };
     unsafe { struct_to_bytes(&d) }.to_vec()
 }
 
@@ -354,7 +377,12 @@ pub fn encode_definition_data(
     identifier: StringRef,
     label: StringRef,
 ) -> Vec<u8> {
-    let d = DefinitionData { url, title, identifier, label };
+    let d = DefinitionData {
+        url,
+        title,
+        identifier,
+        label,
+    };
     unsafe { struct_to_bytes(&d) }.to_vec()
 }
 

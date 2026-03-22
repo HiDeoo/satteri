@@ -1,5 +1,5 @@
+use mdast_arena::{codec::*, Arena, ArenaBuilder, NodeType, StringRef};
 use tryckeri_plugin_api::*;
-use mdast_arena::{Arena, ArenaBuilder, NodeType, StringRef, codec::*};
 
 fn build_test_arena() -> Arena {
     let source = "# Hello\n\nWorld".to_string();
@@ -51,7 +51,9 @@ fn empty_plugin_list_no_mutations() {
 fn single_read_only_plugin_no_mutations() {
     struct ReadOnly;
     impl Plugin for ReadOnly {
-        fn meta(&self) -> PluginMeta { PluginMeta::new("read-only") }
+        fn meta(&self) -> PluginMeta {
+            PluginMeta::new("read-only")
+        }
         fn visit_heading(&mut self, _node: &Heading, _ctx: &mut PluginContext) -> VisitResult {
             VisitResult::NoChange
         }
@@ -69,7 +71,13 @@ fn single_read_only_plugin_no_mutations() {
 /// 3. AddHeadingIds + LintHeadingDepth run in sequence — both work, data from first visible
 fn slugify(text: &str) -> String {
     text.chars()
-        .map(|c| if c.is_alphanumeric() { c.to_lowercase().next().unwrap() } else { '-' })
+        .map(|c| {
+            if c.is_alphanumeric() {
+                c.to_lowercase().next().unwrap()
+            } else {
+                '-'
+            }
+        })
         .collect::<String>()
         .trim_matches('-')
         .to_string()
@@ -78,7 +86,9 @@ fn slugify(text: &str) -> String {
 struct AddHeadingIds;
 
 impl Plugin for AddHeadingIds {
-    fn meta(&self) -> PluginMeta { PluginMeta::new("add-heading-ids") }
+    fn meta(&self) -> PluginMeta {
+        PluginMeta::new("add-heading-ids")
+    }
 
     fn visit_heading(&mut self, node: &Heading, ctx: &mut PluginContext) -> VisitResult {
         let text = ctx.extract_text(node.id());
@@ -88,15 +98,23 @@ impl Plugin for AddHeadingIds {
     }
 }
 
-struct LintHeadingDepth { max_depth: u8 }
+struct LintHeadingDepth {
+    max_depth: u8,
+}
 
 impl Plugin for LintHeadingDepth {
-    fn meta(&self) -> PluginMeta { PluginMeta::new("lint-heading-depth") }
+    fn meta(&self) -> PluginMeta {
+        PluginMeta::new("lint-heading-depth")
+    }
 
     fn visit_heading(&mut self, node: &Heading, ctx: &mut PluginContext) -> VisitResult {
         if node.depth() > self.max_depth {
             ctx.warn(
-                format!("Heading depth {} exceeds max {}", node.depth(), self.max_depth),
+                format!(
+                    "Heading depth {} exceeds max {}",
+                    node.depth(),
+                    self.max_depth
+                ),
                 Some(node.id()),
             );
         }
@@ -121,7 +139,10 @@ fn two_plugins_run_in_sequence() {
     assert_eq!(id_val.as_str().unwrap(), "hello");
 
     // Second plugin produced no warnings (h1 <= 3)
-    assert!(result.diagnostics.is_empty(), "no warnings for h1 with max_depth=3");
+    assert!(
+        result.diagnostics.is_empty(),
+        "no warnings for h1 with max_depth=3"
+    );
 }
 
 /// 4. before and after are called around the traversal
@@ -133,7 +154,9 @@ fn before_and_after_hooks_called() {
     }
 
     impl Plugin for HookTracker {
-        fn meta(&self) -> PluginMeta { PluginMeta::new("hook-tracker") }
+        fn meta(&self) -> PluginMeta {
+            PluginMeta::new("hook-tracker")
+        }
 
         fn before(&mut self, _arena: &Arena, ctx: &mut PluginContext) {
             ctx.set_data(0, "before", DataValue::Bool(true));
@@ -153,8 +176,14 @@ fn before_and_after_hooks_called() {
     let mut typed_data = TypedDataMap::new();
     runner.run(arena, &mut data_map, &mut typed_data);
 
-    assert!(data_map.has(0, "before"), "before hook should have been called");
-    assert!(data_map.has(0, "after"), "after hook should have been called");
+    assert!(
+        data_map.has(0, "before"),
+        "before hook should have been called"
+    );
+    assert!(
+        data_map.has(0, "after"),
+        "after hook should have been called"
+    );
 }
 
 /// 5. Multiple plugins run in order (counter shows plugin 1 before plugin 2)
@@ -164,7 +193,9 @@ fn plugins_run_in_order() {
     // Plugin 2 reads the counter and verifies it is already set (from plugin 1)
     struct SetCounter;
     impl Plugin for SetCounter {
-        fn meta(&self) -> PluginMeta { PluginMeta::new("set-counter") }
+        fn meta(&self) -> PluginMeta {
+            PluginMeta::new("set-counter")
+        }
         fn before(&mut self, _arena: &Arena, ctx: &mut PluginContext) {
             ctx.set_data(0, "order", DataValue::Int(1));
         }
@@ -172,7 +203,9 @@ fn plugins_run_in_order() {
 
     struct VerifyCounter;
     impl Plugin for VerifyCounter {
-        fn meta(&self) -> PluginMeta { PluginMeta::new("verify-counter") }
+        fn meta(&self) -> PluginMeta {
+            PluginMeta::new("verify-counter")
+        }
         fn before(&mut self, _arena: &Arena, ctx: &mut PluginContext) {
             // Should already see the data set by plugin 1
             let existing = ctx.get_data(0, "order");
@@ -186,15 +219,16 @@ fn plugins_run_in_order() {
     }
 
     let arena = build_test_arena();
-    let mut runner = PluginRunner::new(vec![
-        Box::new(SetCounter),
-        Box::new(VerifyCounter),
-    ]);
+    let mut runner = PluginRunner::new(vec![Box::new(SetCounter), Box::new(VerifyCounter)]);
     let mut data_map = DataMap::new();
     let mut typed_data = TypedDataMap::new();
     runner.run(arena, &mut data_map, &mut typed_data);
 
     let order = data_map.get(0, "order").expect("order should be set");
     // Plugin 1 set to 1, plugin 2 incremented to 2
-    assert_eq!(order.as_int().unwrap(), 2, "plugins should run in order: 1 then 2");
+    assert_eq!(
+        order.as_int().unwrap(),
+        2,
+        "plugins should run in order: 1 then 2"
+    );
 }

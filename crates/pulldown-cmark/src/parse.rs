@@ -468,8 +468,7 @@ impl<'input> ParserInner<'input> {
                             continue;
                         }
 
-                        if let Some(total_len) =
-                            scan_mdx_inline_jsx(block_text[start..].as_bytes())
+                        if let Some(total_len) = scan_mdx_inline_jsx(block_text[start..].as_bytes())
                         {
                             let end = start + total_len;
                             let node = scan_nodes_to_ix(&self.tree, self.tree[cur_ix].next, end);
@@ -3022,27 +3021,40 @@ text
     fn mdx_jsx_flow_self_closing() {
         let events: Vec<_> = mdx_parser("<Chart values={[1,2,3]} />\n").collect();
         assert!(events.len() >= 1);
-        assert!(matches!(&events[0], Event::Start(Tag::MdxJsxFlowElement(s)) if s.contains("Chart")));
+        assert!(
+            matches!(&events[0], Event::Start(Tag::MdxJsxFlowElement(s)) if s.contains("Chart"))
+        );
     }
 
     #[test]
     fn mdx_jsx_flow_fragment() {
         let events: Vec<_> = mdx_parser("<>\n").collect();
         assert!(events.len() >= 1);
-        assert!(matches!(&events[0], Event::Start(Tag::MdxJsxFlowElement(_))));
+        assert!(matches!(
+            &events[0],
+            Event::Start(Tag::MdxJsxFlowElement(_))
+        ));
     }
 
     #[test]
     fn mdx_inline_expression() {
         let events: Vec<_> = mdx_parser("hello {name} world\n").collect();
-        let has_expr = events.iter().any(|e| matches!(e, Event::MdxTextExpression(s) if s.as_ref() == "name"));
-        assert!(has_expr, "Expected inline MDX expression, got: {:?}", events);
+        let has_expr = events
+            .iter()
+            .any(|e| matches!(e, Event::MdxTextExpression(s) if s.as_ref() == "name"));
+        assert!(
+            has_expr,
+            "Expected inline MDX expression, got: {:?}",
+            events
+        );
     }
 
     #[test]
     fn mdx_inline_jsx() {
         let events: Vec<_> = mdx_parser("hello <Badge /> world\n").collect();
-        let has_jsx = events.iter().any(|e| matches!(e, Event::Start(Tag::MdxJsxTextElement(s)) if s.contains("Badge")));
+        let has_jsx = events
+            .iter()
+            .any(|e| matches!(e, Event::Start(Tag::MdxJsxTextElement(s)) if s.contains("Badge")));
         assert!(has_jsx, "Expected inline MDX JSX, got: {:?}", events);
     }
 
@@ -3050,7 +3062,9 @@ text
     fn mdx_all_tags_are_jsx() {
         // In MDX mode, all tags (including lowercase) are JSX, not HTML.
         let events: Vec<_> = mdx_parser("hello <em>world</em>\n").collect();
-        let has_jsx = events.iter().any(|e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_))));
+        let has_jsx = events
+            .iter()
+            .any(|e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_))));
         assert!(has_jsx, "In MDX mode, <em> should be JSX: {:?}", events);
     }
 
@@ -3059,6 +3073,8 @@ text
         // Without ENABLE_MDX, none of this should be parsed as MDX.
         let events: Vec<_> = Parser::new("import foo from 'bar'\n").collect();
         // Should be a regular paragraph.
-        assert!(events.iter().any(|e| matches!(e, Event::Start(Tag::Paragraph))));
+        assert!(events
+            .iter()
+            .any(|e| matches!(e, Event::Start(Tag::Paragraph))));
     }
 }

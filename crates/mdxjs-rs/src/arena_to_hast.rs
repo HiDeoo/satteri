@@ -5,13 +5,13 @@
 
 use crate::hast;
 use crate::oxc_utils::inter_element_whitespace;
-use mdast_arena::mdx_types::{sanitize_uri as sanitize, Point, Position};
 use mdast_arena::codec::{
     ColumnAlign, decode_code_data, decode_definition_data, decode_expression_data,
     decode_footnote_definition_data, decode_heading_data, decode_image_data, decode_link_data,
     decode_list_data, decode_list_item_data, decode_math_data, decode_mdx_jsx_element_data,
     decode_reference_data, decode_string_ref_data, decode_table_data,
 };
+use mdast_arena::mdx_types::{Point, Position, sanitize_uri as sanitize};
 use mdast_arena::{NodeType, ReadArena};
 use std::collections::HashMap;
 
@@ -153,7 +153,7 @@ pub fn arena_to_hast(arena: &dyn ReadArena) -> hast::Node {
                         (
                             "className".into(),
                             hast::PropertyValue::SpaceSeparated(vec![
-                                "data-footnote-backref".into()
+                                "data-footnote-backref".into(),
                             ]),
                         ),
                     ],
@@ -629,10 +629,7 @@ fn transform_list(ctx: &mut Context<'_>, node_id: u32, position: Option<Position
         && ordered
         && s != 1
     {
-        properties.push((
-            "start".into(),
-            hast::PropertyValue::String(s.to_string()),
-        ));
+        properties.push(("start".into(), hast::PropertyValue::String(s.to_string())));
     }
 
     if contains_task_list {
@@ -695,10 +692,7 @@ fn transform_list_item(
                     "type".into(),
                     hast::PropertyValue::String("checkbox".into()),
                 ),
-                (
-                    "checked".into(),
-                    hast::PropertyValue::Boolean(checked_val),
-                ),
+                ("checked".into(), hast::PropertyValue::Boolean(checked_val)),
                 ("disabled".into(), hast::PropertyValue::Boolean(true)),
             ],
             children: vec![],
@@ -851,11 +845,7 @@ fn transform_emphasis(
     }))
 }
 
-fn transform_strong(
-    ctx: &mut Context<'_>,
-    node_id: u32,
-    position: Option<Position>,
-) -> NodeResult {
+fn transform_strong(ctx: &mut Context<'_>, node_id: u32, position: Option<Position>) -> NodeResult {
     let children = all_children(ctx, node_id);
     NodeResult::Node(hast::Node::Element(hast::Element {
         tag_name: "strong".into(),
@@ -865,11 +855,7 @@ fn transform_strong(
     }))
 }
 
-fn transform_delete(
-    ctx: &mut Context<'_>,
-    node_id: u32,
-    position: Option<Position>,
-) -> NodeResult {
+fn transform_delete(ctx: &mut Context<'_>, node_id: u32, position: Option<Position>) -> NodeResult {
     let children = all_children(ctx, node_id);
     NodeResult::Node(hast::Node::Element(hast::Element {
         tag_name: "del".into(),
@@ -907,7 +893,11 @@ fn transform_math(ctx: &mut Context<'_>, node_id: u32, position: Option<Position
         String::new()
     } else {
         let d = decode_math_data(data);
-        if d.value.len > 0 { ctx.arena.get_str(d.value).to_string() } else { String::new() }
+        if d.value.len > 0 {
+            ctx.arena.get_str(d.value).to_string()
+        } else {
+            String::new()
+        }
     };
     let mut code_value = value;
     code_value.push('\n');
@@ -923,7 +913,10 @@ fn transform_math(ctx: &mut Context<'_>, node_id: u32, position: Option<Position
                     "math-display".into(),
                 ]),
             )],
-            children: vec![hast::Node::Text(hast::Text { value: code_value, position: None })],
+            children: vec![hast::Node::Text(hast::Text {
+                value: code_value,
+                position: None,
+            })],
             position: position.clone(),
         })],
         position,
@@ -945,10 +938,7 @@ fn transform_inline_math(
         tag_name: "code".into(),
         properties: vec![(
             "className".into(),
-            hast::PropertyValue::SpaceSeparated(vec![
-                "language-math".into(),
-                "math-inline".into(),
-            ]),
+            hast::PropertyValue::SpaceSeparated(vec!["language-math".into(), "math-inline".into()]),
         )],
         children: vec![hast::Node::Text(hast::Text {
             value: replace_eols_with_spaces(&value),
@@ -1175,10 +1165,7 @@ fn transform_footnote_reference(
                         }
                     )),
                 ),
-                (
-                    "dataFootnoteRef".into(),
-                    hast::PropertyValue::Boolean(true),
-                ),
+                ("dataFootnoteRef".into(), hast::PropertyValue::Boolean(true)),
                 (
                     "ariaDescribedBy".into(),
                     hast::PropertyValue::String("footnote-label".into()),
@@ -1387,9 +1374,7 @@ fn transform_mdxjs_esm(
     position: Option<Position>,
 ) -> NodeResult {
     let raw = ctx.arena.get_node(node_id);
-    let value = ctx.arena.source()
-        [raw.start_offset as usize..raw.end_offset as usize]
-        .to_string();
+    let value = ctx.arena.source()[raw.start_offset as usize..raw.end_offset as usize].to_string();
     NodeResult::Node(hast::Node::MdxjsEsm(hast::MdxjsEsm {
         value,
         position,

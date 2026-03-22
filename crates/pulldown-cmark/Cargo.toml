@@ -1,10 +1,7 @@
 [package]
 name = "pulldown-cmark"
 version = "0.13.1"
-authors = [
-    "Raph Levien <raph.levien@gmail.com>",
-    "Marcus Klaas de Vries <mail@marcusklaas.nl>",
-]
+authors = ["Raph Levien <raph.levien@gmail.com>", "Marcus Klaas de Vries <mail@marcusklaas.nl>"]
 license = "MIT"
 description = "A pull parser for CommonMark (vendored fork with MDX extensions)"
 edition = "2021"

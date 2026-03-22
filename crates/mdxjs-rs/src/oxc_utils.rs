@@ -1,19 +1,19 @@
 //! Lots of helpers for dealing with OXC, particularly from unist, and for
 //! building its ES AST.
 
-use mdast_arena::mdx_types::{id_cont, id_start, Point, Position, Location};
+use mdast_arena::mdx_types::{Location, Point, Position, id_cont, id_start};
 
 use std::cell::Cell;
 
 use oxc_allocator::{Allocator, Box as OxcBox, Vec as OxcVec};
 use oxc_ast::ast::{
-    Argument, BindingIdentifier, BooleanLiteral, CallExpression,
-    ComputedMemberExpression, Expression, IdentifierName, IdentifierReference, JSXAttributeName,
-    JSXElementName, JSXIdentifier, JSXMemberExpression, JSXMemberExpressionObject,
-    JSXNamespacedName, MemberExpression, NullLiteral, NumericLiteral, ObjectExpression,
-    ObjectPropertyKind, PropertyKey, StaticMemberExpression, StringLiteral, ThisExpression,
+    Argument, BindingIdentifier, BooleanLiteral, CallExpression, ComputedMemberExpression,
+    Expression, IdentifierName, IdentifierReference, JSXAttributeName, JSXElementName,
+    JSXIdentifier, JSXMemberExpression, JSXMemberExpressionObject, JSXNamespacedName,
+    MemberExpression, NullLiteral, NumericLiteral, ObjectExpression, ObjectPropertyKind,
+    PropertyKey, StaticMemberExpression, StringLiteral, ThisExpression,
 };
-use oxc_span::{Atom, Span, SPAN};
+use oxc_span::{Atom, SPAN, Span};
 use oxc_syntax::node::NodeId;
 
 /// Turn a unist position, into an OXC span, of two byte positions.
@@ -282,10 +282,7 @@ pub fn create_jsx_name_from_str<'a>(alloc: &'a Allocator, name: &str) -> JSXElem
         // `a`
         JsxName::Normal(name) => {
             if is_identifier_name(name)
-                && name
-                    .as_bytes()
-                    .first()
-                    .is_some_and(u8::is_ascii_lowercase)
+                && name.as_bytes().first().is_some_and(u8::is_ascii_lowercase)
             {
                 JSXElementName::Identifier(OxcBox::new_in(
                     JSXIdentifier {

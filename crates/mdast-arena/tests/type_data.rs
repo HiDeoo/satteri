@@ -1,9 +1,9 @@
 //! Integration tests for type-specific data codec.
 
 use mdast_arena::{
-    ArenaBuilder, ColumnAlign, NodeType, StringRef,
     decode_code_data, decode_heading_data, decode_link_data, decode_list_data, decode_table_data,
     encode_code_data, encode_heading_data, encode_link_data, encode_list_data, encode_table_data,
+    ArenaBuilder, ColumnAlign, NodeType, StringRef,
 };
 
 #[test]
@@ -108,4 +108,3 @@ fn type_data_stored_in_arena() {
     let d = decode_heading_data(raw);
     assert_eq!(d.depth, 2);
 }
-

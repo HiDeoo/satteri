@@ -520,7 +520,6 @@ where
                 self.in_non_writing_block = false;
             }
             TagEnd::MdxJsxFlowElement | TagEnd::MdxJsxTextElement => {}
-
         }
         Ok(())
     }

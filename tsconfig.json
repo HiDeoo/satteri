@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "noEmit": true,
+
+    "module": "NodeNext",
+    "target": "ESNext",
+    "moduleResolution": "nodenext",
+
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    "strict": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "noUncheckedSideEffectImports": true,
+    "moduleDetection": "force",
+    "erasableSyntaxOnly": true,
+    "skipLibCheck": true,
+  },
+  "include": ["packages/**/*"],
+  "exclude": ["node_modules", "dist", "vendor", "target"],
+}

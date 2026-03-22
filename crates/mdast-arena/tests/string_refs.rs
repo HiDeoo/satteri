@@ -1,6 +1,8 @@
 //! Integration tests for StringRef and get_str.
 
-use mdast_arena::{Arena, ArenaBuilder, NodeType, StringRef, encode_string_ref_data, decode_string_ref_data};
+use mdast_arena::{
+    decode_string_ref_data, encode_string_ref_data, Arena, ArenaBuilder, NodeType, StringRef,
+};
 
 #[test]
 fn store_and_read_back_string_ref() {
@@ -56,8 +58,8 @@ fn string_ref_encoded_as_type_data() {
 
     let arena = builder.finish();
     let text_node = arena.get_node(text_id);
-    let raw = &arena.arena_type_data()
-        [text_node.data_offset as usize..][..text_node.data_len as usize];
+    let raw =
+        &arena.arena_type_data()[text_node.data_offset as usize..][..text_node.data_len as usize];
     let decoded = decode_string_ref_data(raw);
     assert_eq!(decoded, sr);
     assert_eq!(arena.get_str(decoded), "world");

@@ -10,6 +10,4 @@ pub use context::{Diagnostic, PluginContext, Severity};
 pub use data::{DataMap, DataValue, TypedDataMap};
 pub use plugin::{NodeView, Plugin, PluginMeta, VisitResult};
 pub use runner::{PluginRunResult, PluginRunner};
-pub use typed_nodes::{
-    Code, Heading, Image, Link, NodePosition, Paragraph, Text,
-};
+pub use typed_nodes::{Code, Heading, Image, Link, NodePosition, Paragraph, Text};

@@ -1,12 +1,10 @@
 //! Integration tests for MDAST → HAST conversion.
 
-use tryckeri_hast::{HastNodeType, arena_to_hast};
 use mdast_arena::{
-    ArenaBuilder, NodeType, StringRef,
-    encode_code_data, encode_heading_data, encode_image_data, encode_link_data,
-    encode_list_data, encode_string_ref_data, encode_table_data,
-    ColumnAlign,
+    encode_code_data, encode_heading_data, encode_image_data, encode_link_data, encode_list_data,
+    encode_string_ref_data, encode_table_data, ArenaBuilder, ColumnAlign, NodeType, StringRef,
 };
+use tryckeri_hast::{arena_to_hast, HastNodeType};
 
 // ---------------------------------------------------------------------------
 // Arena 1: Heading + Paragraph

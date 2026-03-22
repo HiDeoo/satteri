@@ -10,7 +10,7 @@ use crate::oxc_utils::{
     u32_to_point,
 };
 use core::str;
-use mdast_arena::mdx_types::{self as message, Message, Location};
+use mdast_arena::mdx_types::{self as message, Location, Message};
 use oxc_allocator::{Allocator, Box as OxcBox, Vec as OxcVec};
 use oxc_ast::ast::{
     Argument, ArrayExpression, ArrayExpressionElement, CallExpression, Declaration,
@@ -19,7 +19,7 @@ use oxc_ast::ast::{
     JSXChild, JSXElement, JSXExpression, JSXFragment, ModuleDeclaration, ModuleExportName,
     ObjectProperty, ObjectPropertyKind, PropertyKey, PropertyKind, Statement, ThisExpression,
 };
-use oxc_span::{Span, SPAN};
+use oxc_span::{SPAN, Span};
 use oxc_syntax::node::NodeId;
 use std::cell::Cell;
 
@@ -310,8 +310,7 @@ fn process_statement_jsx<'a>(
             }
         }
         Statement::ExportDefaultDeclaration(decl) => {
-            if let ExportDefaultDeclarationKind::FunctionDeclaration(func) =
-                &mut decl.declaration
+            if let ExportDefaultDeclarationKind::FunctionDeclaration(func) = &mut decl.declaration
                 && let Some(ref mut body) = func.body
             {
                 for s in &mut body.statements {
@@ -395,8 +394,6 @@ fn process_statement_jsx<'a>(
     }
     Ok(())
 }
-
-
 
 /// Process an expression, replacing JSX with function calls.
 #[allow(clippy::too_many_arguments)]
@@ -1071,8 +1068,7 @@ fn jsx_children_to_expressions<'a>(
                     reason:
                         "Unexpected spread child, which is not supported in Babel, SWC, or React"
                             .into(),
-                    place: u32_to_point(lo, location)
-                        .map(|p| Box::new(message::Place::Point(p))),
+                    place: u32_to_point(lo, location).map(|p| Box::new(message::Place::Point(p))),
                     source: Box::new("mdxjs-rs".into()),
                     rule_id: Box::new("spread".into()),
                 });
@@ -1236,39 +1232,39 @@ fn jsx_attributes_to_props<'a>(
     if let Some(children) = children
         && !children.is_empty()
     {
-            let value = if children.len() == 1 {
-                children.pop().unwrap()
-            } else {
-                let mut elements = OxcVec::with_capacity_in(children.len(), alloc);
-                for child in children.drain(..) {
-                    elements.push(ArrayExpressionElement::from(child));
-                }
-                Expression::ArrayExpression(OxcBox::new_in(
-                    ArrayExpression {
-                        span: SPAN,
-                        elements,
-                        node_id: Cell::new(NodeId::DUMMY),
-                    },
-                    alloc,
-                ))
-            };
-
-            fields.push(ObjectPropertyKind::ObjectProperty(OxcBox::new_in(
-                ObjectProperty {
+        let value = if children.len() == 1 {
+            children.pop().unwrap()
+        } else {
+            let mut elements = OxcVec::with_capacity_in(children.len(), alloc);
+            for child in children.drain(..) {
+                elements.push(ArrayExpressionElement::from(child));
+            }
+            Expression::ArrayExpression(OxcBox::new_in(
+                ArrayExpression {
                     span: SPAN,
-                    kind: PropertyKind::Init,
-                    key: PropertyKey::StaticIdentifier(OxcBox::new_in(
-                        create_ident_name(alloc, "children"),
-                        alloc,
-                    )),
-                    value,
-                    method: false,
-                    shorthand: false,
-                    computed: false,
+                    elements,
                     node_id: Cell::new(NodeId::DUMMY),
                 },
                 alloc,
-            )));
+            ))
+        };
+
+        fields.push(ObjectPropertyKind::ObjectProperty(OxcBox::new_in(
+            ObjectProperty {
+                span: SPAN,
+                kind: PropertyKind::Init,
+                key: PropertyKey::StaticIdentifier(OxcBox::new_in(
+                    create_ident_name(alloc, "children"),
+                    alloc,
+                )),
+                value,
+                method: false,
+                shorthand: false,
+                computed: false,
+                node_id: Cell::new(NodeId::DUMMY),
+            },
+            alloc,
+        )));
     }
 
     // Add remaining fields.

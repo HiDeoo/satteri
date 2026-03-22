@@ -102,20 +102,13 @@ impl Arena {
         buf.extend_from_slice(header_bytes);
 
         // Nodes
-        let nodes_slice: &[u8] = unsafe {
-            std::slice::from_raw_parts(
-                self.nodes.as_ptr() as *const u8,
-                nodes_bytes,
-            )
-        };
+        let nodes_slice: &[u8] =
+            unsafe { std::slice::from_raw_parts(self.nodes.as_ptr() as *const u8, nodes_bytes) };
         buf.extend_from_slice(nodes_slice);
 
         // Children (u32 array)
         let children_slice: &[u8] = unsafe {
-            std::slice::from_raw_parts(
-                self.children.as_ptr() as *const u8,
-                children_bytes,
-            )
+            std::slice::from_raw_parts(self.children.as_ptr() as *const u8, children_bytes)
         };
         buf.extend_from_slice(children_slice);
 
@@ -152,10 +145,9 @@ impl Arena {
         }
 
         // Validate offsets are within buffer bounds.
-        let nodes_end = header.nodes_offset as usize
-            + header.node_count as usize * NODE_STRUCT_SIZE;
-        let children_end = header.children_offset as usize
-            + header.children_count as usize * 4;
+        let nodes_end =
+            header.nodes_offset as usize + header.node_count as usize * NODE_STRUCT_SIZE;
+        let children_end = header.children_offset as usize + header.children_count as usize * 4;
         let type_data_end = header.type_data_offset as usize + header.type_data_len as usize;
         let source_end = header.source_offset as usize + header.source_len as usize;
 
@@ -168,8 +160,7 @@ impl Arena {
         }
 
         // Validate source is valid UTF-8.
-        let source_bytes =
-            &buf[header.source_offset as usize..source_end];
+        let source_bytes = &buf[header.source_offset as usize..source_end];
         std::str::from_utf8(source_bytes).map_err(|_| BufferError::InvalidUtf8)?;
 
         Ok(ArenaView { header, buf })

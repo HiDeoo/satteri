@@ -17,7 +17,7 @@ use oxc_ast::ast::{
     JSXExpressionContainer, JSXFragment, JSXOpeningElement, JSXOpeningFragment, JSXSpreadAttribute,
     Program, Statement, StringLiteral,
 };
-use oxc_span::{Atom, Span, SPAN};
+use oxc_span::{Atom, SPAN, Span};
 use oxc_syntax::node::NodeId;
 use rustc_hash::FxHashSet;
 
@@ -147,7 +147,9 @@ fn one<'a>(
     let value = match node {
         hast::Node::Comment(x) => Some(transform_comment(context, node, x)),
         hast::Node::Element(x) => transform_element(context, node, x, explicit_jsxs)?,
-        hast::Node::MdxJsxElement(x) | hast::Node::MdxJsxTextElement(x) => transform_mdx_jsx_element(context, node, x, explicit_jsxs)?,
+        hast::Node::MdxJsxElement(x) | hast::Node::MdxJsxTextElement(x) => {
+            transform_mdx_jsx_element(context, node, x, explicit_jsxs)?
+        }
         hast::Node::MdxExpression(x) => transform_mdx_expression(context, node, x)?,
         hast::Node::MdxjsEsm(x) => transform_mdxjs_esm(context, node, x)?,
         hast::Node::Root(x) => transform_root(context, node, x, explicit_jsxs)?,

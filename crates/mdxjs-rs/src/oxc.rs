@@ -1,13 +1,11 @@
 //! Bridge between `markdown-rs` and OXC.
 
-
-
-use mdast_arena::mdx_types::{self as message, Stop, Location, MdxExpressionKind, MdxSignal};
+use mdast_arena::mdx_types::{self as message, Location, MdxExpressionKind, MdxSignal, Stop};
 use oxc_allocator::Allocator;
 use oxc_ast::ast::{Expression, ObjectPropertyKind, Program, Statement};
 use oxc_codegen::Codegen;
 use oxc_parser::{ParseOptions, Parser};
-use oxc_span::{GetSpan, SourceType, Span, SPAN};
+use oxc_span::{GetSpan, SPAN, SourceType, Span};
 
 /// Lex ESM in MDX with OXC.
 pub fn parse_esm(value: &str) -> MdxSignal {

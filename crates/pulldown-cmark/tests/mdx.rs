@@ -30,14 +30,20 @@ fn count(events: &[Event<'_>], pred: impl Fn(&Event<'_>) -> bool) -> usize {
 #[test]
 fn esm_import() {
     let ev = mdx_events("import a from 'b'\n\nc");
-    assert!(has(&ev, |e| matches!(e, Event::MdxEsm(s) if s.contains("import"))));
+    assert!(has(
+        &ev,
+        |e| matches!(e, Event::MdxEsm(s) if s.contains("import"))
+    ));
     assert!(has(&ev, |e| matches!(e, Event::Start(Tag::Paragraph))));
 }
 
 #[test]
 fn esm_export() {
     let ev = mdx_events("export default a\n\nb");
-    assert!(has(&ev, |e| matches!(e, Event::MdxEsm(s) if s.contains("export"))));
+    assert!(has(
+        &ev,
+        |e| matches!(e, Event::MdxEsm(s) if s.contains("export"))
+    ));
 }
 
 #[test]
@@ -54,27 +60,42 @@ fn esm_export_star() {
 
 #[test]
 fn esm_not_import_dot() {
-    assert!(!has(&mdx_events("import.\n"), |e| matches!(e, Event::MdxEsm(_))));
+    assert!(!has(&mdx_events("import.\n"), |e| matches!(
+        e,
+        Event::MdxEsm(_)
+    )));
 }
 
 #[test]
 fn esm_not_import_parens() {
-    assert!(!has(&mdx_events("import('a')\n"), |e| matches!(e, Event::MdxEsm(_))));
+    assert!(!has(&mdx_events("import('a')\n"), |e| matches!(
+        e,
+        Event::MdxEsm(_)
+    )));
 }
 
 #[test]
 fn esm_not_impossible() {
-    assert!(!has(&mdx_events("impossible\n"), |e| matches!(e, Event::MdxEsm(_))));
+    assert!(!has(&mdx_events("impossible\n"), |e| matches!(
+        e,
+        Event::MdxEsm(_)
+    )));
 }
 
 #[test]
 fn esm_not_exporting() {
-    assert!(!has(&mdx_events("exporting\n"), |e| matches!(e, Event::MdxEsm(_))));
+    assert!(!has(&mdx_events("exporting\n"), |e| matches!(
+        e,
+        Event::MdxEsm(_)
+    )));
 }
 
 #[test]
 fn esm_not_indented() {
-    assert!(!has(&mdx_events("  import a from 'b'\n"), |e| matches!(e, Event::MdxEsm(_))));
+    assert!(!has(&mdx_events("  import a from 'b'\n"), |e| matches!(
+        e,
+        Event::MdxEsm(_)
+    )));
 }
 
 #[test]
@@ -113,8 +134,11 @@ fn esm_import_styles() {
         "import \"a\"\n",
     ];
     for input in cases {
-        assert!(has(&mdx_events(input), |e| matches!(e, Event::MdxEsm(_))),
-            "should be ESM: {}", input);
+        assert!(
+            has(&mdx_events(input), |e| matches!(e, Event::MdxEsm(_))),
+            "should be ESM: {}",
+            input
+        );
     }
 }
 
@@ -133,8 +157,11 @@ fn esm_export_styles() {
         "export {a} from \"b\"\n",
     ];
     for input in cases {
-        assert!(has(&mdx_events(input), |e| matches!(e, Event::MdxEsm(_))),
-            "should be ESM: {}", input);
+        assert!(
+            has(&mdx_events(input), |e| matches!(e, Event::MdxEsm(_))),
+            "should be ESM: {}",
+            input
+        );
     }
 }
 
@@ -142,22 +169,31 @@ fn esm_export_styles() {
 fn esm_not_in_paragraph() {
     // Import/export inside a paragraph (not interrupting) should not be ESM.
     let ev = mdx_events("a\nimport a from 'b'\n");
-    assert!(!has(&ev, |e| matches!(e, Event::MdxEsm(_))),
-        "should not be ESM inside paragraph: {:?}", ev);
+    assert!(
+        !has(&ev, |e| matches!(e, Event::MdxEsm(_))),
+        "should not be ESM inside paragraph: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn esm_not_in_list() {
     let ev = mdx_events("- import a from 'b'\n");
-    assert!(!has(&ev, |e| matches!(e, Event::MdxEsm(_))),
-        "should not be ESM in list item: {:?}", ev);
+    assert!(
+        !has(&ev, |e| matches!(e, Event::MdxEsm(_))),
+        "should not be ESM in list item: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn esm_not_in_blockquote() {
     let ev = mdx_events("> export default c\n");
-    assert!(!has(&ev, |e| matches!(e, Event::MdxEsm(_))),
-        "should not be ESM in blockquote: {:?}", ev);
+    assert!(
+        !has(&ev, |e| matches!(e, Event::MdxEsm(_))),
+        "should not be ESM in blockquote: {:?}",
+        ev
+    );
 }
 
 // ===========================================================================
@@ -167,34 +203,49 @@ fn esm_not_in_blockquote() {
 #[test]
 fn expr_flow_simple() {
     let ev = mdx_events("{a}\n");
-    assert!(has(&ev, |e| matches!(e, Event::MdxFlowExpression(s) if s.as_ref() == "a")));
+    assert!(has(
+        &ev,
+        |e| matches!(e, Event::MdxFlowExpression(s) if s.as_ref() == "a")
+    ));
 }
 
 #[test]
 fn expr_flow_empty() {
     let ev = mdx_events("{}\n");
-    assert!(has(&ev, |e| matches!(e, Event::MdxFlowExpression(s) if s.as_ref() == "")));
+    assert!(has(
+        &ev,
+        |e| matches!(e, Event::MdxFlowExpression(s) if s.as_ref() == "")
+    ));
 }
 
 #[test]
 fn expr_flow_nested_braces() {
     let ev = mdx_events("{a { b }}\n");
-    assert!(has(&ev, |e| matches!(e, Event::MdxFlowExpression(s) if s.as_ref() == "a { b }")));
+    assert!(has(
+        &ev,
+        |e| matches!(e, Event::MdxFlowExpression(s) if s.as_ref() == "a { b }")
+    ));
 }
 
 #[test]
 fn expr_flow_multiline() {
     let ev = mdx_events("{\n}\n");
-    assert!(has(&ev, |e| matches!(e, Event::MdxFlowExpression(_))),
-        "multiline expression: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(e, Event::MdxFlowExpression(_))),
+        "multiline expression: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn expr_flow_trailing_whitespace() {
     // `{ a } \t\n` — expression followed by spaces.
     let ev = mdx_events("{ a } \t\n");
-    assert!(has(&ev, |e| matches!(e, Event::MdxFlowExpression(_))),
-        "trailing whitespace: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(e, Event::MdxFlowExpression(_))),
+        "trailing whitespace: {:?}",
+        ev
+    );
 }
 
 #[test]
@@ -210,15 +261,27 @@ fn expr_flow_leading_whitespace() {
 fn expr_flow_with_strings() {
     // Braces inside strings should not count.
     let ev = mdx_events("{\"a { b }\"}\n");
-    assert!(has(&ev, |e| matches!(e, Event::MdxFlowExpression(s) if s.as_ref() == "\"a { b }\"")),
-        "strings in expression: {:?}", ev);
+    assert!(
+        has(
+            &ev,
+            |e| matches!(e, Event::MdxFlowExpression(s) if s.as_ref() == "\"a { b }\"")
+        ),
+        "strings in expression: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn expr_flow_with_template() {
     let ev = mdx_events("{`a { b }`}\n");
-    assert!(has(&ev, |e| matches!(e, Event::MdxFlowExpression(s) if s.as_ref() == "`a { b }`")),
-        "template in expression: {:?}", ev);
+    assert!(
+        has(
+            &ev,
+            |e| matches!(e, Event::MdxFlowExpression(s) if s.as_ref() == "`a { b }`")
+        ),
+        "template in expression: {:?}",
+        ev
+    );
 }
 
 // ===========================================================================
@@ -228,35 +291,53 @@ fn expr_flow_with_template() {
 #[test]
 fn expr_text_simple() {
     let ev = mdx_events("a {b} c");
-    assert!(has(&ev, |e| matches!(e, Event::MdxTextExpression(s) if s.as_ref() == "b")));
+    assert!(has(
+        &ev,
+        |e| matches!(e, Event::MdxTextExpression(s) if s.as_ref() == "b")
+    ));
 }
 
 #[test]
 fn expr_text_empty() {
     let ev = mdx_events("a {} b");
-    assert!(has(&ev, |e| matches!(e, Event::MdxTextExpression(s) if s.as_ref() == "")));
+    assert!(has(
+        &ev,
+        |e| matches!(e, Event::MdxTextExpression(s) if s.as_ref() == "")
+    ));
 }
 
 #[test]
 fn expr_text_nested() {
     let ev = mdx_events("a {b { c }} d");
-    assert!(has(&ev, |e| matches!(e, Event::MdxTextExpression(s) if s.as_ref() == "b { c }")),
-        "nested inline expression: {:?}", ev);
+    assert!(
+        has(
+            &ev,
+            |e| matches!(e, Event::MdxTextExpression(s) if s.as_ref() == "b { c }")
+        ),
+        "nested inline expression: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn expr_text_multiline() {
     let ev = mdx_events("a {\n} b");
-    assert!(has(&ev, |e| matches!(e, Event::MdxTextExpression(_))),
-        "multiline inline expression: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(e, Event::MdxTextExpression(_))),
+        "multiline inline expression: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn expr_text_closing_brace_as_text() {
     // A lone `}` should be plain text.
     let ev = mdx_events("a } b");
-    assert!(!has(&ev, |e| matches!(e, Event::MdxTextExpression(_))),
-        "lone }} should be text: {:?}", ev);
+    assert!(
+        !has(&ev, |e| matches!(e, Event::MdxTextExpression(_))),
+        "lone }} should be text: {:?}",
+        ev
+    );
     assert!(has(&ev, |e| matches!(e, Event::Text(_))));
 }
 
@@ -264,43 +345,73 @@ fn expr_text_closing_brace_as_text() {
 fn expr_text_at_start() {
     // Expression at the start of inline content.
     let ev = mdx_events("{ a } b");
-    assert!(has(&ev, |e| matches!(e, Event::MdxTextExpression(_))),
-        "expression at start: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(e, Event::MdxTextExpression(_))),
+        "expression at start: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn expr_text_with_parens() {
     let ev = mdx_events("a{(b)}c");
-    assert!(has(&ev, |e| matches!(e, Event::MdxTextExpression(s) if s.as_ref() == "(b)")),
-        "parens in expression: {:?}", ev);
+    assert!(
+        has(
+            &ev,
+            |e| matches!(e, Event::MdxTextExpression(s) if s.as_ref() == "(b)")
+        ),
+        "parens in expression: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn expr_text_with_string_braces() {
     // Braces inside strings don't count.
     let ev = mdx_events("a {\"}\"}  b");
-    assert!(has(&ev, |e| matches!(e, Event::MdxTextExpression(s) if s.as_ref() == "\"}\"")),
-        "string with brace: {:?}", ev);
+    assert!(
+        has(
+            &ev,
+            |e| matches!(e, Event::MdxTextExpression(s) if s.as_ref() == "\"}\"")
+        ),
+        "string with brace: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn expr_text_comment() {
     let ev = mdx_events("a {/**/} b");
-    assert!(has(&ev, |e| matches!(e, Event::MdxTextExpression(s) if s.as_ref() == "/**/")),
-        "comment in expression: {:?}", ev);
+    assert!(
+        has(
+            &ev,
+            |e| matches!(e, Event::MdxTextExpression(s) if s.as_ref() == "/**/")
+        ),
+        "comment in expression: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn expr_text_1_plus_1() {
     let ev = mdx_events("a {1 + 1} b");
-    assert!(has(&ev, |e| matches!(e, Event::MdxTextExpression(s) if s.as_ref() == "1 + 1")));
+    assert!(has(
+        &ev,
+        |e| matches!(e, Event::MdxTextExpression(s) if s.as_ref() == "1 + 1")
+    ));
 }
 
 #[test]
 fn expr_text_function() {
     let ev = mdx_events("a {function () {}} b");
-    assert!(has(&ev, |e| matches!(e, Event::MdxTextExpression(s) if s.as_ref() == "function () {}")),
-        "function in expression: {:?}", ev);
+    assert!(
+        has(
+            &ev,
+            |e| matches!(e, Event::MdxTextExpression(s) if s.as_ref() == "function () {}")
+        ),
+        "function in expression: {:?}",
+        ev
+    );
 }
 
 // ===========================================================================
@@ -310,46 +421,76 @@ fn expr_text_function() {
 #[test]
 fn jsx_flow_self_closing() {
     let ev = mdx_events("<a />\n");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxFlowElement(_)))));
+    assert!(has(&ev, |e| matches!(
+        e,
+        Event::Start(Tag::MdxJsxFlowElement(_))
+    )));
 }
 
 #[test]
 fn jsx_flow_closed() {
     let ev = mdx_events("<a></a>\n");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxFlowElement(_)))));
+    assert!(has(&ev, |e| matches!(
+        e,
+        Event::Start(Tag::MdxJsxFlowElement(_))
+    )));
 }
 
 #[test]
 fn jsx_flow_fragment() {
     let ev = mdx_events("<>\n");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxFlowElement(_)))));
+    assert!(has(&ev, |e| matches!(
+        e,
+        Event::Start(Tag::MdxJsxFlowElement(_))
+    )));
 }
 
 #[test]
 fn jsx_flow_attributes() {
     let ev = mdx_events("<a b c:d e=\"\" f={/* g */} {...h} />\n");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxFlowElement(_)))),
-        "attributes: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxFlowElement(_))
+        )),
+        "attributes: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_flow_with_expression_attr() {
     let ev = mdx_events("<Chart values={[1,2,3]} />\n");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxFlowElement(s)) if s.contains("Chart"))));
+    assert!(has(
+        &ev,
+        |e| matches!(e, Event::Start(Tag::MdxJsxFlowElement(s)) if s.contains("Chart"))
+    ));
 }
 
 #[test]
 fn jsx_flow_closing_fragment() {
     let ev = mdx_events("</>\n");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxFlowElement(_)))),
-        "closing fragment: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxFlowElement(_))
+        )),
+        "closing fragment: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_flow_closing_tag() {
     let ev = mdx_events("</a>\n");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxFlowElement(_)))),
-        "closing tag: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxFlowElement(_))
+        )),
+        "closing tag: {:?}",
+        ev
+    );
 }
 
 // ===========================================================================
@@ -359,100 +500,177 @@ fn jsx_flow_closing_tag() {
 #[test]
 fn jsx_text_lowercase() {
     let ev = mdx_events("a <b> c");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))),
-        "lowercase <b>: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxTextElement(_))
+        )),
+        "lowercase <b>: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_text_self_closing() {
     let ev = mdx_events("a <b/> c.");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))));
+    assert!(has(&ev, |e| matches!(
+        e,
+        Event::Start(Tag::MdxJsxTextElement(_))
+    )));
 }
 
 #[test]
 fn jsx_text_closed() {
     let ev = mdx_events("a <b></b> c.");
-    assert!(count(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))) >= 1);
+    assert!(
+        count(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxTextElement(_))
+        )) >= 1
+    );
 }
 
 #[test]
 fn jsx_text_fragment() {
     let ev = mdx_events("a <></> c.");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))),
-        "inline fragment: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxTextElement(_))
+        )),
+        "inline fragment: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_text_uppercase() {
     let ev = mdx_events("a <Badge /> c.");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(s)) if s.contains("Badge"))));
+    assert!(has(
+        &ev,
+        |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(s)) if s.contains("Badge"))
+    ));
 }
 
 #[test]
 fn jsx_text_namespaced() {
     // `<a:b />` — namespaced tag name.
     let ev = mdx_events("<a:b />.");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(s)) if s.contains("a:b"))),
-        "namespaced tag: {:?}", ev);
+    assert!(
+        has(
+            &ev,
+            |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(s)) if s.contains("a:b"))
+        ),
+        "namespaced tag: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_text_member() {
     // `<a.b.c />` — member expression tag name.
     let ev = mdx_events("<a.b.c />.");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(s)) if s.contains("a.b.c"))),
-        "member tag: {:?}", ev);
+    assert!(
+        has(
+            &ev,
+            |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(s)) if s.contains("a.b.c"))
+        ),
+        "member tag: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_text_spread_attribute() {
     let ev = mdx_events("<a {...b} />.");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(s)) if s.contains("...b"))),
-        "spread attribute: {:?}", ev);
+    assert!(
+        has(
+            &ev,
+            |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(s)) if s.contains("...b"))
+        ),
+        "spread attribute: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_text_boolean_attribute() {
     let ev = mdx_events("<a b />.");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))),
-        "boolean attribute: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxTextElement(_))
+        )),
+        "boolean attribute: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_text_string_attribute() {
     let ev = mdx_events("<a b=\"c\" />.");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(s)) if s.contains("b=\"c\""))),
-        "string attribute: {:?}", ev);
+    assert!(
+        has(
+            &ev,
+            |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(s)) if s.contains("b=\"c\""))
+        ),
+        "string attribute: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_text_expression_attribute() {
     let ev = mdx_events("<a b={c} />.");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(s)) if s.contains("b={c}"))),
-        "expression attribute: {:?}", ev);
+    assert!(
+        has(
+            &ev,
+            |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(s)) if s.contains("b={c}"))
+        ),
+        "expression attribute: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_text_closing_tag() {
     let ev = mdx_events("a </b> c");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))),
-        "closing tag inline: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxTextElement(_))
+        )),
+        "closing tag inline: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_text_not_lt_number() {
     // `a < 3` is NOT JSX — no tag name after `<`.
     let ev = mdx_events("a < 3 b");
-    assert!(!has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))),
-        "< number is not JSX: {:?}", ev);
+    assert!(
+        !has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxTextElement(_))
+        )),
+        "< number is not JSX: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_text_complex_attrs() {
     // Multiple different attribute types.
     let ev = mdx_events("<a b c:d e=\"\" f={g} {...h} />.");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))),
-        "complex attrs: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxTextElement(_))
+        )),
+        "complex attrs: {:?}",
+        ev
+    );
 }
 
 // ===========================================================================
@@ -475,7 +693,10 @@ fn no_mdx_expressions_without_flag() {
 fn no_mdx_jsx_without_flag() {
     // Without MDX, <em> is regular HTML, not JSX.
     let ev: Vec<_> = Parser::new("a <em>b</em> c\n").collect();
-    assert!(!has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))));
+    assert!(!has(&ev, |e| matches!(
+        e,
+        Event::Start(Tag::MdxJsxTextElement(_))
+    )));
 }
 
 // ===========================================================================
@@ -488,10 +709,17 @@ fn expression_then_jsx_same_line_is_inline() {
     let ev = mdx_events("{1}<a/>\n");
     assert!(
         has(&ev, |e| matches!(e, Event::MdxTextExpression(_)))
-            || has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_))))
+            || has(&ev, |e| matches!(
+                e,
+                Event::Start(Tag::MdxJsxTextElement(_))
+            ))
             || has(&ev, |e| matches!(e, Event::MdxFlowExpression(_)))
-            || has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxFlowElement(_)))),
-        "expression+jsx on same line: {:?}", ev
+            || has(&ev, |e| matches!(
+                e,
+                Event::Start(Tag::MdxJsxFlowElement(_))
+            )),
+        "expression+jsx on same line: {:?}",
+        ev
     );
 }
 
@@ -505,10 +733,22 @@ fn jsx_then_expression_same_line_is_inline() {
 #[test]
 fn inline_expression_and_jsx() {
     let ev = mdx_events("a {b} <C /> d");
-    assert!(has(&ev, |e| matches!(e, Event::MdxTextExpression(s) if s.as_ref() == "b")),
-        "inline expr: {:?}", ev);
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(s)) if s.contains("C"))),
-        "inline jsx: {:?}", ev);
+    assert!(
+        has(
+            &ev,
+            |e| matches!(e, Event::MdxTextExpression(s) if s.as_ref() == "b")
+        ),
+        "inline expr: {:?}",
+        ev
+    );
+    assert!(
+        has(
+            &ev,
+            |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(s)) if s.contains("C"))
+        ),
+        "inline jsx: {:?}",
+        ev
+    );
 }
 
 #[test]
@@ -525,15 +765,27 @@ fn esm_then_heading() {
 #[test]
 fn jsx_flow_emits_end() {
     let ev = mdx_events("<a />\n");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxFlowElement(_)))));
-    assert!(has(&ev, |e| matches!(e, Event::End(TagEnd::MdxJsxFlowElement))));
+    assert!(has(&ev, |e| matches!(
+        e,
+        Event::Start(Tag::MdxJsxFlowElement(_))
+    )));
+    assert!(has(&ev, |e| matches!(
+        e,
+        Event::End(TagEnd::MdxJsxFlowElement)
+    )));
 }
 
 #[test]
 fn jsx_text_emits_end() {
     let ev = mdx_events("x <b/> y");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))));
-    assert!(has(&ev, |e| matches!(e, Event::End(TagEnd::MdxJsxTextElement))));
+    assert!(has(&ev, |e| matches!(
+        e,
+        Event::Start(Tag::MdxJsxTextElement(_))
+    )));
+    assert!(has(&ev, |e| matches!(
+        e,
+        Event::End(TagEnd::MdxJsxTextElement)
+    )));
 }
 
 // ===========================================================================
@@ -544,37 +796,67 @@ fn jsx_text_emits_end() {
 fn jsx_text_multiline_tag() {
     // Tag name + attributes spanning multiple lines.
     let ev = mdx_events("a <b\nc\n d\n/> e.");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))),
-        "multiline tag: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxTextElement(_))
+        )),
+        "multiline tag: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_text_multiline_string_attr() {
     let ev = mdx_events("a <b c=\"d\ne\" /> f");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))),
-        "multiline string attr: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxTextElement(_))
+        )),
+        "multiline string attr: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_text_multiline_expr_attr() {
     let ev = mdx_events("a <b c={d\ne} /> f");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))),
-        "multiline expr attr: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxTextElement(_))
+        )),
+        "multiline expr attr: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_text_multiline_spread() {
     let ev = mdx_events("a <b {c\nd} /> e");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))),
-        "multiline spread: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxTextElement(_))
+        )),
+        "multiline spread: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_text_multiline_complex() {
     // From markdown-rs: `<a\nb \nc\n d\n/>.`
     let ev = mdx_events("<a\nb \nc\n d\n/>.");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(s)) if s.contains("<a"))),
-        "complex multiline: {:?}", ev);
+    assert!(
+        has(
+            &ev,
+            |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(s)) if s.contains("<a"))
+        ),
+        "complex multiline: {:?}",
+        ev
+    );
 }
 
 // ===========================================================================
@@ -584,45 +866,81 @@ fn jsx_text_multiline_complex() {
 #[test]
 fn jsx_text_non_ascii_pi() {
     let ev = mdx_events("a <π /> b.");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))),
-        "non-ascii π: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxTextElement(_))
+        )),
+        "non-ascii π: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_text_dollar_tag() {
     let ev = mdx_events("a <$Component /> b.");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(s)) if s.contains("$Component"))),
-        "dollar tag: {:?}", ev);
+    assert!(
+        has(
+            &ev,
+            |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(s)) if s.contains("$Component"))
+        ),
+        "dollar tag: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_flow_non_ascii() {
     let ev = mdx_events("<π />\n");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxFlowElement(_)))),
-        "flow non-ascii: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxFlowElement(_))
+        )),
+        "flow non-ascii: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_flow_dollar() {
     let ev = mdx_events("<$C />\n");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxFlowElement(_)))),
-        "flow dollar: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxFlowElement(_))
+        )),
+        "flow dollar: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_text_dash_in_name() {
     // Custom elements with dashes: `<my-component />`
     let ev = mdx_events("a <my-component /> b.");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(s)) if s.contains("my-component"))),
-        "dash in name: {:?}", ev);
+    assert!(
+        has(
+            &ev,
+            |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(s)) if s.contains("my-component"))
+        ),
+        "dash in name: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_text_dashes_in_name() {
     // `<a-->` — from markdown-rs
     let ev = mdx_events("a <a-->b</a-->.");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))),
-        "dashes in tag name: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxTextElement(_))
+        )),
+        "dashes in tag name: {:?}",
+        ev
+    );
 }
 
 // ===========================================================================
@@ -632,29 +950,53 @@ fn jsx_text_dashes_in_name() {
 #[test]
 fn jsx_text_whitespace_after_slash() {
     let ev = mdx_events("<a/ \t>.");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))),
-        "whitespace after slash: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxTextElement(_))
+        )),
+        "whitespace after slash: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_text_lt_space_not_jsx() {
     let ev = mdx_events("a < \t>b c");
-    assert!(!has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))),
-        "< followed by space is not JSX: {:?}", ev);
+    assert!(
+        !has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxTextElement(_))
+        )),
+        "< followed by space is not JSX: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_text_lt_newline_not_jsx() {
     let ev = mdx_events("a < \nb\t>b c");
-    assert!(!has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))),
-        "< followed by newline is not JSX: {:?}", ev);
+    assert!(
+        !has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxTextElement(_))
+        )),
+        "< followed by newline is not JSX: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn less_than_number() {
     let ev = mdx_events("1 < 3");
-    assert!(!has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))),
-        "1 < 3 is not JSX: {:?}", ev);
+    assert!(
+        !has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxTextElement(_))
+        )),
+        "1 < 3 is not JSX: {:?}",
+        ev
+    );
 }
 
 // ===========================================================================
@@ -665,16 +1007,22 @@ fn less_than_number() {
 fn html_comment_not_block_in_mdx() {
     let ev = mdx_events("<!-- comment -->\n");
     // Should NOT be an HTML block — should be a paragraph with text.
-    assert!(!has(&ev, |e| matches!(e, Event::Start(Tag::HtmlBlock))),
-        "<!-- should not be HTML block in MDX: {:?}", ev);
+    assert!(
+        !has(&ev, |e| matches!(e, Event::Start(Tag::HtmlBlock))),
+        "<!-- should not be HTML block in MDX: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn html_comment_not_inline_in_mdx() {
     let ev = mdx_events("a <!-- b --> c");
     // Should NOT be inline HTML.
-    assert!(!has(&ev, |e| matches!(e, Event::InlineHtml(_))),
-        "<!-- should not be inline HTML in MDX: {:?}", ev);
+    assert!(
+        !has(&ev, |e| matches!(e, Event::InlineHtml(_))),
+        "<!-- should not be inline HTML in MDX: {:?}",
+        ev
+    );
 }
 
 // ===========================================================================
@@ -684,32 +1032,61 @@ fn html_comment_not_inline_in_mdx() {
 #[test]
 fn jsx_text_in_blockquote() {
     let ev = mdx_events("> a <b>\n> c </b> d.");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))),
-        "jsx in blockquote: {:?}", ev);
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::BlockQuote(_)))),
-        "has blockquote: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxTextElement(_))
+        )),
+        "jsx in blockquote: {:?}",
+        ev
+    );
+    assert!(
+        has(&ev, |e| matches!(e, Event::Start(Tag::BlockQuote(_)))),
+        "has blockquote: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_text_multiline_attr_in_blockquote() {
     let ev = mdx_events("> a <b c=\"d\ne\" /> f");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))),
-        "multiline attr in blockquote: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxTextElement(_))
+        )),
+        "multiline attr in blockquote: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_text_multiline_expr_attr_in_blockquote() {
     let ev = mdx_events("> a <b c={d\ne} /> f");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))),
-        "multiline expr attr in blockquote: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxTextElement(_))
+        )),
+        "multiline expr attr in blockquote: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn expr_flow_in_blockquote() {
     let ev = mdx_events("> {a}\n");
-    assert!(has(&ev, |e| matches!(e, Event::MdxFlowExpression(s) if s.as_ref() == "a"))
-        || has(&ev, |e| matches!(e, Event::MdxTextExpression(s) if s.as_ref() == "a")),
-        "expression in blockquote: {:?}", ev);
+    assert!(
+        has(
+            &ev,
+            |e| matches!(e, Event::MdxFlowExpression(s) if s.as_ref() == "a")
+        ) || has(
+            &ev,
+            |e| matches!(e, Event::MdxTextExpression(s) if s.as_ref() == "a")
+        ),
+        "expression in blockquote: {:?}",
+        ev
+    );
 }
 
 // ===========================================================================
@@ -720,17 +1097,28 @@ fn expr_flow_in_blockquote() {
 fn jsx_text_markdown_children() {
     // `a <b>*c*</b> d.` — emphasis inside JSX.
     let ev = mdx_events("a <b>*c*</b> d.");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))),
-        "jsx with markdown children: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxTextElement(_))
+        )),
+        "jsx with markdown children: {:?}",
+        ev
+    );
     // The emphasis should still be parsed.
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::Emphasis))),
-        "emphasis inside jsx: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(e, Event::Start(Tag::Emphasis))),
+        "emphasis inside jsx: {:?}",
+        ev
+    );
 }
 
 #[test]
 fn jsx_text_nested_tags() {
     let ev = mdx_events("a <>b <>c</> d</>.");
-    let jsx_count = count(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_))));
+    let jsx_count = count(&ev, |e| {
+        matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))
+    });
     assert!(jsx_count >= 2, "nested fragments: {:?}", ev);
 }
 
@@ -738,8 +1126,14 @@ fn jsx_text_nested_tags() {
 fn jsx_flow_with_content() {
     // `<a>\nb\n</a>` — block JSX with content between open/close.
     let ev = mdx_events("<a>\nb\n</a>\n");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxFlowElement(_)))),
-        "flow jsx with content: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxFlowElement(_))
+        )),
+        "flow jsx with content: {:?}",
+        ev
+    );
 }
 
 // ===========================================================================
@@ -749,8 +1143,14 @@ fn jsx_flow_with_content() {
 #[test]
 fn jsx_text_unclosed_does_not_crash() {
     let ev = mdx_events("a <b> c");
-    assert!(has(&ev, |e| matches!(e, Event::Start(Tag::MdxJsxTextElement(_)))),
-        "unclosed tag should parse: {:?}", ev);
+    assert!(
+        has(&ev, |e| matches!(
+            e,
+            Event::Start(Tag::MdxJsxTextElement(_))
+        )),
+        "unclosed tag should parse: {:?}",
+        ev
+    );
 }
 
 #[test]

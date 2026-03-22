@@ -1,7 +1,7 @@
 //! Integration tests: new parser → HAST → HTML, and new parser → MDX compile.
 
-use parser::{parse, ParseOptions};
 use mdast_arena::ReadArena;
+use parser::{parse, ParseOptions};
 
 #[test]
 fn full_pipeline_heading_to_html() {
@@ -33,14 +33,20 @@ fn full_pipeline_code_block_to_html() {
     let html = tryckeri_hast::arena_to_html(&arena);
     assert!(html.contains("<pre>"), "expected <pre>, got: {html}");
     assert!(html.contains("<code"), "expected <code>, got: {html}");
-    assert!(html.contains("fn main"), "expected code content, got: {html}");
+    assert!(
+        html.contains("fn main"),
+        "expected code content, got: {html}"
+    );
 }
 
 #[test]
 fn full_pipeline_link_to_html() {
     let arena = parse("[click](https://example.com)\n", &ParseOptions::default());
     let html = tryckeri_hast::arena_to_html(&arena);
-    assert!(html.contains("href=\"https://example.com\""), "expected href, got: {html}");
+    assert!(
+        html.contains("href=\"https://example.com\""),
+        "expected href, got: {html}"
+    );
     assert!(html.contains("click"), "expected link text, got: {html}");
 }
 
@@ -48,21 +54,33 @@ fn full_pipeline_link_to_html() {
 fn full_pipeline_image_to_html() {
     let arena = parse("![alt](img.png)\n", &ParseOptions::default());
     let html = tryckeri_hast::arena_to_html(&arena);
-    assert!(html.contains("src=\"img.png\""), "expected src, got: {html}");
+    assert!(
+        html.contains("src=\"img.png\""),
+        "expected src, got: {html}"
+    );
 }
 
 #[test]
 fn full_pipeline_blockquote_to_html() {
     let arena = parse("> quoted text\n", &ParseOptions::default());
     let html = tryckeri_hast::arena_to_html(&arena);
-    assert!(html.contains("<blockquote>"), "expected blockquote, got: {html}");
+    assert!(
+        html.contains("<blockquote>"),
+        "expected blockquote, got: {html}"
+    );
 }
 
 #[test]
 fn full_pipeline_html_block_to_html() {
-    let arena = parse("<div>raw html</div>\n\nparagraph\n", &ParseOptions::default());
+    let arena = parse(
+        "<div>raw html</div>\n\nparagraph\n",
+        &ParseOptions::default(),
+    );
     let html = tryckeri_hast::arena_to_html(&arena);
-    assert!(html.contains("<div>raw html</div>"), "expected raw html, got: {html}");
+    assert!(
+        html.contains("<div>raw html</div>"),
+        "expected raw html, got: {html}"
+    );
 }
 
 #[test]
@@ -96,7 +114,10 @@ fn full_pipeline_ordered_list_to_html() {
 
 #[test]
 fn full_pipeline_table_to_html() {
-    let arena = parse("| a | b |\n|---|---|\n| 1 | 2 |\n", &ParseOptions::default());
+    let arena = parse(
+        "| a | b |\n|---|---|\n| 1 | 2 |\n",
+        &ParseOptions::default(),
+    );
     let html = tryckeri_hast::arena_to_html(&arena);
     assert!(html.contains("<table>"), "expected <table>, got: {html}");
 }
@@ -108,7 +129,10 @@ fn full_pipeline_buffer_roundtrip_then_hast() {
     // Use the buffer path (simulating the NAPI path).
     let html_buf = tryckeri_hast::arena_to_hast_buffer(&buf).unwrap();
     let html = tryckeri_hast::hast_buffer_to_html(&html_buf).unwrap();
-    assert!(html.contains("<h1>"), "expected heading via buffer path, got: {html}");
+    assert!(
+        html.contains("<h1>"),
+        "expected heading via buffer path, got: {html}"
+    );
 }
 
 #[test]
@@ -156,8 +180,11 @@ fn jsx_inline_with_children() {
         .find(|n| n.node_type == mdast_arena::NodeType::MdxJsxTextElement as u8)
         .expect("should have MdxJsxTextElement");
     // The JSX element should have children (the text "c").
-    assert!(jsx.children_count > 0,
-        "JSX element should have children, got {}", jsx.children_count);
+    assert!(
+        jsx.children_count > 0,
+        "JSX element should have children, got {}",
+        jsx.children_count
+    );
 }
 
 #[test]
@@ -167,8 +194,11 @@ fn jsx_fragment_with_children() {
         .map(|i| arena.get_node(i))
         .find(|n| n.node_type == mdast_arena::NodeType::MdxJsxTextElement as u8)
         .expect("should have MdxJsxTextElement for fragment");
-    assert!(jsx.children_count > 0,
-        "Fragment should have children, got {}", jsx.children_count);
+    assert!(
+        jsx.children_count > 0,
+        "Fragment should have children, got {}",
+        jsx.children_count
+    );
 }
 
 #[test]
@@ -176,11 +206,16 @@ fn jsx_self_closing_no_children() {
     let arena = parse("<Component />", &ParseOptions::mdx());
     let jsx = (0..arena.len() as u32)
         .map(|i| arena.get_node(i))
-        .find(|n| n.node_type == mdast_arena::NodeType::MdxJsxFlowElement as u8
-            || n.node_type == mdast_arena::NodeType::MdxJsxTextElement as u8)
+        .find(|n| {
+            n.node_type == mdast_arena::NodeType::MdxJsxFlowElement as u8
+                || n.node_type == mdast_arena::NodeType::MdxJsxTextElement as u8
+        })
         .expect("should have MDX JSX");
-    assert_eq!(jsx.children_count, 0,
-        "Self-closing should have no children, got {}", jsx.children_count);
+    assert_eq!(
+        jsx.children_count, 0,
+        "Self-closing should have no children, got {}",
+        jsx.children_count
+    );
 }
 
 #[test]
@@ -191,8 +226,11 @@ fn jsx_flow_with_children() {
         .map(|i| arena.get_node(i))
         .find(|n| n.node_type == mdast_arena::NodeType::MdxJsxFlowElement as u8)
         .expect("should have MdxJsxFlowElement");
-    assert!(jsx.children_count > 0,
-        "Flow JSX element should have children, got {}", jsx.children_count);
+    assert!(
+        jsx.children_count > 0,
+        "Flow JSX element should have children, got {}",
+        jsx.children_count
+    );
 }
 
 #[test]

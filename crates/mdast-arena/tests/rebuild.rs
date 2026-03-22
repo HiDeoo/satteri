@@ -2,7 +2,10 @@
 //!
 //! Tests apply patches to the "# Hello\n\nWorld" arena and verify the resulting structure.
 
-use mdast_arena::{Arena, ArenaBuilder, NodeType, rebuild::{Patch, rebuild}};
+use mdast_arena::{
+    rebuild::{rebuild, Patch},
+    Arena, ArenaBuilder, NodeType,
+};
 
 /// Build the standard "# Hello\n\nWorld" test arena.
 ///
@@ -84,12 +87,21 @@ fn remove_leaf_node() {
     let heading_id = orig.get_children(0)[0];
     let text_in_heading = orig.get_children(heading_id)[0];
 
-    let rebuilt = rebuild(&orig, &[Patch::Remove { node_id: text_in_heading }]);
+    let rebuilt = rebuild(
+        &orig,
+        &[Patch::Remove {
+            node_id: text_in_heading,
+        }],
+    );
 
     assert_eq!(rebuilt.len(), 4, "one node removed");
     let new_h = rebuilt.get_children(0)[0];
     assert_eq!(rebuilt.get_node(new_h).node_type, NodeType::Heading as u8);
-    assert_eq!(rebuilt.get_children(new_h).len(), 0, "heading has no children now");
+    assert_eq!(
+        rebuilt.get_children(new_h).len(),
+        0,
+        "heading has no children now"
+    );
 
     // Paragraph + its Text are still present
     let new_p = rebuilt.get_children(0)[1];
@@ -105,12 +117,20 @@ fn remove_non_leaf_removes_subtree() {
     let orig = build_hello_world();
     let heading_id = orig.get_children(0)[0];
 
-    let rebuilt = rebuild(&orig, &[Patch::Remove { node_id: heading_id }]);
+    let rebuilt = rebuild(
+        &orig,
+        &[Patch::Remove {
+            node_id: heading_id,
+        }],
+    );
 
     assert_eq!(rebuilt.len(), 3, "heading + its text child removed");
     let root_children = rebuilt.get_children(0);
     assert_eq!(root_children.len(), 1);
-    assert_eq!(rebuilt.get_node(root_children[0]).node_type, NodeType::Paragraph as u8);
+    assert_eq!(
+        rebuilt.get_node(root_children[0]).node_type,
+        NodeType::Paragraph as u8
+    );
 }
 
 // ── Test 4: Replace a leaf node ──────────────────────────────────────────────
@@ -123,12 +143,25 @@ fn replace_leaf_node() {
     let text_id = orig.get_children(heading_id)[0];
 
     let replacement = single_node_arena(NodeType::ThematicBreak);
-    let rebuilt = rebuild(&orig, &[Patch::Replace { node_id: text_id, new_tree: replacement }]);
+    let rebuilt = rebuild(
+        &orig,
+        &[Patch::Replace {
+            node_id: text_id,
+            new_tree: replacement,
+        }],
+    );
 
-    assert_eq!(rebuilt.len(), orig.len(), "same node count (1-for-1 replacement)");
+    assert_eq!(
+        rebuilt.len(),
+        orig.len(),
+        "same node count (1-for-1 replacement)"
+    );
     let new_h = rebuilt.get_children(0)[0];
     let child_of_h = rebuilt.get_children(new_h)[0];
-    assert_eq!(rebuilt.get_node(child_of_h).node_type, NodeType::ThematicBreak as u8);
+    assert_eq!(
+        rebuilt.get_node(child_of_h).node_type,
+        NodeType::ThematicBreak as u8
+    );
 }
 
 // ── Test 5: Replace root's child with a different node type ──────────────────
@@ -140,7 +173,13 @@ fn replace_root_child_with_different_type() {
     let heading_id = orig.get_children(0)[0];
 
     let replacement = single_node_arena(NodeType::Paragraph);
-    let rebuilt = rebuild(&orig, &[Patch::Replace { node_id: heading_id, new_tree: replacement }]);
+    let rebuilt = rebuild(
+        &orig,
+        &[Patch::Replace {
+            node_id: heading_id,
+            new_tree: replacement,
+        }],
+    );
 
     // The heading + its text child (2 nodes) are replaced by 1 Paragraph
     // So: Root + new Paragraph + original Paragraph + Text(World) = 4 nodes
@@ -148,9 +187,15 @@ fn replace_root_child_with_different_type() {
     let root_children = rebuilt.get_children(0);
     assert_eq!(root_children.len(), 2);
     // First child is now a Paragraph (the replacement)
-    assert_eq!(rebuilt.get_node(root_children[0]).node_type, NodeType::Paragraph as u8);
+    assert_eq!(
+        rebuilt.get_node(root_children[0]).node_type,
+        NodeType::Paragraph as u8
+    );
     // Second child is still the original Paragraph
-    assert_eq!(rebuilt.get_node(root_children[1]).node_type, NodeType::Paragraph as u8);
+    assert_eq!(
+        rebuilt.get_node(root_children[1]).node_type,
+        NodeType::Paragraph as u8
+    );
 }
 
 // ── Test 6: Insert before a node ─────────────────────────────────────────────
@@ -162,13 +207,28 @@ fn insert_before_node() {
     let para_id = orig.get_children(0)[1];
 
     let new_tree = single_node_arena(NodeType::ThematicBreak);
-    let rebuilt = rebuild(&orig, &[Patch::InsertBefore { node_id: para_id, new_tree }]);
+    let rebuilt = rebuild(
+        &orig,
+        &[Patch::InsertBefore {
+            node_id: para_id,
+            new_tree,
+        }],
+    );
 
     let root_children = rebuilt.get_children(0);
     assert_eq!(root_children.len(), 3);
-    assert_eq!(rebuilt.get_node(root_children[0]).node_type, NodeType::Heading as u8);
-    assert_eq!(rebuilt.get_node(root_children[1]).node_type, NodeType::ThematicBreak as u8);
-    assert_eq!(rebuilt.get_node(root_children[2]).node_type, NodeType::Paragraph as u8);
+    assert_eq!(
+        rebuilt.get_node(root_children[0]).node_type,
+        NodeType::Heading as u8
+    );
+    assert_eq!(
+        rebuilt.get_node(root_children[1]).node_type,
+        NodeType::ThematicBreak as u8
+    );
+    assert_eq!(
+        rebuilt.get_node(root_children[2]).node_type,
+        NodeType::Paragraph as u8
+    );
 }
 
 // ── Test 7: Insert after a node ──────────────────────────────────────────────
@@ -180,13 +240,28 @@ fn insert_after_node() {
     let heading_id = orig.get_children(0)[0];
 
     let new_tree = single_node_arena(NodeType::ThematicBreak);
-    let rebuilt = rebuild(&orig, &[Patch::InsertAfter { node_id: heading_id, new_tree }]);
+    let rebuilt = rebuild(
+        &orig,
+        &[Patch::InsertAfter {
+            node_id: heading_id,
+            new_tree,
+        }],
+    );
 
     let root_children = rebuilt.get_children(0);
     assert_eq!(root_children.len(), 3);
-    assert_eq!(rebuilt.get_node(root_children[0]).node_type, NodeType::Heading as u8);
-    assert_eq!(rebuilt.get_node(root_children[1]).node_type, NodeType::ThematicBreak as u8);
-    assert_eq!(rebuilt.get_node(root_children[2]).node_type, NodeType::Paragraph as u8);
+    assert_eq!(
+        rebuilt.get_node(root_children[0]).node_type,
+        NodeType::Heading as u8
+    );
+    assert_eq!(
+        rebuilt.get_node(root_children[1]).node_type,
+        NodeType::ThematicBreak as u8
+    );
+    assert_eq!(
+        rebuilt.get_node(root_children[2]).node_type,
+        NodeType::Paragraph as u8
+    );
 }
 
 // ── Test 8: Append child ─────────────────────────────────────────────────────
@@ -198,13 +273,25 @@ fn append_child() {
     let heading_id = orig.get_children(0)[0];
 
     let child_tree = single_node_arena(NodeType::Break);
-    let rebuilt = rebuild(&orig, &[Patch::AppendChild { node_id: heading_id, child_tree }]);
+    let rebuilt = rebuild(
+        &orig,
+        &[Patch::AppendChild {
+            node_id: heading_id,
+            child_tree,
+        }],
+    );
 
     let new_h = rebuilt.get_children(0)[0];
     let h_children = rebuilt.get_children(new_h);
     assert_eq!(h_children.len(), 2);
-    assert_eq!(rebuilt.get_node(h_children[0]).node_type, NodeType::Text as u8);
-    assert_eq!(rebuilt.get_node(h_children[1]).node_type, NodeType::Break as u8);
+    assert_eq!(
+        rebuilt.get_node(h_children[0]).node_type,
+        NodeType::Text as u8
+    );
+    assert_eq!(
+        rebuilt.get_node(h_children[1]).node_type,
+        NodeType::Break as u8
+    );
 }
 
 // ── Test 9: Prepend child ────────────────────────────────────────────────────
@@ -216,13 +303,25 @@ fn prepend_child() {
     let heading_id = orig.get_children(0)[0];
 
     let child_tree = single_node_arena(NodeType::Break);
-    let rebuilt = rebuild(&orig, &[Patch::PrependChild { node_id: heading_id, child_tree }]);
+    let rebuilt = rebuild(
+        &orig,
+        &[Patch::PrependChild {
+            node_id: heading_id,
+            child_tree,
+        }],
+    );
 
     let new_h = rebuilt.get_children(0)[0];
     let h_children = rebuilt.get_children(new_h);
     assert_eq!(h_children.len(), 2);
-    assert_eq!(rebuilt.get_node(h_children[0]).node_type, NodeType::Break as u8);
-    assert_eq!(rebuilt.get_node(h_children[1]).node_type, NodeType::Text as u8);
+    assert_eq!(
+        rebuilt.get_node(h_children[0]).node_type,
+        NodeType::Break as u8
+    );
+    assert_eq!(
+        rebuilt.get_node(h_children[1]).node_type,
+        NodeType::Text as u8
+    );
 }
 
 // ── Test 10: Multiple patches in one rebuild ──────────────────────────────────
@@ -237,16 +336,27 @@ fn multiple_patches_applied_together() {
     let new_tree = single_node_arena(NodeType::ThematicBreak);
 
     let patches = vec![
-        Patch::Remove { node_id: heading_id },
-        Patch::InsertAfter { node_id: para_id, new_tree },
+        Patch::Remove {
+            node_id: heading_id,
+        },
+        Patch::InsertAfter {
+            node_id: para_id,
+            new_tree,
+        },
     ];
     let rebuilt = rebuild(&orig, &patches);
 
     // Root → [Paragraph → [Text(World)], ThematicBreak]
     let root_children = rebuilt.get_children(0);
     assert_eq!(root_children.len(), 2);
-    assert_eq!(rebuilt.get_node(root_children[0]).node_type, NodeType::Paragraph as u8);
-    assert_eq!(rebuilt.get_node(root_children[1]).node_type, NodeType::ThematicBreak as u8);
+    assert_eq!(
+        rebuilt.get_node(root_children[0]).node_type,
+        NodeType::Paragraph as u8
+    );
+    assert_eq!(
+        rebuilt.get_node(root_children[1]).node_type,
+        NodeType::ThematicBreak as u8
+    );
 
     // Total: Root + Paragraph + Text(World) + ThematicBreak = 4 nodes
     assert_eq!(rebuilt.len(), 4);
@@ -261,13 +371,22 @@ fn parent_references_consistent_after_rebuild() {
     let para_id = orig.get_children(0)[1];
 
     let new_tree = single_node_arena(NodeType::ThematicBreak);
-    let rebuilt = rebuild(&orig, &[Patch::InsertAfter { node_id: para_id, new_tree }]);
+    let rebuilt = rebuild(
+        &orig,
+        &[Patch::InsertAfter {
+            node_id: para_id,
+            new_tree,
+        }],
+    );
 
     // Verify parent references for all non-root nodes
     let root = 0u32;
     for child_id in rebuilt.get_children(root) {
         let child = rebuilt.get_node(*child_id);
-        assert_eq!(child.parent, root, "child of root should have root as parent");
+        assert_eq!(
+            child.parent, root,
+            "child of root should have root as parent"
+        );
 
         for grandchild_id in rebuilt.get_children(*child_id) {
             let gc = rebuilt.get_node(*grandchild_id);

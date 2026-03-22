@@ -1,5 +1,5 @@
-use mdast_arena::{Arena, ArenaNode, NodeType};
 use mdast_arena::codec::*;
+use mdast_arena::{Arena, ArenaNode, NodeType};
 
 /// Position info extracted from an ArenaNode
 #[derive(Debug, Clone, Copy)]
@@ -32,7 +32,9 @@ pub struct Heading<'a> {
 }
 
 impl<'a> Heading<'a> {
-    pub fn id(&self) -> u32 { self.node_id }
+    pub fn id(&self) -> u32 {
+        self.node_id
+    }
 
     pub fn depth(&self) -> u8 {
         let data = self.arena.get_type_data(self.node_id);
@@ -55,7 +57,9 @@ pub struct Text<'a> {
 }
 
 impl<'a> Text<'a> {
-    pub fn id(&self) -> u32 { self.node_id }
+    pub fn id(&self) -> u32 {
+        self.node_id
+    }
 
     pub fn value(&self) -> &str {
         let data = self.arena.get_type_data(self.node_id);
@@ -75,7 +79,9 @@ pub struct Link<'a> {
 }
 
 impl<'a> Link<'a> {
-    pub fn id(&self) -> u32 { self.node_id }
+    pub fn id(&self) -> u32 {
+        self.node_id
+    }
 
     pub fn url(&self) -> &str {
         let data = self.arena.get_type_data(self.node_id);
@@ -109,8 +115,12 @@ pub struct Paragraph<'a> {
 }
 
 impl<'a> Paragraph<'a> {
-    pub fn id(&self) -> u32 { self.node_id }
-    pub fn children(&self) -> &[u32] { self.arena.get_children(self.node_id) }
+    pub fn id(&self) -> u32 {
+        self.node_id
+    }
+    pub fn children(&self) -> &[u32] {
+        self.arena.get_children(self.node_id)
+    }
     pub fn position(&self) -> NodePosition {
         NodePosition::from_node(self.arena.get_node(self.node_id))
     }
@@ -123,7 +133,9 @@ pub struct Image<'a> {
 }
 
 impl<'a> Image<'a> {
-    pub fn id(&self) -> u32 { self.node_id }
+    pub fn id(&self) -> u32 {
+        self.node_id
+    }
 
     pub fn url(&self) -> &str {
         let data = self.arena.get_type_data(self.node_id);
@@ -159,7 +171,9 @@ pub struct Code<'a> {
 }
 
 impl<'a> Code<'a> {
-    pub fn id(&self) -> u32 { self.node_id }
+    pub fn id(&self) -> u32 {
+        self.node_id
+    }
 
     pub fn lang(&self) -> Option<&str> {
         let data = self.arena.get_type_data(self.node_id);

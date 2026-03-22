@@ -1,0 +1,19 @@
+{
+  "name": "root",
+  "private": true,
+  "license": "MIT",
+  "author": "Bruits",
+  "type": "module",
+  "scripts": {
+    "lint": "oxlint && cargo clippy",
+    "lint:fix": "oxlint --fix && cargo clippy --fix --allow-dirty",
+    "format": "oxfmt && cargo fmt"
+  },
+  "devDependencies": {
+    "oxfmt": "^0.41.0",
+    "oxlint": "^1.56.0",
+    "oxlint-tsgolint": "^0.17.1",
+    "typescript": "^5.9.3"
+  },
+  "packageManager": "pnpm@10.32.1"
+}

@@ -1,13 +1,10 @@
 //! Integration tests for HAST → HTML serialization and end-to-end conversion.
 
-use tryckeri_hast::{
-    HastBuilder, Property, PropertyValue, hast_to_html, arena_to_html,
-};
 use mdast_arena::{
-    ArenaBuilder, NodeType, StringRef,
     encode_code_data, encode_heading_data, encode_image_data, encode_link_data,
-    encode_string_ref_data,
+    encode_string_ref_data, ArenaBuilder, NodeType, StringRef,
 };
+use tryckeri_hast::{arena_to_html, hast_to_html, HastBuilder, Property, PropertyValue};
 
 // ---------------------------------------------------------------------------
 // Serialization tests (HAST builder → HTML string)

@@ -86,8 +86,7 @@ pub fn mdast_buffer_to_hast_buffer(buf: Buffer) -> Result<Buffer> {
 /// Convert a HAST binary buffer to an HTML string.
 #[napi]
 pub fn hast_buffer_to_html_str(buf: Buffer) -> Result<String> {
-    tryckeri_hast::hast_buffer_to_html(&buf)
-        .map_err(|e| napi::Error::from_reason(format!("{e:?}")))
+    tryckeri_hast::hast_buffer_to_html(&buf).map_err(|e| napi::Error::from_reason(format!("{e:?}")))
 }
 
 /// Parse Markdown source and return a raw binary Arena buffer as Uint8Array.

@@ -151,8 +151,8 @@ impl HastArena {
 
     pub fn get_children(&self, id: u32) -> &[u32] {
         let node = self.get_node(id);
-        &self.children[node.children_start as usize
-            ..(node.children_start + node.children_count) as usize]
+        &self.children
+            [node.children_start as usize..(node.children_start + node.children_count) as usize]
     }
 
     pub fn add_properties(&mut self, node_id: u32, props: Vec<Property>) {
@@ -166,8 +166,7 @@ impl HastArena {
 
     pub fn get_properties(&self, id: u32) -> &[Property] {
         let node = self.get_node(id);
-        &self.properties[node.props_start as usize
-            ..(node.props_start + node.props_count) as usize]
+        &self.properties[node.props_start as usize..(node.props_start + node.props_count) as usize]
     }
 
     pub fn len(&self) -> usize {

@@ -11,8 +11,7 @@ use mdast_arena::{
     NodeType, StringRef,
 };
 use pulldown_cmark::{
-    CodeBlockKind, Event, HeadingLevel, LinkType, Options, Parser, Tag, TagEnd,
-    TextMergeWithOffset,
+    CodeBlockKind, Event, HeadingLevel, LinkType, Options, Parser, Tag, TagEnd, TextMergeWithOffset,
 };
 
 pub use mdast_arena;
@@ -54,7 +53,8 @@ impl ParseOptions {
 /// Parse markdown source into an Arena.
 pub fn parse(source: &str, opts: &ParseOptions) -> Arena {
     let line_index = LineIndex::from_source(source);
-    let parser = TextMergeWithOffset::new(Parser::new_ext(source, opts.pulldown).into_offset_iter());
+    let parser =
+        TextMergeWithOffset::new(Parser::new_ext(source, opts.pulldown).into_offset_iter());
     let mut builder = ArenaBuilder::new(source.to_string());
 
     // Open root node.
@@ -100,7 +100,12 @@ pub fn parse(source: &str, opts: &ParseOptions) -> Arena {
                     let orig_start_line = node.start_line;
                     let orig_start_col = node.start_column;
                     builder.set_position_current(
-                        orig_start, end, orig_start_line, orig_start_col, end_line, end_col,
+                        orig_start,
+                        end,
+                        orig_start_line,
+                        orig_start_col,
+                        end_line,
+                        end_col,
                     );
                     builder.set_data_current(&encode_string_ref_data(sr));
                     builder.close_node();
@@ -135,7 +140,12 @@ pub fn parse(source: &str, opts: &ParseOptions) -> Arena {
                     let orig_start_line = node.start_line;
                     let orig_start_col = node.start_column;
                     builder.set_position_current(
-                        orig_start, end, orig_start_line, orig_start_col, end_line, end_col,
+                        orig_start,
+                        end,
+                        orig_start_line,
+                        orig_start_col,
+                        end_line,
+                        end_col,
                     );
                     builder.close_node();
                     continue;
@@ -147,10 +157,18 @@ pub fn parse(source: &str, opts: &ParseOptions) -> Arena {
         // Accumulate image alt text (runs in parallel with normal event processing).
         if image_alt_buf.is_some() {
             match &event {
-                Event::Text(t) => { image_alt_buf.as_mut().unwrap().push_str(t); }
-                Event::Code(c) => { image_alt_buf.as_mut().unwrap().push_str(c); }
-                Event::SoftBreak | Event::HardBreak => { image_alt_buf.as_mut().unwrap().push(' '); }
-                Event::Start(Tag::Image { .. }) => { image_depth += 1; }
+                Event::Text(t) => {
+                    image_alt_buf.as_mut().unwrap().push_str(t);
+                }
+                Event::Code(c) => {
+                    image_alt_buf.as_mut().unwrap().push_str(c);
+                }
+                Event::SoftBreak | Event::HardBreak => {
+                    image_alt_buf.as_mut().unwrap().push(' ');
+                }
+                Event::Start(Tag::Image { .. }) => {
+                    image_depth += 1;
+                }
                 Event::End(TagEnd::Image) => {
                     if image_depth > 0 {
                         image_depth -= 1;
@@ -182,15 +200,18 @@ pub fn parse(source: &str, opts: &ParseOptions) -> Arena {
                 match tag {
                     Tag::HtmlBlock => {
                         let _id = builder.open_node(NodeType::Html);
-                        builder.set_position_current(start, end, start_line, start_col, end_line, end_col);
+                        builder.set_position_current(
+                            start, end, start_line, start_col, end_line, end_col,
+                        );
                         html_block_buf = Some(String::new());
                         continue;
                     }
                     Tag::CodeBlock(_) => {
-                        let (node_type, data) =
-                            tag_to_node_type(tag, &mut builder, source);
+                        let (node_type, data) = tag_to_node_type(tag, &mut builder, source);
                         let _id = builder.open_node(node_type);
-                        builder.set_position_current(start, end, start_line, start_col, end_line, end_col);
+                        builder.set_position_current(
+                            start, end, start_line, start_col, end_line, end_col,
+                        );
                         if let Some(d) = data {
                             builder.set_data_current(&d);
                         }
@@ -200,7 +221,9 @@ pub fn parse(source: &str, opts: &ParseOptions) -> Arena {
                     Tag::MetadataBlock(_) => {
                         // Metadata blocks are also containers → leaf.
                         let _id = builder.open_node(NodeType::Yaml);
-                        builder.set_position_current(start, end, start_line, start_col, end_line, end_col);
+                        builder.set_position_current(
+                            start, end, start_line, start_col, end_line, end_col,
+                        );
                         // Use the same html_block_buf trick to collect content.
                         html_block_buf = Some(String::new());
                         continue;
@@ -219,10 +242,11 @@ pub fn parse(source: &str, opts: &ParseOptions) -> Arena {
                     match jsx_kind {
                         JsxTagKind::SelfClosing => {
                             // Self-closing: open + immediately close.
-                            let (node_type, data) =
-                                tag_to_node_type(tag, &mut builder, source);
+                            let (node_type, data) = tag_to_node_type(tag, &mut builder, source);
                             let _id = builder.open_node(node_type);
-                            builder.set_position_current(start, end, start_line, start_col, end_line, end_col);
+                            builder.set_position_current(
+                                start, end, start_line, start_col, end_line, end_col,
+                            );
                             if let Some(d) = data {
                                 builder.set_data_current(&d);
                             }
@@ -231,10 +255,11 @@ pub fn parse(source: &str, opts: &ParseOptions) -> Arena {
                         }
                         JsxTagKind::Opening(name) => {
                             // Opening: open node and push to stack.
-                            let (node_type, data) =
-                                tag_to_node_type(tag, &mut builder, source);
+                            let (node_type, data) = tag_to_node_type(tag, &mut builder, source);
                             let _id = builder.open_node(node_type);
-                            builder.set_position_current(start, end, start_line, start_col, end_line, end_col);
+                            builder.set_position_current(
+                                start, end, start_line, start_col, end_line, end_col,
+                            );
                             if let Some(d) = data {
                                 builder.set_data_current(&d);
                             }
@@ -251,12 +276,29 @@ pub fn parse(source: &str, opts: &ParseOptions) -> Arena {
                                 }
                                 for _ in 0..close_count {
                                     let id = builder.current_node_id();
-                                    let (orig_start, orig_start_line, orig_start_col, nt, node_start_line) = {
+                                    let (
+                                        orig_start,
+                                        orig_start_line,
+                                        orig_start_col,
+                                        nt,
+                                        node_start_line,
+                                    ) = {
                                         let n = builder.arena_ref().get_node(id);
-                                        (n.start_offset, n.start_line, n.start_column, n.node_type, n.start_line)
+                                        (
+                                            n.start_offset,
+                                            n.start_line,
+                                            n.start_column,
+                                            n.node_type,
+                                            n.start_line,
+                                        )
                                     };
                                     builder.set_position_current(
-                                        orig_start, end, orig_start_line, orig_start_col, end_line, end_col,
+                                        orig_start,
+                                        end,
+                                        orig_start_line,
+                                        orig_start_col,
+                                        end_line,
+                                        end_col,
                                     );
 
                                     // Before closing the JSX node, check if it's
@@ -276,8 +318,7 @@ pub fn parse(source: &str, opts: &ParseOptions) -> Arena {
                     }
                 }
 
-                let (node_type, data) =
-                    tag_to_node_type(tag, &mut builder, source);
+                let (node_type, data) = tag_to_node_type(tag, &mut builder, source);
                 let _id = builder.open_node(node_type);
                 builder.set_position_current(start, end, start_line, start_col, end_line, end_col);
                 if let Some(d) = data {
@@ -293,7 +334,10 @@ pub fn parse(source: &str, opts: &ParseOptions) -> Arena {
                 // JSX End events from pulldown-cmark mark the end of the tag itself,
                 // NOT the closing of the JSX container. Skip them — the container
                 // is closed when we encounter the matching closing tag.
-                if matches!(tag_end, TagEnd::MdxJsxFlowElement | TagEnd::MdxJsxTextElement) {
+                if matches!(
+                    tag_end,
+                    TagEnd::MdxJsxFlowElement | TagEnd::MdxJsxTextElement
+                ) {
                     continue;
                 }
 
@@ -317,7 +361,12 @@ pub fn parse(source: &str, opts: &ParseOptions) -> Arena {
                     let orig_start_line = node.start_line;
                     let orig_start_col = node.start_column;
                     builder.set_position_current(
-                        orig_start, end, orig_start_line, orig_start_col, end_line, end_col,
+                        orig_start,
+                        end,
+                        orig_start_line,
+                        orig_start_col,
+                        end_line,
+                        end_col,
                     );
                     builder.set_data_current(&encode_string_ref_data(sr));
                     builder.close_node();
@@ -331,48 +380,77 @@ pub fn parse(source: &str, opts: &ParseOptions) -> Arena {
                 let orig_start_line = node.start_line;
                 let orig_start_col = node.start_column;
                 builder.set_position_current(
-                    orig_start, end, orig_start_line, orig_start_col, end_line, end_col,
+                    orig_start,
+                    end,
+                    orig_start_line,
+                    orig_start_col,
+                    end_line,
+                    end_col,
                 );
                 builder.close_node();
             }
             Event::Text(text) => {
                 let sr = source_ref_or_alloc(source, &text, range.start, &mut builder);
                 let id = builder.add_leaf(NodeType::Text);
-                builder.arena_mut().set_position(id, start, end, start_line, start_col, end_line, end_col);
-                builder.arena_mut().set_type_data(id, &encode_string_ref_data(sr));
+                builder
+                    .arena_mut()
+                    .set_position(id, start, end, start_line, start_col, end_line, end_col);
+                builder
+                    .arena_mut()
+                    .set_type_data(id, &encode_string_ref_data(sr));
             }
             Event::Code(code) => {
                 let sr = builder.alloc_string(&code);
                 let id = builder.add_leaf(NodeType::InlineCode);
-                builder.arena_mut().set_position(id, start, end, start_line, start_col, end_line, end_col);
-                builder.arena_mut().set_type_data(id, &encode_string_ref_data(sr));
+                builder
+                    .arena_mut()
+                    .set_position(id, start, end, start_line, start_col, end_line, end_col);
+                builder
+                    .arena_mut()
+                    .set_type_data(id, &encode_string_ref_data(sr));
             }
             Event::Html(html) => {
                 // Standalone Html event (outside HtmlBlock).
                 let sr = source_ref_or_alloc(source, &html, range.start, &mut builder);
                 let id = builder.add_leaf(NodeType::Html);
-                builder.arena_mut().set_position(id, start, end, start_line, start_col, end_line, end_col);
-                builder.arena_mut().set_type_data(id, &encode_string_ref_data(sr));
+                builder
+                    .arena_mut()
+                    .set_position(id, start, end, start_line, start_col, end_line, end_col);
+                builder
+                    .arena_mut()
+                    .set_type_data(id, &encode_string_ref_data(sr));
             }
             Event::InlineHtml(html) => {
                 let sr = source_ref_or_alloc(source, &html, range.start, &mut builder);
                 let id = builder.add_leaf(NodeType::Html);
-                builder.arena_mut().set_position(id, start, end, start_line, start_col, end_line, end_col);
-                builder.arena_mut().set_type_data(id, &encode_string_ref_data(sr));
+                builder
+                    .arena_mut()
+                    .set_position(id, start, end, start_line, start_col, end_line, end_col);
+                builder
+                    .arena_mut()
+                    .set_type_data(id, &encode_string_ref_data(sr));
             }
             Event::SoftBreak => {
                 let id = builder.add_leaf(NodeType::Text);
                 let sr = builder.alloc_string("\n");
-                builder.arena_mut().set_position(id, start, end, start_line, start_col, end_line, end_col);
-                builder.arena_mut().set_type_data(id, &encode_string_ref_data(sr));
+                builder
+                    .arena_mut()
+                    .set_position(id, start, end, start_line, start_col, end_line, end_col);
+                builder
+                    .arena_mut()
+                    .set_type_data(id, &encode_string_ref_data(sr));
             }
             Event::HardBreak => {
                 let id = builder.add_leaf(NodeType::Break);
-                builder.arena_mut().set_position(id, start, end, start_line, start_col, end_line, end_col);
+                builder
+                    .arena_mut()
+                    .set_position(id, start, end, start_line, start_col, end_line, end_col);
             }
             Event::Rule => {
                 let id = builder.add_leaf(NodeType::ThematicBreak);
-                builder.arena_mut().set_position(id, start, end, start_line, start_col, end_line, end_col);
+                builder
+                    .arena_mut()
+                    .set_position(id, start, end, start_line, start_col, end_line, end_col);
             }
             Event::TaskListMarker(checked) => {
                 // Task list markers modify the parent ListItem's data.
@@ -387,39 +465,61 @@ pub fn parse(source: &str, opts: &ParseOptions) -> Arena {
             Event::FootnoteReference(label) => {
                 let sr = builder.alloc_string(&label);
                 let id = builder.add_leaf(NodeType::FootnoteReference);
-                builder.arena_mut().set_position(id, start, end, start_line, start_col, end_line, end_col);
+                builder
+                    .arena_mut()
+                    .set_position(id, start, end, start_line, start_col, end_line, end_col);
                 let data = mdast_arena::encode_reference_data(sr, sr, 0);
                 builder.arena_mut().set_type_data(id, &data);
             }
             Event::InlineMath(math) => {
                 let sr = builder.alloc_string(&math);
                 let id = builder.add_leaf(NodeType::InlineMath);
-                builder.arena_mut().set_position(id, start, end, start_line, start_col, end_line, end_col);
-                builder.arena_mut().set_type_data(id, &encode_math_data(StringRef::empty(), sr));
+                builder
+                    .arena_mut()
+                    .set_position(id, start, end, start_line, start_col, end_line, end_col);
+                builder
+                    .arena_mut()
+                    .set_type_data(id, &encode_math_data(StringRef::empty(), sr));
             }
             Event::DisplayMath(math) => {
                 let sr = builder.alloc_string(&math);
                 let id = builder.add_leaf(NodeType::Math);
-                builder.arena_mut().set_position(id, start, end, start_line, start_col, end_line, end_col);
-                builder.arena_mut().set_type_data(id, &encode_math_data(StringRef::empty(), sr));
+                builder
+                    .arena_mut()
+                    .set_position(id, start, end, start_line, start_col, end_line, end_col);
+                builder
+                    .arena_mut()
+                    .set_type_data(id, &encode_math_data(StringRef::empty(), sr));
             }
             Event::MdxFlowExpression(expr) => {
                 let sr = builder.alloc_string(&expr);
                 let id = builder.add_leaf(NodeType::MdxFlowExpression);
-                builder.arena_mut().set_position(id, start, end, start_line, start_col, end_line, end_col);
-                builder.arena_mut().set_type_data(id, &encode_expression_data(sr));
+                builder
+                    .arena_mut()
+                    .set_position(id, start, end, start_line, start_col, end_line, end_col);
+                builder
+                    .arena_mut()
+                    .set_type_data(id, &encode_expression_data(sr));
             }
             Event::MdxTextExpression(expr) => {
                 let sr = builder.alloc_string(&expr);
                 let id = builder.add_leaf(NodeType::MdxTextExpression);
-                builder.arena_mut().set_position(id, start, end, start_line, start_col, end_line, end_col);
-                builder.arena_mut().set_type_data(id, &encode_expression_data(sr));
+                builder
+                    .arena_mut()
+                    .set_position(id, start, end, start_line, start_col, end_line, end_col);
+                builder
+                    .arena_mut()
+                    .set_type_data(id, &encode_expression_data(sr));
             }
             Event::MdxEsm(code) => {
                 let sr = builder.alloc_string(&code);
                 let id = builder.add_leaf(NodeType::MdxjsEsm);
-                builder.arena_mut().set_position(id, start, end, start_line, start_col, end_line, end_col);
-                builder.arena_mut().set_type_data(id, &encode_expression_data(sr));
+                builder
+                    .arena_mut()
+                    .set_position(id, start, end, start_line, start_col, end_line, end_col);
+                builder
+                    .arena_mut()
+                    .set_type_data(id, &encode_expression_data(sr));
             }
         }
     }
@@ -519,9 +619,7 @@ fn tag_to_node_type(
             (NodeType::Link, Some(encode_link_data(url_ref, title_ref)))
         }
         Tag::Image {
-            dest_url,
-            title,
-            ..
+            dest_url, title, ..
         } => {
             let url_ref = builder.alloc_string(dest_url);
             let title_ref = if title.is_empty() {
@@ -603,17 +701,19 @@ fn wrap_bare_text_in_paragraphs(builder: &mut ArenaBuilder, _jsx_id: u32) {
     let mut run_start: Option<usize> = None;
     for (i, &nl) in is_newline.iter().enumerate() {
         if nl {
-            if let Some(s) = run_start.take() { runs.push((s, i)); }
+            if let Some(s) = run_start.take() {
+                runs.push((s, i));
+            }
         } else if run_start.is_none() {
             run_start = Some(i);
         }
     }
-    if let Some(s) = run_start { runs.push((s, old_children.len())); }
+    if let Some(s) = run_start {
+        runs.push((s, old_children.len()));
+    }
 
     // If there's only one run covering everything, it's inline — don't wrap.
-    if runs.is_empty()
-        || (runs.len() == 1 && runs[0].0 == 0 && runs[0].1 == old_children.len())
-    {
+    if runs.is_empty() || (runs.len() == 1 && runs[0].0 == 0 && runs[0].1 == old_children.len()) {
         return;
     }
 
@@ -627,9 +727,12 @@ fn wrap_bare_text_in_paragraphs(builder: &mut ArenaBuilder, _jsx_id: u32) {
         let first = builder.arena_ref().get_node(run_child_ids[0]);
         let last = builder.arena_ref().get_node(*run_child_ids.last().unwrap());
         let pos = (
-            first.start_offset, last.end_offset,
-            first.start_line, first.start_column,
-            last.end_line, last.end_column,
+            first.start_offset,
+            last.end_offset,
+            first.start_line,
+            first.start_column,
+            last.end_line,
+            last.end_column,
         );
 
         let para_id = builder.arena_mut().alloc_node(NodeType::Paragraph);
@@ -637,7 +740,9 @@ fn wrap_bare_text_in_paragraphs(builder: &mut ArenaBuilder, _jsx_id: u32) {
         for &c in &run_child_ids {
             builder.arena_mut().set_parent(c, para_id);
         }
-        builder.arena_mut().set_position(para_id, pos.0, pos.1, pos.2, pos.3, pos.4, pos.5);
+        builder
+            .arena_mut()
+            .set_position(para_id, pos.0, pos.1, pos.2, pos.3, pos.4, pos.5);
         new_children.push(para_id);
     }
 
@@ -654,9 +759,7 @@ fn find_jsx_depth(builder: &ArenaBuilder) -> usize {
     for i in (0..depth).rev() {
         if let Some(node_id) = builder.stack_node_id(i) {
             let nt = builder.arena_ref().get_node(node_id).node_type;
-            if nt == NodeType::MdxJsxFlowElement as u8
-                || nt == NodeType::MdxJsxTextElement as u8
-            {
+            if nt == NodeType::MdxJsxFlowElement as u8 || nt == NodeType::MdxJsxTextElement as u8 {
                 return i;
             }
         }

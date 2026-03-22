@@ -1,6 +1,6 @@
-use mdast_arena::Arena;
 use crate::commands::{Command, NewNode};
 use crate::data::{DataMap, DataValue, TypedDataMap};
+use mdast_arena::Arena;
 
 /// Context passed to Rust plugin visitor methods and before/after hooks.
 pub struct PluginContext<'a> {
@@ -42,16 +42,16 @@ impl<'a> PluginContext<'a> {
 
     // ── Arena access ──────────────────────────────────────────────────────────
 
-    pub fn arena(&self) -> &Arena { self.arena }
+    pub fn arena(&self) -> &Arena {
+        self.arena
+    }
 
     /// Extract all text content from a subtree (depth-first concatenation)
     pub fn extract_text(&self, node_id: u32) -> String {
-        use mdast_arena::NodeType;
         use mdast_arena::codec::decode_string_ref_data;
+        use mdast_arena::NodeType;
         let node = self.arena.get_node(node_id);
-        if node.node_type == NodeType::Text as u8
-            || node.node_type == NodeType::InlineCode as u8
-        {
+        if node.node_type == NodeType::Text as u8 || node.node_type == NodeType::InlineCode as u8 {
             let data = self.arena.get_type_data(node_id);
             if !data.is_empty() {
                 let string_ref = decode_string_ref_data(data);
@@ -60,7 +60,8 @@ impl<'a> PluginContext<'a> {
             return String::new();
         }
         let children = self.arena.get_children(node_id).to_vec();
-        children.iter()
+        children
+            .iter()
             .map(|&child_id| self.extract_text(child_id))
             .collect::<Vec<_>>()
             .join("")
@@ -97,23 +98,34 @@ impl<'a> PluginContext<'a> {
     }
 
     pub fn insert_before(&mut self, node_id: u32, new_node: NewNode) {
-        self.commands.push(Command::InsertBefore { node_id, new_node });
+        self.commands
+            .push(Command::InsertBefore { node_id, new_node });
     }
 
     pub fn insert_after(&mut self, node_id: u32, new_node: NewNode) {
-        self.commands.push(Command::InsertAfter { node_id, new_node });
+        self.commands
+            .push(Command::InsertAfter { node_id, new_node });
     }
 
     pub fn wrap_node(&mut self, node_id: u32, parent_node: NewNode) {
-        self.commands.push(Command::Wrap { node_id, parent_node });
+        self.commands.push(Command::Wrap {
+            node_id,
+            parent_node,
+        });
     }
 
     pub fn prepend_child(&mut self, node_id: u32, child_node: NewNode) {
-        self.commands.push(Command::PrependChild { node_id, child_node });
+        self.commands.push(Command::PrependChild {
+            node_id,
+            child_node,
+        });
     }
 
     pub fn append_child(&mut self, node_id: u32, child_node: NewNode) {
-        self.commands.push(Command::AppendChild { node_id, child_node });
+        self.commands.push(Command::AppendChild {
+            node_id,
+            child_node,
+        });
     }
 
     // ── Diagnostics ───────────────────────────────────────────────────────────

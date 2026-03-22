@@ -1624,7 +1624,9 @@ pub(crate) fn scan_mdx_esm(bytes: &[u8]) -> Option<usize> {
     let mut ix = 0;
     loop {
         // Find end of current line.
-        let eol = memchr(b'\n', &bytes[ix..]).map(|i| ix + i + 1).unwrap_or(bytes.len());
+        let eol = memchr(b'\n', &bytes[ix..])
+            .map(|i| ix + i + 1)
+            .unwrap_or(bytes.len());
         ix = eol;
         // Check for continuation: next line that doesn't start a new block.
         // Simple heuristic: line continuation if previous line ends with `,` or `{` or `(` or `from`
@@ -1633,8 +1635,14 @@ pub(crate) fn scan_mdx_esm(bytes: &[u8]) -> Option<usize> {
             continue;
         }
         // Also continue if the last non-whitespace char before the newline suggests continuation.
-        let prev_end = if ix >= 2 && bytes[ix - 2] == b'\r' { ix - 2 } else { ix - 1 };
-        let last_significant = bytes[..prev_end].iter().rposition(|&b| b != b' ' && b != b'\t');
+        let prev_end = if ix >= 2 && bytes[ix - 2] == b'\r' {
+            ix - 2
+        } else {
+            ix - 1
+        };
+        let last_significant = bytes[..prev_end]
+            .iter()
+            .rposition(|&b| b != b' ' && b != b'\t');
         if let Some(pos) = last_significant {
             match bytes[pos] {
                 b',' | b'{' | b'(' => {
@@ -1768,25 +1776,35 @@ fn scan_mdx_jsx_tag_end(bytes: &[u8]) -> Option<usize> {
             b'"' => {
                 ix += 1;
                 while ix < bytes.len() && bytes[ix] != b'"' {
-                    if bytes[ix] == b'\\' { ix += 1; }
+                    if bytes[ix] == b'\\' {
+                        ix += 1;
+                    }
                     ix += 1;
                 }
-                if ix < bytes.len() { ix += 1; } // skip closing quote
+                if ix < bytes.len() {
+                    ix += 1;
+                } // skip closing quote
             }
             b'\'' => {
                 ix += 1;
                 while ix < bytes.len() && bytes[ix] != b'\'' {
-                    if bytes[ix] == b'\\' { ix += 1; }
+                    if bytes[ix] == b'\\' {
+                        ix += 1;
+                    }
                     ix += 1;
                 }
-                if ix < bytes.len() { ix += 1; }
+                if ix < bytes.len() {
+                    ix += 1;
+                }
             }
             b'`' => {
                 ix += 1;
                 while ix < bytes.len() && bytes[ix] != b'`' {
                     ix += 1;
                 }
-                if ix < bytes.len() { ix += 1; }
+                if ix < bytes.len() {
+                    ix += 1;
+                }
             }
             b'\n' | b'\r' => {
                 // Multi-line JSX: keep scanning
@@ -1813,30 +1831,46 @@ pub(crate) fn scan_mdx_expression_block(bytes: &[u8]) -> Option<usize> {
 
     while ix < bytes.len() && depth > 0 {
         match bytes[ix] {
-            b'{' => { depth += 1; ix += 1; }
-            b'}' => { depth -= 1; ix += 1; }
+            b'{' => {
+                depth += 1;
+                ix += 1;
+            }
+            b'}' => {
+                depth -= 1;
+                ix += 1;
+            }
             b'"' => {
                 ix += 1;
                 while ix < bytes.len() && bytes[ix] != b'"' {
-                    if bytes[ix] == b'\\' { ix += 1; }
+                    if bytes[ix] == b'\\' {
+                        ix += 1;
+                    }
                     ix += 1;
                 }
-                if ix < bytes.len() { ix += 1; }
+                if ix < bytes.len() {
+                    ix += 1;
+                }
             }
             b'\'' => {
                 ix += 1;
                 while ix < bytes.len() && bytes[ix] != b'\'' {
-                    if bytes[ix] == b'\\' { ix += 1; }
+                    if bytes[ix] == b'\\' {
+                        ix += 1;
+                    }
                     ix += 1;
                 }
-                if ix < bytes.len() { ix += 1; }
+                if ix < bytes.len() {
+                    ix += 1;
+                }
             }
             b'`' => {
                 ix += 1;
                 while ix < bytes.len() && bytes[ix] != b'`' {
                     ix += 1;
                 }
-                if ix < bytes.len() { ix += 1; }
+                if ix < bytes.len() {
+                    ix += 1;
+                }
             }
             _ => ix += 1,
         }
@@ -1852,8 +1886,12 @@ pub(crate) fn scan_mdx_expression_block(bytes: &[u8]) -> Option<usize> {
         while ix < bytes.len() && (bytes[ix] == b' ' || bytes[ix] == b'\t') {
             ix += 1;
         }
-        if ix < bytes.len() && bytes[ix] == b'\r' { ix += 1; }
-        if ix < bytes.len() && bytes[ix] == b'\n' { ix += 1; }
+        if ix < bytes.len() && bytes[ix] == b'\r' {
+            ix += 1;
+        }
+        if ix < bytes.len() && bytes[ix] == b'\n' {
+            ix += 1;
+        }
         Some(ix)
     } else {
         None
@@ -1872,30 +1910,46 @@ pub(crate) fn scan_mdx_inline_expression(bytes: &[u8]) -> Option<(usize, usize, 
 
     while ix < bytes.len() && depth > 0 {
         match bytes[ix] {
-            b'{' => { depth += 1; ix += 1; }
-            b'}' => { depth -= 1; ix += 1; }
+            b'{' => {
+                depth += 1;
+                ix += 1;
+            }
+            b'}' => {
+                depth -= 1;
+                ix += 1;
+            }
             b'"' => {
                 ix += 1;
                 while ix < bytes.len() && bytes[ix] != b'"' {
-                    if bytes[ix] == b'\\' { ix += 1; }
+                    if bytes[ix] == b'\\' {
+                        ix += 1;
+                    }
                     ix += 1;
                 }
-                if ix < bytes.len() { ix += 1; }
+                if ix < bytes.len() {
+                    ix += 1;
+                }
             }
             b'\'' => {
                 ix += 1;
                 while ix < bytes.len() && bytes[ix] != b'\'' {
-                    if bytes[ix] == b'\\' { ix += 1; }
+                    if bytes[ix] == b'\\' {
+                        ix += 1;
+                    }
                     ix += 1;
                 }
-                if ix < bytes.len() { ix += 1; }
+                if ix < bytes.len() {
+                    ix += 1;
+                }
             }
             b'`' => {
                 ix += 1;
                 while ix < bytes.len() && bytes[ix] != b'`' {
                     ix += 1;
                 }
-                if ix < bytes.len() { ix += 1; }
+                if ix < bytes.len() {
+                    ix += 1;
+                }
             }
             _ => ix += 1,
         }
@@ -1943,23 +1997,37 @@ pub(crate) fn scan_mdx_inline_jsx(bytes: &[u8]) -> Option<usize> {
             b'/' if ix + 1 < bytes.len() && bytes[ix + 1] == b'>' && brace_depth == 0 => {
                 return Some(ix + 2);
             }
-            b'{' => { brace_depth += 1; ix += 1; }
-            b'}' => { brace_depth = brace_depth.saturating_sub(1); ix += 1; }
+            b'{' => {
+                brace_depth += 1;
+                ix += 1;
+            }
+            b'}' => {
+                brace_depth = brace_depth.saturating_sub(1);
+                ix += 1;
+            }
             b'"' => {
                 ix += 1;
                 while ix < bytes.len() && bytes[ix] != b'"' {
-                    if bytes[ix] == b'\\' { ix += 1; }
+                    if bytes[ix] == b'\\' {
+                        ix += 1;
+                    }
                     ix += 1;
                 }
-                if ix < bytes.len() { ix += 1; }
+                if ix < bytes.len() {
+                    ix += 1;
+                }
             }
             b'\'' => {
                 ix += 1;
                 while ix < bytes.len() && bytes[ix] != b'\'' {
-                    if bytes[ix] == b'\\' { ix += 1; }
+                    if bytes[ix] == b'\\' {
+                        ix += 1;
+                    }
                     ix += 1;
                 }
-                if ix < bytes.len() { ix += 1; }
+                if ix < bytes.len() {
+                    ix += 1;
+                }
             }
             b'\n' | b'\r' => {
                 // Multi-line JSX: keep scanning (attributes/values can span lines).

@@ -1,10 +1,10 @@
-use mdast_arena::{Arena, ArenaBuilder, NodeType};
-use mdast_arena::rebuild::{Patch, rebuild};
 use crate::commands::{BuiltNode, Command, NewNode};
 use crate::context::{Diagnostic, PluginContext};
 use crate::data::{DataMap, TypedDataMap};
 use crate::plugin::{NodeView, Plugin, VisitResult};
 use crate::typed_nodes::*;
+use mdast_arena::rebuild::{rebuild, Patch};
+use mdast_arena::{Arena, ArenaBuilder, NodeType};
 
 /// Result of running plugins against an arena.
 pub struct PluginRunResult {
@@ -109,45 +109,54 @@ impl PluginRunner {
 /// not via arena structural mutation).
 /// NewNode::Raw commands are skipped (need parser, Phase 8).
 fn commands_to_patches<'a>(commands: Vec<&'a Command>, arena: &Arena) -> Vec<Patch> {
-    commands.into_iter().filter_map(|cmd| match cmd {
-        Command::Replace { node_id, new_node } => {
-            built_node_to_arena(new_node, arena.source()).map(|sub|
-                Patch::Replace { node_id: *node_id, new_tree: sub }
-            )
-        }
-        Command::Remove { node_id } => {
-            Some(Patch::Remove { node_id: *node_id })
-        }
-        Command::InsertBefore { node_id, new_node } => {
-            built_node_to_arena(new_node, arena.source()).map(|sub|
-                Patch::InsertBefore { node_id: *node_id, new_tree: sub }
-            )
-        }
-        Command::InsertAfter { node_id, new_node } => {
-            built_node_to_arena(new_node, arena.source()).map(|sub|
-                Patch::InsertAfter { node_id: *node_id, new_tree: sub }
-            )
-        }
-        Command::Wrap { node_id, parent_node } => {
-            built_node_to_arena(parent_node, arena.source()).map(|sub|
-                Patch::Wrap { node_id: *node_id, parent_tree: sub }
-            )
-        }
-        Command::PrependChild { node_id, child_node } => {
-            built_node_to_arena(child_node, arena.source()).map(|sub|
-                Patch::PrependChild { node_id: *node_id, child_tree: sub }
-            )
-        }
-        Command::AppendChild { node_id, child_node } => {
-            built_node_to_arena(child_node, arena.source()).map(|sub|
-                Patch::AppendChild { node_id: *node_id, child_tree: sub }
-            )
-        }
-        Command::SetData { .. } => {
-            // Already applied via DataMap in PluginContext — no arena rebuild needed
-            None
-        }
-    }).collect()
+    commands
+        .into_iter()
+        .filter_map(|cmd| match cmd {
+            Command::Replace { node_id, new_node } => built_node_to_arena(new_node, arena.source())
+                .map(|sub| Patch::Replace {
+                    node_id: *node_id,
+                    new_tree: sub,
+                }),
+            Command::Remove { node_id } => Some(Patch::Remove { node_id: *node_id }),
+            Command::InsertBefore { node_id, new_node } => {
+                built_node_to_arena(new_node, arena.source()).map(|sub| Patch::InsertBefore {
+                    node_id: *node_id,
+                    new_tree: sub,
+                })
+            }
+            Command::InsertAfter { node_id, new_node } => {
+                built_node_to_arena(new_node, arena.source()).map(|sub| Patch::InsertAfter {
+                    node_id: *node_id,
+                    new_tree: sub,
+                })
+            }
+            Command::Wrap {
+                node_id,
+                parent_node,
+            } => built_node_to_arena(parent_node, arena.source()).map(|sub| Patch::Wrap {
+                node_id: *node_id,
+                parent_tree: sub,
+            }),
+            Command::PrependChild {
+                node_id,
+                child_node,
+            } => built_node_to_arena(child_node, arena.source()).map(|sub| Patch::PrependChild {
+                node_id: *node_id,
+                child_tree: sub,
+            }),
+            Command::AppendChild {
+                node_id,
+                child_node,
+            } => built_node_to_arena(child_node, arena.source()).map(|sub| Patch::AppendChild {
+                node_id: *node_id,
+                child_tree: sub,
+            }),
+            Command::SetData { .. } => {
+                // Already applied via DataMap in PluginContext — no arena rebuild needed
+                None
+            }
+        })
+        .collect()
 }
 
 /// Convert a NewNode into a mini Arena for use as a patch sub-tree.
@@ -188,48 +197,20 @@ fn dispatch_visitor(
     ctx: &mut PluginContext,
 ) -> VisitResult {
     match NodeType::from_u8(node_type_byte) {
-        Some(NodeType::Heading) => {
-            plugin.visit_heading(&Heading { node_id, arena }, ctx)
-        }
-        Some(NodeType::Paragraph) => {
-            plugin.visit_paragraph(&Paragraph { node_id, arena }, ctx)
-        }
-        Some(NodeType::Text) => {
-            plugin.visit_text(&Text { node_id, arena }, ctx)
-        }
-        Some(NodeType::Link) => {
-            plugin.visit_link(&Link { node_id, arena }, ctx)
-        }
-        Some(NodeType::Image) => {
-            plugin.visit_image(&Image { node_id, arena }, ctx)
-        }
-        Some(NodeType::Code) => {
-            plugin.visit_code(&Code { node_id, arena }, ctx)
-        }
-        Some(NodeType::List) => {
-            plugin.visit_list(&NodeView { node_id, arena }, ctx)
-        }
-        Some(NodeType::ListItem) => {
-            plugin.visit_list_item(&NodeView { node_id, arena }, ctx)
-        }
-        Some(NodeType::Blockquote) => {
-            plugin.visit_blockquote(&NodeView { node_id, arena }, ctx)
-        }
-        Some(NodeType::Emphasis) => {
-            plugin.visit_emphasis(&NodeView { node_id, arena }, ctx)
-        }
-        Some(NodeType::Strong) => {
-            plugin.visit_strong(&NodeView { node_id, arena }, ctx)
-        }
-        Some(NodeType::InlineCode) => {
-            plugin.visit_inline_code(&Text { node_id, arena }, ctx)
-        }
-        Some(NodeType::Html) => {
-            plugin.visit_html(&Text { node_id, arena }, ctx)
-        }
-        Some(NodeType::Table) => {
-            plugin.visit_table(&NodeView { node_id, arena }, ctx)
-        }
+        Some(NodeType::Heading) => plugin.visit_heading(&Heading { node_id, arena }, ctx),
+        Some(NodeType::Paragraph) => plugin.visit_paragraph(&Paragraph { node_id, arena }, ctx),
+        Some(NodeType::Text) => plugin.visit_text(&Text { node_id, arena }, ctx),
+        Some(NodeType::Link) => plugin.visit_link(&Link { node_id, arena }, ctx),
+        Some(NodeType::Image) => plugin.visit_image(&Image { node_id, arena }, ctx),
+        Some(NodeType::Code) => plugin.visit_code(&Code { node_id, arena }, ctx),
+        Some(NodeType::List) => plugin.visit_list(&NodeView { node_id, arena }, ctx),
+        Some(NodeType::ListItem) => plugin.visit_list_item(&NodeView { node_id, arena }, ctx),
+        Some(NodeType::Blockquote) => plugin.visit_blockquote(&NodeView { node_id, arena }, ctx),
+        Some(NodeType::Emphasis) => plugin.visit_emphasis(&NodeView { node_id, arena }, ctx),
+        Some(NodeType::Strong) => plugin.visit_strong(&NodeView { node_id, arena }, ctx),
+        Some(NodeType::InlineCode) => plugin.visit_inline_code(&Text { node_id, arena }, ctx),
+        Some(NodeType::Html) => plugin.visit_html(&Text { node_id, arena }, ctx),
+        Some(NodeType::Table) => plugin.visit_table(&NodeView { node_id, arena }, ctx),
         _ => VisitResult::NoChange,
     }
 }

@@ -24,7 +24,7 @@ fn two_lines_newline_boundary() {
     let idx = LineIndex::from_source("hi\nbye");
     assert_eq!(idx.offset_to_line_col(0), (1, 1)); // 'h'
     assert_eq!(idx.offset_to_line_col(1), (1, 2)); // 'i'
-    // offset 2 is '\n' — still line 1
+                                                   // offset 2 is '\n' — still line 1
     assert_eq!(idx.offset_to_line_col(2), (1, 3));
     assert_eq!(idx.offset_to_line_col(3), (2, 1)); // 'b'
     assert_eq!(idx.offset_to_line_col(5), (2, 3)); // 'e'

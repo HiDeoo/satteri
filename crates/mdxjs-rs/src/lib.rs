@@ -9,7 +9,6 @@
 #![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::cast_precision_loss)]
 
-
 mod arena_to_hast;
 mod configuration;
 pub mod hast;
@@ -114,13 +113,11 @@ pub fn compile_arena(
 ///
 /// Returns an error if the buffer is malformed or compilation fails.
 pub fn compile_arena_bytes(buf: &[u8], options: &Options) -> Result<String, message::Message> {
-    let view = mdast_arena::Arena::from_raw_buffer(buf).map_err(|e| {
-        message::Message {
-            reason: format!("invalid arena buffer: {e:?}"),
-            place: None,
-            rule_id: Box::new(String::new()),
-            source: Box::new("mdxjs".into()),
-        }
+    let view = mdast_arena::Arena::from_raw_buffer(buf).map_err(|e| message::Message {
+        reason: format!("invalid arena buffer: {e:?}"),
+        place: None,
+        rule_id: Box::new(String::new()),
+        source: Box::new("mdxjs".into()),
     })?;
     compile_arena(&view, options)
 }

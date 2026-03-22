@@ -1,5 +1,5 @@
+use mdast_arena::{codec::*, Arena, ArenaBuilder, NodeType, StringRef};
 use tryckeri_plugin_api::*;
-use mdast_arena::{Arena, ArenaBuilder, NodeType, StringRef, codec::*};
 
 // ── Test arena builder ────────────────────────────────────────────────────────
 
@@ -53,7 +53,13 @@ fn build_test_arena() -> Arena {
 
 fn slugify(text: &str) -> String {
     text.chars()
-        .map(|c| if c.is_alphanumeric() { c.to_lowercase().next().unwrap() } else { '-' })
+        .map(|c| {
+            if c.is_alphanumeric() {
+                c.to_lowercase().next().unwrap()
+            } else {
+                '-'
+            }
+        })
         .collect::<String>()
         .trim_matches('-')
         .to_string()
@@ -62,7 +68,9 @@ fn slugify(text: &str) -> String {
 struct AddHeadingIds;
 
 impl Plugin for AddHeadingIds {
-    fn meta(&self) -> PluginMeta { PluginMeta::new("add-heading-ids") }
+    fn meta(&self) -> PluginMeta {
+        PluginMeta::new("add-heading-ids")
+    }
 
     fn visit_heading(&mut self, node: &Heading, ctx: &mut PluginContext) -> VisitResult {
         let text = ctx.extract_text(node.id());
@@ -72,15 +80,23 @@ impl Plugin for AddHeadingIds {
     }
 }
 
-struct LintHeadingDepth { max_depth: u8 }
+struct LintHeadingDepth {
+    max_depth: u8,
+}
 
 impl Plugin for LintHeadingDepth {
-    fn meta(&self) -> PluginMeta { PluginMeta::new("lint-heading-depth") }
+    fn meta(&self) -> PluginMeta {
+        PluginMeta::new("lint-heading-depth")
+    }
 
     fn visit_heading(&mut self, node: &Heading, ctx: &mut PluginContext) -> VisitResult {
         if node.depth() > self.max_depth {
             ctx.warn(
-                format!("Heading depth {} exceeds max {}", node.depth(), self.max_depth),
+                format!(
+                    "Heading depth {} exceeds max {}",
+                    node.depth(),
+                    self.max_depth
+                ),
                 Some(node.id()),
             );
         }
@@ -88,10 +104,14 @@ impl Plugin for LintHeadingDepth {
     }
 }
 
-struct CountNodes { pub count: usize }
+struct CountNodes {
+    pub count: usize,
+}
 
 impl Plugin for CountNodes {
-    fn meta(&self) -> PluginMeta { PluginMeta::new("count-nodes") }
+    fn meta(&self) -> PluginMeta {
+        PluginMeta::new("count-nodes")
+    }
 
     fn visit_text(&mut self, _node: &Text, _ctx: &mut PluginContext) -> VisitResult {
         self.count += 1;
@@ -106,7 +126,9 @@ impl Plugin for CountNodes {
 fn noop_plugin_runs_without_error() {
     struct NoopPlugin;
     impl Plugin for NoopPlugin {
-        fn meta(&self) -> PluginMeta { PluginMeta::new("noop") }
+        fn meta(&self) -> PluginMeta {
+            PluginMeta::new("noop")
+        }
     }
 
     let arena = build_test_arena();
@@ -129,7 +151,10 @@ fn add_heading_ids_sets_data() {
     runner.run(arena, &mut data_map, &mut typed_data);
 
     let heading_id = 1u32;
-    assert!(data_map.has(heading_id, "id"), "id key should be set on heading node");
+    assert!(
+        data_map.has(heading_id, "id"),
+        "id key should be set on heading node"
+    );
 }
 
 /// 3. The id is a slug of the heading text
@@ -142,7 +167,9 @@ fn add_heading_ids_slug_matches_text() {
     runner.run(arena, &mut data_map, &mut typed_data);
 
     let heading_id = 1u32;
-    let id_val = data_map.get(heading_id, "id").expect("id should be present");
+    let id_val = data_map
+        .get(heading_id, "id")
+        .expect("id should be present");
     assert_eq!(id_val.as_str().unwrap(), "hello");
 }
 
@@ -154,7 +181,10 @@ fn lint_heading_depth_no_warning_for_h1() {
     let mut data_map = DataMap::new();
     let mut typed_data = TypedDataMap::new();
     let result = runner.run(arena, &mut data_map, &mut typed_data);
-    assert!(result.diagnostics.is_empty(), "no warnings for h1 with max_depth=3");
+    assert!(
+        result.diagnostics.is_empty(),
+        "no warnings for h1 with max_depth=3"
+    );
 }
 
 /// 5. LintHeadingDepth with max_depth=0 produces 1 warning for h1
@@ -165,7 +195,11 @@ fn lint_heading_depth_warning_for_h1_when_max_is_zero() {
     let mut data_map = DataMap::new();
     let mut typed_data = TypedDataMap::new();
     let result = runner.run(arena, &mut data_map, &mut typed_data);
-    assert_eq!(result.diagnostics.len(), 1, "exactly one warning for h1 with max_depth=0");
+    assert_eq!(
+        result.diagnostics.len(),
+        1,
+        "exactly one warning for h1 with max_depth=0"
+    );
     assert_eq!(result.diagnostics[0].severity, Severity::Warning);
 }
 
@@ -189,7 +223,9 @@ fn count_nodes_counts_text_nodes() {
 fn count_nodes_via_data_map() {
     struct CountNodesData;
     impl Plugin for CountNodesData {
-        fn meta(&self) -> PluginMeta { PluginMeta::new("count-via-data") }
+        fn meta(&self) -> PluginMeta {
+            PluginMeta::new("count-via-data")
+        }
 
         fn visit_text(&mut self, node: &Text, ctx: &mut PluginContext) -> VisitResult {
             ctx.set_data(node.id(), "visited", DataValue::Bool(true));
@@ -206,5 +242,8 @@ fn count_nodes_via_data_map() {
     // Text nodes are ids 2 and 4
     assert!(data_map.has(2, "visited"), "text node 2 should be visited");
     assert!(data_map.has(4, "visited"), "text node 4 should be visited");
-    assert!(!data_map.has(1, "visited"), "heading node 1 should not be visited");
+    assert!(
+        !data_map.has(1, "visited"),
+        "heading node 1 should not be visited"
+    );
 }

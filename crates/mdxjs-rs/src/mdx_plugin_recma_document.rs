@@ -11,8 +11,8 @@ use crate::oxc_utils::{
 };
 use std::cell::Cell;
 
-use mdast_arena::mdx_types::{Point, Position, Location};
 use mdast_arena::mdx_types as message;
+use mdast_arena::mdx_types::{Location, Point, Position};
 use oxc_allocator::{Allocator, Box as OxcBox, Vec as OxcVec};
 use oxc_ast::ast::{
     Argument, AssignmentPattern, BindingPattern, ConditionalExpression, Declaration,
@@ -194,7 +194,9 @@ pub fn mdx_plugin_recma_document<'a>(
                 while index < named_export.specifiers.len() {
                     let mut take = false;
                     let spec = &named_export.specifiers[index];
-                    if let ModuleExportName::IdentifierName(ident) = &spec.exported && ident.name.as_str() == "default" {
+                    if let ModuleExportName::IdentifierName(ident) = &spec.exported
+                        && ident.name.as_str() == "default"
+                    {
                         match &spec.local {
                             ModuleExportName::IdentifierReference(local_ident) => {
                                 err_for_double_layout(
@@ -277,7 +279,9 @@ pub fn mdx_plugin_recma_document<'a>(
                     }
                     Expression::JSXFragment(frag) => {
                         // Unwrap if possible.
-                        if frag.children.len() == 1 && matches!(&frag.children[0], JSXChild::Element(_)) {
+                        if frag.children.len() == 1
+                            && matches!(&frag.children[0], JSXChild::Element(_))
+                        {
                             content = true;
                             let expr_stmt = if let Statement::ExpressionStatement(e) = stmt {
                                 e.unbox().expression
@@ -365,38 +369,70 @@ fn export_default_kind_to_expression(
         ExportDefaultDeclarationKind::MetaProperty(v) => Some(Expression::MetaProperty(v)),
         ExportDefaultDeclarationKind::Super(v) => Some(Expression::Super(v)),
         ExportDefaultDeclarationKind::ArrayExpression(v) => Some(Expression::ArrayExpression(v)),
-        ExportDefaultDeclarationKind::ArrowFunctionExpression(v) => Some(Expression::ArrowFunctionExpression(v)),
-        ExportDefaultDeclarationKind::AssignmentExpression(v) => Some(Expression::AssignmentExpression(v)),
+        ExportDefaultDeclarationKind::ArrowFunctionExpression(v) => {
+            Some(Expression::ArrowFunctionExpression(v))
+        }
+        ExportDefaultDeclarationKind::AssignmentExpression(v) => {
+            Some(Expression::AssignmentExpression(v))
+        }
         ExportDefaultDeclarationKind::AwaitExpression(v) => Some(Expression::AwaitExpression(v)),
         ExportDefaultDeclarationKind::BinaryExpression(v) => Some(Expression::BinaryExpression(v)),
         ExportDefaultDeclarationKind::CallExpression(v) => Some(Expression::CallExpression(v)),
         ExportDefaultDeclarationKind::ChainExpression(v) => Some(Expression::ChainExpression(v)),
         ExportDefaultDeclarationKind::ClassExpression(v) => Some(Expression::ClassExpression(v)),
-        ExportDefaultDeclarationKind::ConditionalExpression(v) => Some(Expression::ConditionalExpression(v)),
-        ExportDefaultDeclarationKind::FunctionExpression(v) => Some(Expression::FunctionExpression(v)),
+        ExportDefaultDeclarationKind::ConditionalExpression(v) => {
+            Some(Expression::ConditionalExpression(v))
+        }
+        ExportDefaultDeclarationKind::FunctionExpression(v) => {
+            Some(Expression::FunctionExpression(v))
+        }
         ExportDefaultDeclarationKind::ImportExpression(v) => Some(Expression::ImportExpression(v)),
-        ExportDefaultDeclarationKind::LogicalExpression(v) => Some(Expression::LogicalExpression(v)),
+        ExportDefaultDeclarationKind::LogicalExpression(v) => {
+            Some(Expression::LogicalExpression(v))
+        }
         ExportDefaultDeclarationKind::NewExpression(v) => Some(Expression::NewExpression(v)),
         ExportDefaultDeclarationKind::ObjectExpression(v) => Some(Expression::ObjectExpression(v)),
-        ExportDefaultDeclarationKind::ParenthesizedExpression(v) => Some(Expression::ParenthesizedExpression(v)),
-        ExportDefaultDeclarationKind::SequenceExpression(v) => Some(Expression::SequenceExpression(v)),
-        ExportDefaultDeclarationKind::TaggedTemplateExpression(v) => Some(Expression::TaggedTemplateExpression(v)),
+        ExportDefaultDeclarationKind::ParenthesizedExpression(v) => {
+            Some(Expression::ParenthesizedExpression(v))
+        }
+        ExportDefaultDeclarationKind::SequenceExpression(v) => {
+            Some(Expression::SequenceExpression(v))
+        }
+        ExportDefaultDeclarationKind::TaggedTemplateExpression(v) => {
+            Some(Expression::TaggedTemplateExpression(v))
+        }
         ExportDefaultDeclarationKind::ThisExpression(v) => Some(Expression::ThisExpression(v)),
         ExportDefaultDeclarationKind::UnaryExpression(v) => Some(Expression::UnaryExpression(v)),
         ExportDefaultDeclarationKind::UpdateExpression(v) => Some(Expression::UpdateExpression(v)),
         ExportDefaultDeclarationKind::YieldExpression(v) => Some(Expression::YieldExpression(v)),
-        ExportDefaultDeclarationKind::PrivateInExpression(v) => Some(Expression::PrivateInExpression(v)),
+        ExportDefaultDeclarationKind::PrivateInExpression(v) => {
+            Some(Expression::PrivateInExpression(v))
+        }
         ExportDefaultDeclarationKind::JSXElement(v) => Some(Expression::JSXElement(v)),
         ExportDefaultDeclarationKind::JSXFragment(v) => Some(Expression::JSXFragment(v)),
         ExportDefaultDeclarationKind::TSAsExpression(v) => Some(Expression::TSAsExpression(v)),
-        ExportDefaultDeclarationKind::TSSatisfiesExpression(v) => Some(Expression::TSSatisfiesExpression(v)),
+        ExportDefaultDeclarationKind::TSSatisfiesExpression(v) => {
+            Some(Expression::TSSatisfiesExpression(v))
+        }
         ExportDefaultDeclarationKind::TSTypeAssertion(v) => Some(Expression::TSTypeAssertion(v)),
-        ExportDefaultDeclarationKind::TSNonNullExpression(v) => Some(Expression::TSNonNullExpression(v)),
-        ExportDefaultDeclarationKind::TSInstantiationExpression(v) => Some(Expression::TSInstantiationExpression(v)),
-        ExportDefaultDeclarationKind::V8IntrinsicExpression(v) => Some(Expression::V8IntrinsicExpression(v)),
-        ExportDefaultDeclarationKind::ComputedMemberExpression(v) => Some(Expression::ComputedMemberExpression(v)),
-        ExportDefaultDeclarationKind::StaticMemberExpression(v) => Some(Expression::StaticMemberExpression(v)),
-        ExportDefaultDeclarationKind::PrivateFieldExpression(v) => Some(Expression::PrivateFieldExpression(v)),
+        ExportDefaultDeclarationKind::TSNonNullExpression(v) => {
+            Some(Expression::TSNonNullExpression(v))
+        }
+        ExportDefaultDeclarationKind::TSInstantiationExpression(v) => {
+            Some(Expression::TSInstantiationExpression(v))
+        }
+        ExportDefaultDeclarationKind::V8IntrinsicExpression(v) => {
+            Some(Expression::V8IntrinsicExpression(v))
+        }
+        ExportDefaultDeclarationKind::ComputedMemberExpression(v) => {
+            Some(Expression::ComputedMemberExpression(v))
+        }
+        ExportDefaultDeclarationKind::StaticMemberExpression(v) => {
+            Some(Expression::StaticMemberExpression(v))
+        }
+        ExportDefaultDeclarationKind::PrivateFieldExpression(v) => {
+            Some(Expression::PrivateFieldExpression(v))
+        }
     }
 }
 

@@ -32,10 +32,19 @@ fn data_map_entries_for_node() {
 #[test]
 fn typed_data_map_set_and_get() {
     #[derive(Debug, PartialEq)]
-    struct MyData { value: i32, label: String }
+    struct MyData {
+        value: i32,
+        label: String,
+    }
 
     let mut map = TypedDataMap::new();
-    map.set(42u32, MyData { value: 99, label: "test".to_string() });
+    map.set(
+        42u32,
+        MyData {
+            value: 99,
+            label: "test".to_string(),
+        },
+    );
 
     let retrieved = map.get::<MyData>(42).expect("should retrieve typed data");
     assert_eq!(retrieved.value, 99);

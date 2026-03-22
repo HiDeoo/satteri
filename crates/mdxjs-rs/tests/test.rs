@@ -1,5 +1,5 @@
 extern crate mdxjs;
-use mdxjs::{compile, JsxRuntime, Options};
+use mdxjs::{JsxRuntime, Options, compile};
 use pretty_assertions::assert_eq;
 
 #[test]
@@ -183,15 +183,18 @@ export default MDXContent;
 
 #[test]
 fn unravel_elements() -> Result<(), mdast_arena::mdx_types::Message> {
-    let result = compile(
-        "<x>a</x>\n<x>\n  b\n</x>\n",
-        &Default::default()
-    )?;
+    let result = compile("<x>a</x>\n<x>\n  b\n</x>\n", &Default::default())?;
     // Must produce valid JS with both <x> elements.
-    assert!(result.contains("\"x\""), "should have x component: {result}");
+    assert!(
+        result.contains("\"x\""),
+        "should have x component: {result}"
+    );
     assert!(result.contains("\"a\""), "should have 'a' text: {result}");
     assert!(result.contains("\"b\""), "should have 'b' text: {result}");
-    assert!(result.contains("export default MDXContent"), "should have default export: {result}");
+    assert!(
+        result.contains("export default MDXContent"),
+        "should have default export: {result}"
+    );
     Ok(())
 }
 
@@ -298,7 +301,10 @@ fn err_expression_broken_multiline_comment_c() {
 #[test]
 fn err_expression_broken_line_comment_a() {
     assert_eq!(
-        compile("{x//}", &Default::default()).err().unwrap().to_string(),
+        compile("{x//}", &Default::default())
+            .err()
+            .unwrap()
+            .to_string(),
         "1:6: Could not parse expression with oxc: Unexpected unclosed line comment, expected line ending: `\\n` (mdxjs-rs:oxc)",
         "should crash on an unclosed line comment after an expression",
     );
@@ -423,7 +429,10 @@ fn err_expression_value_extra_comment() {
 #[test]
 fn err_expression_spread_none() {
     assert_eq!(
-        compile("<a {x} />", &Default::default()).err().unwrap().to_string(),
+        compile("<a {x} />", &Default::default())
+            .err()
+            .unwrap()
+            .to_string(),
         "1:10: Unexpected prop in spread (such as `{x}`): only a spread is supported (such as `{...x}`) (mdxjs-rs:oxc)",
         "should crash on a non-spread",
     );
@@ -444,7 +453,10 @@ fn err_expression_spread_multi_1() {
 #[test]
 fn err_expression_spread_multi_2() {
     assert_eq!(
-        compile("<a {...x, y} />", &Default::default()).err().unwrap().to_string(),
+        compile("<a {...x, y} />", &Default::default())
+            .err()
+            .unwrap()
+            .to_string(),
         "1:16: Unexpected extra content in spread (such as `{...x,y}`): only a single spread is supported (such as `{...x}`) (mdxjs-rs:oxc)",
         "should crash on more content after a (spread) expression (2)",
     );

@@ -8,8 +8,8 @@ extern crate alloc;
 
 #[allow(unused_imports)]
 pub use mdast_arena::mdx_types::MdxJsxAttribute;
-pub use mdast_arena::mdx_types::{AttributeContent, AttributeValue, Stop};
 use mdast_arena::mdx_types::Position;
+pub use mdast_arena::mdx_types::{AttributeContent, AttributeValue, Stop};
 
 /// Nodes.
 #[derive(Clone, PartialEq, Eq)]

@@ -33,9 +33,7 @@ fn main() {
 #[divan::bench]
 fn parse(bencher: divan::Bencher) {
     let opts = parser::ParseOptions::default();
-    bencher.bench(|| {
-        parser::parse(MARKDOWN, &opts)
-    });
+    bencher.bench(|| parser::parse(MARKDOWN, &opts));
 }
 
 /// Parse Markdown source and serialise to a flat binary buffer.
@@ -94,7 +92,7 @@ fn pulldown_parse_events_mdx(bencher: divan::Bencher) {
 /// pulldown-cmark: parse + render to HTML string.
 #[divan::bench]
 fn pulldown_to_html(bencher: divan::Bencher) {
-    use pulldown_cmark::{Options, Parser, html};
+    use pulldown_cmark::{html, Options, Parser};
 
     let opts = Options::ENABLE_TABLES
         | Options::ENABLE_FOOTNOTES
@@ -115,9 +113,7 @@ fn pulldown_to_html(bencher: divan::Bencher) {
 fn pulldown_mdx_parse(bencher: divan::Bencher) {
     use pulldown_cmark::{Options, Parser};
 
-    let opts = Options::ENABLE_TABLES
-        | Options::ENABLE_MATH
-        | Options::ENABLE_MDX;
+    let opts = Options::ENABLE_TABLES | Options::ENABLE_MATH | Options::ENABLE_MDX;
 
     bencher.bench(|| {
         let parser = Parser::new_ext(MDX, opts);
@@ -147,9 +143,7 @@ fn mdast_buffer_to_hast_buffer(bencher: divan::Bencher) {
     let arena = parser::parse(MARKDOWN, &parser::ParseOptions::default());
     let mdast_buf = arena.to_raw_buffer();
 
-    bencher.bench(|| {
-        tryckeri_hast::arena_to_hast_buffer(&mdast_buf).unwrap()
-    });
+    bencher.bench(|| tryckeri_hast::arena_to_hast_buffer(&mdast_buf).unwrap());
 }
 
 /// Given a pre-built HAST binary buffer, emit an HTML string.
@@ -159,9 +153,7 @@ fn hast_buffer_to_html(bencher: divan::Bencher) {
     let mdast_buf = arena.to_raw_buffer();
     let hast_buf = tryckeri_hast::arena_to_hast_buffer(&mdast_buf).unwrap();
 
-    bencher.bench(|| {
-        tryckeri_hast::hast_buffer_to_html(&hast_buf).unwrap()
-    });
+    bencher.bench(|| tryckeri_hast::hast_buffer_to_html(&hast_buf).unwrap());
 }
 
 // ---------------------------------------------------------------------------
@@ -171,9 +163,7 @@ fn hast_buffer_to_html(bencher: divan::Bencher) {
 /// Full pipeline: MDX source → JavaScript (parse + arena→hast + hast→OXC + serialize).
 #[divan::bench]
 fn mdx_compile(bencher: divan::Bencher) {
-    bencher.bench(|| {
-        mdxjs::compile(MDX, &mdxjs::Options::default()).unwrap()
-    });
+    bencher.bench(|| mdxjs::compile(MDX, &mdxjs::Options::default()).unwrap());
 }
 
 /// Compile from a pre-parsed MDAST binary buffer — skips the parse step.
@@ -182,9 +172,7 @@ fn mdx_compile_from_buffer(bencher: divan::Bencher) {
     let arena = parser::parse(MDX, &parser::ParseOptions::mdx());
     let mdast_buf = arena.to_raw_buffer();
 
-    bencher.bench(|| {
-        mdxjs::compile_arena_bytes(&mdast_buf, &mdxjs::Options::default()).unwrap()
-    });
+    bencher.bench(|| mdxjs::compile_arena_bytes(&mdast_buf, &mdxjs::Options::default()).unwrap());
 }
 
 // ---- Step-by-step breakdown ----
@@ -193,9 +181,7 @@ fn mdx_compile_from_buffer(bencher: divan::Bencher) {
 #[divan::bench]
 fn mdx_step1_parse(bencher: divan::Bencher) {
     let opts = parser::ParseOptions::mdx();
-    bencher.bench(|| {
-        parser::parse(MDX, &opts)
-    });
+    bencher.bench(|| parser::parse(MDX, &opts));
 }
 
 /// Step 2 of MDX compile: Arena → boxed hast::Node tree.
@@ -203,9 +189,7 @@ fn mdx_step1_parse(bencher: divan::Bencher) {
 fn mdx_step2_arena_to_hast(bencher: divan::Bencher) {
     let arena = parser::parse(MDX, &parser::ParseOptions::mdx());
 
-    bencher.bench(|| {
-        mdxjs::arena_to_hast(&arena)
-    });
+    bencher.bench(|| mdxjs::arena_to_hast(&arena));
 }
 
 /// Step 3 of MDX compile: hast::Node tree → OXC ES AST + recma plugins + serialize.
@@ -222,8 +206,10 @@ fn mdx_step3_hast_to_js(bencher: divan::Bencher) {
     bencher.bench(|| {
         let alloc = Allocator::default();
         let mut explicit_jsxs = FxHashSet::default();
-        let mut program = hast_util_to_oxc_program(&hast, &opts, None, &mut explicit_jsxs, &alloc).unwrap();
+        let mut program =
+            hast_util_to_oxc_program(&hast, &opts, None, &mut explicit_jsxs, &alloc).unwrap();
         mdxjs::mdx_plugin_recma_document(&mut program, &opts, None, &alloc).unwrap();
-        mdxjs::mdx_plugin_recma_jsx_rewrite(&mut program, &opts, None, &explicit_jsxs, &alloc).unwrap();
+        mdxjs::mdx_plugin_recma_jsx_rewrite(&mut program, &opts, None, &explicit_jsxs, &alloc)
+            .unwrap();
     });
 }

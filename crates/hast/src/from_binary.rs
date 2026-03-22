@@ -2,12 +2,14 @@
 
 use mdast_arena::{Arena, ArenaView, BufferError};
 
-use crate::codec::{decode_element_tag, decode_element_prop_count, decode_element_prop, decode_text_data};
+use crate::codec::{
+    decode_element_prop, decode_element_prop_count, decode_element_tag, decode_text_data,
+};
 use crate::node_types::*;
 
 const VOID_ELEMENTS: &[&str] = &[
-    "area", "base", "br", "col", "embed", "hr", "img", "input",
-    "link", "meta", "param", "source", "track", "wbr",
+    "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source",
+    "track", "wbr",
 ];
 
 fn is_void(tag: &str) -> bool {
@@ -21,8 +23,7 @@ fn escape_text(s: &str) -> String {
 }
 
 fn escape_attr(s: &str) -> String {
-    s.replace('&', "&amp;")
-        .replace('"', "&quot;")
+    s.replace('&', "&amp;").replace('"', "&quot;")
 }
 
 /// Convert a HAST binary buffer to an HTML string.

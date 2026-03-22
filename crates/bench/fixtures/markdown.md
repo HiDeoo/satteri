@@ -15,27 +15,27 @@ CommonMark compliant markdown parser in Rust with ASTs and extensions.
 
 ## Feature highlights
 
-* [x] **[compliant][commonmark]**
-  (100% to CommonMark)
-* [x] **[extensions][]**
-  (100% GFM, 100% MDX, frontmatter, math)
-* [x] **[safe][security]**
-  (100% safe Rust, also 100% safe HTML by default)
-* [x] **[robust][test]**
-  (2300+ tests, 100% coverage, fuzz testing)
-* [x] **[ast][mdast]**
-  (mdast)
+- [x] **[compliant][commonmark]**
+      (100% to CommonMark)
+- [x] **[extensions][]**
+      (100% GFM, 100% MDX, frontmatter, math)
+- [x] **[safe][security]**
+      (100% safe Rust, also 100% safe HTML by default)
+- [x] **[robust][test]**
+      (2300+ tests, 100% coverage, fuzz testing)
+- [x] **[ast][mdast]**
+      (mdast)
 
 ## Links
 
-* [GitHub: `wooorm/markdown-rs`][repo]
-* [`crates.io`: `markdown`][crate]
-* [`docs.rs`: `markdown`][docs]
+- [GitHub: `wooorm/markdown-rs`][repo]
+- [`crates.io`: `markdown`][crate]
+- [`docs.rs`: `markdown`][docs]
 
 ## When should I use this?
 
-* if you *just* want to turn markdown into HTML (with maybe a few extensions)
-* if you want to do *really complex things* with markdown
+- if you _just_ want to turn markdown into HTML (with maybe a few extensions)
+- if you want to do _really complex things_ with markdown
 
 ## What is this?
 
@@ -61,37 +61,37 @@ This Rust crate has a sibling project in JavaScript:
 [`micromark`][micromark]
 (and [`mdast-util-from-markdown`][mdast-util-from-markdown] for the AST).
 
-P.S. if you want to *compile* MDX,
+P.S. if you want to _compile_ MDX,
 use [`mdxjs-rs`][mdxjs-rs].
 
 ## Questions
 
-* to learn markdown,
+- to learn markdown,
   see this [cheatsheet and tutorial][cheat]
-* for the API,
+- for the API,
   see the [crate docs][docs]
-* for questions,
+- for questions,
   see [Discussions][]
-* to help,
+- to help,
   see [contribute][] or [sponsor][] below
 
 ## Contents
 
-* [Install](#install)
-* [Use](#use)
-* [API](#api)
-* [Extensions](#extensions)
-* [Project](#project)
-  * [Overview](#overview)
-  * [File structure](#file-structure)
-  * [Test](#test)
-  * [Version](#version)
-  * [Security](#security)
-  * [Contribute](#contribute)
-  * [Sponsor](#sponsor)
-  * [Thanks](#thanks)
-* [Related](#related)
-* [License](#license)
+- [Install](#install)
+- [Use](#use)
+- [API](#api)
+- [Extensions](#extensions)
+- [Project](#project)
+  - [Overview](#overview)
+  - [File structure](#file-structure)
+  - [Test](#test)
+  - [Version](#version)
+  - [Security](#security)
+  - [Contribute](#contribute)
+  - [Sponsor](#sponsor)
+  - [Thanks](#thanks)
+- [Related](#related)
+- [License](#license)
 
 ## Install
 
@@ -180,19 +180,19 @@ See the [crate docs][docs] for more info.
 These extensions are maintained in this project.
 They are not enabled by default but can be turned on with options.
 
-* GFM
-  * autolink literal
-  * footnote
-  * strikethrough
-  * table
-  * tagfilter
-  * task list item
-* MDX
-  * ESM
-  * expressions
-  * JSX
-* frontmatter
-* math
+- GFM
+  - autolink literal
+  - footnote
+  - strikethrough
+  - table
+  - tagfilter
+  - task list item
+- MDX
+  - ESM
+  - expressions
+  - JSX
+- frontmatter
+- math
 
 It is not a goal of this project to support lots of different extensions.
 It’s instead a goal to support very common and mostly standardized extensions.
@@ -218,31 +218,31 @@ The process to parse markdown looks like this:
 
 The files in `src/` are as follows:
 
-* `construct/*.rs`
+- `construct/*.rs`
   — CommonMark, GFM, and other extension constructs used in markdown
-* `util/*.rs`
+- `util/*.rs`
   — helpers often needed when parsing markdown
-* `event.rs`
+- `event.rs`
   — things with meaning happening somewhere
-* `lib.rs`
+- `lib.rs`
   — public API
-* `mdast.rs`
+- `mdast.rs`
   — syntax tree
-* `parser.rs`
+- `parser.rs`
   — turn a string of markdown into events
-* `resolve.rs`
+- `resolve.rs`
   — steps to process events
-* `state.rs`
+- `state.rs`
   — steps of the state machine
-* `subtokenize.rs`
+- `subtokenize.rs`
   — handle content in other content
-* `to_html.rs`
+- `to_html.rs`
   — turns events into a string of HTML
-* `to_mdast.rs`
+- `to_mdast.rs`
   — turns events into a syntax tree
-* `tokenizer.rs`
+- `tokenizer.rs`
   — glue the states of the state machine together
-* `unist.rs`
+- `unist.rs`
   — point and position, used in mdast
 
 ### Test
@@ -256,31 +256,31 @@ Fuzz testing is used to check for things that might fall through coverage.
 
 The following bash scripts are useful when working on this project:
 
-* generate code (latest CM tests and Unicode info):
+- generate code (latest CM tests and Unicode info):
   ```sh
   cargo run --manifest-path generate/Cargo.toml
   ```
-* run examples:
+- run examples:
   ```sh
   RUST_BACKTRACE=1 RUST_LOG=trace cargo run --example lib --features log
   ```
-* format:
+- format:
   ```sh
   cargo fmt && cargo fix --all-features --all-targets --workspace
   ```
-* lint:
+- lint:
   ```sh
   cargo fmt --check && cargo clippy --all-features --all-targets --workspace
   ```
-* test:
+- test:
   ```sh
   RUST_BACKTRACE=1 cargo test --all-features --workspace
   ```
-* docs:
+- docs:
   ```sh
   cargo doc --document-private-items --examples --workspace
   ```
-* fuzz:
+- fuzz:
   ```sh
   cargo install cargo-fuzz
   cargo install honggfuzz
@@ -353,9 +353,9 @@ project.
 
 Support this effort and give back by sponsoring:
 
-* [GitHub Sponsors](https://github.com/sponsors/wooorm)
+- [GitHub Sponsors](https://github.com/sponsors/wooorm)
   (personal; monthly or one-time)
-* [OpenCollective](https://opencollective.com/unified) or
+- [OpenCollective](https://opencollective.com/unified) or
   [GitHub Sponsors](https://github.com/sponsors/unifiedjs)
   (unified; monthly or one-time)
 
@@ -363,81 +363,50 @@ Support this effort and give back by sponsoring:
 
 Special thanks go out to:
 
-* [Vercel][] for funding the initial development
-* [**@Murderlon**][murderlon] for the design of the logo
-* [**@johannhof**][johannhof] for the crate name
+- [Vercel][] for funding the initial development
+- [**@Murderlon**][murderlon] for the design of the logo
+- [**@johannhof**][johannhof] for the crate name
 
 ## Related
 
-* [`micromark`][micromark]
+- [`micromark`][micromark]
   — same as `markdown-rs` but in JavaScript
-* [`mdxjs-rs`][mdxjs-rs]
-  — wraps `markdown-rs` to *compile* MDX to JavaScript
+- [`mdxjs-rs`][mdxjs-rs]
+  — wraps `markdown-rs` to _compile_ MDX to JavaScript
 
 ## License
 
 [MIT][license] © [Titus Wormer][author]
 
 [badge-build-image]: https://github.com/wooorm/markdown-rs/workflows/main/badge.svg
-
 [badge-build-url]: https://github.com/wooorm/markdown-rs/actions
-
 [badge-coverage-image]: https://img.shields.io/codecov/c/github/wooorm/markdown-rs.svg
-
 [badge-coverage-url]: https://codecov.io/github/wooorm/markdown-rs
-
 [docs]: https://docs.rs/markdown/latest/markdown/
-
 [crate]: https://crates.io/crates/markdown
-
 [repo]: https://github.com/wooorm/markdown-rs
-
 [discussions]: https://github.com/wooorm/markdown-rs/discussions
-
 [commonmark]: https://spec.commonmark.org
-
 [cheat]: https://commonmark.org/help/
-
 [rust]: https://www.rust-lang.org
-
 [xss]: https://en.wikipedia.org/wiki/Cross-site_scripting
-
 [improper]: https://github.com/ChALkeR/notes/blob/master/Improper-markup-sanitization.md
-
 [chalker]: https://github.com/ChALkeR
-
 [license]: license
-
 [author]: https://wooorm.com
-
 [mdast]: https://github.com/syntax-tree/mdast
-
 [micromark]: https://github.com/micromark/micromark
-
 [mdxjs-rs]: https://github.com/wooorm/mdxjs-rs
-
 [mdast-util-from-markdown]: https://github.com/syntax-tree/mdast-util-from-markdown
-
 [vercel]: https://vercel.com
-
 [murderlon]: https://github.com/murderlon
-
 [johannhof]: https://github.com/johannhof
-
 [contribute]: #contribute
-
 [sponsor]: #sponsor
-
 [extensions]: #extensions
-
 [security]: #security
-
 [test]: #test
-
 [contributing]: .github/contribute.md
-
 [support]: .github/support.md
-
 [coc]: .github/code-of-conduct.md
-
 [whatwg-html-image]: https://html.spec.whatwg.org/multipage/images.html#images-processing-model

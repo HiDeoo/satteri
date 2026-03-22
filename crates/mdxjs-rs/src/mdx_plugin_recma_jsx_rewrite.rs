@@ -24,7 +24,7 @@ use oxc_ast::ast::{
     ThrowStatement, UnaryExpression, UnaryOperator, VariableDeclaration, VariableDeclarationKind,
     VariableDeclarator,
 };
-use oxc_span::{Atom, Span, SPAN};
+use oxc_span::{Atom, SPAN, Span};
 use oxc_syntax::node::NodeId;
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::cell::Cell;
@@ -83,22 +83,21 @@ pub fn mdx_plugin_recma_jsx_rewrite<'a>(
     let mut top_level_imports: FxHashSet<String> = FxHashSet::default();
     for stmt in &program.program.body {
         if let Statement::ImportDeclaration(import) = stmt
-            && let Some(specifiers) = &import.specifiers {
-                for spec in specifiers {
-                    let local_name = match spec {
-                        ImportDeclarationSpecifier::ImportSpecifier(s) => {
-                            s.local.name.to_string()
-                        }
-                        ImportDeclarationSpecifier::ImportDefaultSpecifier(s) => {
-                            s.local.name.to_string()
-                        }
-                        ImportDeclarationSpecifier::ImportNamespaceSpecifier(s) => {
-                            s.local.name.to_string()
-                        }
-                    };
-                    top_level_imports.insert(local_name);
-                }
+            && let Some(specifiers) = &import.specifiers
+        {
+            for spec in specifiers {
+                let local_name = match spec {
+                    ImportDeclarationSpecifier::ImportSpecifier(s) => s.local.name.to_string(),
+                    ImportDeclarationSpecifier::ImportDefaultSpecifier(s) => {
+                        s.local.name.to_string()
+                    }
+                    ImportDeclarationSpecifier::ImportNamespaceSpecifier(s) => {
+                        s.local.name.to_string()
+                    }
+                };
+                top_level_imports.insert(local_name);
             }
+        }
     }
 
     // Process the program body. We walk through each top-level statement.
@@ -167,8 +166,7 @@ pub fn mdx_plugin_recma_jsx_rewrite<'a>(
         defaults.sort_by(|a, b| a.0.cmp(&b.0));
 
         for (name, span) in &scope.components {
-            if !scope.defined.contains(name.as_str())
-                && !top_level_imports.contains(name.as_str())
+            if !scope.defined.contains(name.as_str()) && !top_level_imports.contains(name.as_str())
             {
                 dynamic_components.push((name.clone(), *span));
             }

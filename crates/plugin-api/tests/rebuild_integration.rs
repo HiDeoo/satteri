@@ -1,8 +1,8 @@
 //! Integration tests verifying that PluginRunner actually applies arena rebuild
 //! when structural commands are issued.
 
+use mdast_arena::{codec::*, Arena, ArenaBuilder, NodeType, StringRef};
 use tryckeri_plugin_api::*;
-use mdast_arena::{Arena, ArenaBuilder, NodeType, StringRef, codec::*};
 
 fn build_test_arena() -> Arena {
     let source = "# Hello\n\nWorld".to_string();
@@ -41,7 +41,9 @@ fn build_test_arena() -> Arena {
 struct RemoveAllText;
 
 impl Plugin for RemoveAllText {
-    fn meta(&self) -> PluginMeta { PluginMeta::new("remove-all-text") }
+    fn meta(&self) -> PluginMeta {
+        PluginMeta::new("remove-all-text")
+    }
 
     fn visit_text(&mut self, node: &Text, _ctx: &mut PluginContext) -> VisitResult {
         // Using the visitor return value path
@@ -88,7 +90,9 @@ fn remove_text_via_visit_result_removes_from_arena() {
 struct ReplaceHeadingWithParagraph;
 
 impl Plugin for ReplaceHeadingWithParagraph {
-    fn meta(&self) -> PluginMeta { PluginMeta::new("replace-heading-with-para") }
+    fn meta(&self) -> PluginMeta {
+        PluginMeta::new("replace-heading-with-para")
+    }
 
     fn visit_heading(&mut self, _node: &Heading, _ctx: &mut PluginContext) -> VisitResult {
         VisitResult::Replace(NodeBuilder::paragraph().build())
@@ -107,9 +111,8 @@ fn replace_heading_via_visit_result_updates_arena() {
     assert!(result.has_mutations);
 
     // No Heading should remain in the rebuilt arena
-    let has_heading = (0..result.arena.len() as u32).any(|id| {
-        result.arena.get_node(id).node_type == NodeType::Heading as u8
-    });
+    let has_heading = (0..result.arena.len() as u32)
+        .any(|id| result.arena.get_node(id).node_type == NodeType::Heading as u8);
     assert!(!has_heading, "no headings should remain after replacement");
 
     // Root should still have children
@@ -123,7 +126,9 @@ fn replace_heading_via_visit_result_updates_arena() {
 struct ReadOnlyPlugin;
 
 impl Plugin for ReadOnlyPlugin {
-    fn meta(&self) -> PluginMeta { PluginMeta::new("read-only") }
+    fn meta(&self) -> PluginMeta {
+        PluginMeta::new("read-only")
+    }
 
     fn visit_heading(&mut self, _node: &Heading, _ctx: &mut PluginContext) -> VisitResult {
         VisitResult::NoChange
@@ -147,7 +152,10 @@ fn read_only_plugin_does_not_rebuild_arena() {
     let result = runner.run(arena, &mut data_map, &mut typed_data);
 
     // Skip optimization: no rebuild, no mutations
-    assert!(!result.has_mutations, "read-only plugin should not cause mutations");
+    assert!(
+        !result.has_mutations,
+        "read-only plugin should not cause mutations"
+    );
     assert_eq!(result.arena.len(), original_count, "node count unchanged");
     assert!(result.commands.is_empty(), "no commands recorded");
 }
@@ -157,7 +165,13 @@ fn read_only_plugin_does_not_rebuild_arena() {
 /// AddHeadingIds writes to the DataMap but issues no structural commands.
 fn slugify(text: &str) -> String {
     text.chars()
-        .map(|c| if c.is_alphanumeric() { c.to_lowercase().next().unwrap() } else { '-' })
+        .map(|c| {
+            if c.is_alphanumeric() {
+                c.to_lowercase().next().unwrap()
+            } else {
+                '-'
+            }
+        })
         .collect::<String>()
         .trim_matches('-')
         .to_string()
@@ -166,7 +180,9 @@ fn slugify(text: &str) -> String {
 struct AddHeadingIds;
 
 impl Plugin for AddHeadingIds {
-    fn meta(&self) -> PluginMeta { PluginMeta::new("add-heading-ids") }
+    fn meta(&self) -> PluginMeta {
+        PluginMeta::new("add-heading-ids")
+    }
 
     fn visit_heading(&mut self, node: &Heading, ctx: &mut PluginContext) -> VisitResult {
         let text = ctx.extract_text(node.id());
@@ -187,9 +203,15 @@ fn data_only_plugin_does_not_trigger_rebuild() {
     let result = runner.run(arena, &mut data_map, &mut typed_data);
 
     // Data written to DataMap — but no structural arena commands
-    assert!(!result.has_mutations, "data-only plugin should not set has_mutations");
+    assert!(
+        !result.has_mutations,
+        "data-only plugin should not set has_mutations"
+    );
     assert_eq!(result.arena.len(), original_count, "arena is unchanged");
-    assert!(result.commands.is_empty(), "no commands from data-only plugin");
+    assert!(
+        result.commands.is_empty(),
+        "no commands from data-only plugin"
+    );
 
     // The data should be in the data_map
     assert!(data_map.has(1, "id"), "id should be set by AddHeadingIds");
@@ -202,7 +224,9 @@ fn data_only_plugin_does_not_trigger_rebuild() {
 struct RemoveHeadingExplicit;
 
 impl Plugin for RemoveHeadingExplicit {
-    fn meta(&self) -> PluginMeta { PluginMeta::new("remove-heading-explicit") }
+    fn meta(&self) -> PluginMeta {
+        PluginMeta::new("remove-heading-explicit")
+    }
 
     fn visit_heading(&mut self, node: &Heading, ctx: &mut PluginContext) -> VisitResult {
         ctx.remove_node(node.id());
@@ -222,9 +246,8 @@ fn explicit_remove_command_rebuilds_arena() {
     assert!(result.has_mutations);
 
     // Heading (and its Text child) should be gone
-    let has_heading = (0..result.arena.len() as u32).any(|id| {
-        result.arena.get_node(id).node_type == NodeType::Heading as u8
-    });
+    let has_heading = (0..result.arena.len() as u32)
+        .any(|id| result.arena.get_node(id).node_type == NodeType::Heading as u8);
     assert!(!has_heading, "heading should be removed from arena");
 
     // Should have 3 nodes: Root + Paragraph + Text(World)
@@ -234,10 +257,14 @@ fn explicit_remove_command_rebuilds_arena() {
 // ── Test 6: Two plugins sequentially — second sees rebuilt arena ─────────────
 
 /// Plugin 1 removes the heading. Plugin 2 counts nodes.
-struct CounterPlugin { count: usize }
+struct CounterPlugin {
+    count: usize,
+}
 
 impl Plugin for CounterPlugin {
-    fn meta(&self) -> PluginMeta { PluginMeta::new("counter") }
+    fn meta(&self) -> PluginMeta {
+        PluginMeta::new("counter")
+    }
 
     fn before(&mut self, arena: &Arena, _ctx: &mut PluginContext) {
         self.count = arena.len();
@@ -250,10 +277,7 @@ fn second_plugin_sees_rebuilt_arena() {
     // Original: 5 nodes. After removing heading + text = 3 nodes.
     let counter = CounterPlugin { count: 0 };
 
-    let mut runner = PluginRunner::new(vec![
-        Box::new(RemoveHeadingExplicit),
-        Box::new(counter),
-    ]);
+    let mut runner = PluginRunner::new(vec![Box::new(RemoveHeadingExplicit), Box::new(counter)]);
     let mut data_map = DataMap::new();
     let mut typed_data = TypedDataMap::new();
     runner.run(arena, &mut data_map, &mut typed_data);

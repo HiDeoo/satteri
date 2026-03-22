@@ -19,7 +19,11 @@ pub enum Command {
     /// Append a child to a node
     AppendChild { node_id: u32, child_node: NewNode },
     /// Set a scalar field on a node (used for simple property changes)
-    SetData { node_id: u32, key: String, value: crate::data::DataValue },
+    SetData {
+        node_id: u32,
+        key: String,
+        value: crate::data::DataValue,
+    },
 }
 
 /// A new node to be inserted into the arena.
@@ -93,8 +97,7 @@ impl NodeBuilder {
 impl NodeBuilder {
     pub fn heading(depth: u8) -> Self {
         use mdast_arena::codec::encode_heading_data;
-        Self::new(NodeType::Heading)
-            .data_bytes(encode_heading_data(depth))
+        Self::new(NodeType::Heading).data_bytes(encode_heading_data(depth))
     }
 
     pub fn paragraph() -> Self {
@@ -102,10 +105,12 @@ impl NodeBuilder {
     }
 
     pub fn text(value_offset: u32, value_len: u32) -> Self {
-        use mdast_arena::{StringRef, codec::encode_string_ref_data};
-        let string_ref = StringRef { offset: value_offset, len: value_len };
-        Self::new(NodeType::Text)
-            .data_bytes(encode_string_ref_data(string_ref))
+        use mdast_arena::{codec::encode_string_ref_data, StringRef};
+        let string_ref = StringRef {
+            offset: value_offset,
+            len: value_len,
+        };
+        Self::new(NodeType::Text).data_bytes(encode_string_ref_data(string_ref))
     }
 
     /// Create a text node with a raw string (for when we don't have source offsets)

@@ -1,10 +1,10 @@
 //! Convert an MDAST binary buffer to a HAST binary buffer.
 
 use mdast_arena::{
-    Arena, ArenaBuilder, ArenaView, BufferError, NodeType, StringRef,
-    decode_code_data, decode_heading_data, decode_image_data, decode_link_data,
-    decode_list_data, decode_list_item_data, decode_math_data, decode_string_ref_data,
-    decode_definition_data, decode_reference_data,
+    decode_code_data, decode_definition_data, decode_heading_data, decode_image_data,
+    decode_link_data, decode_list_data, decode_list_item_data, decode_math_data,
+    decode_reference_data, decode_string_ref_data, Arena, ArenaBuilder, ArenaView, BufferError,
+    NodeType, StringRef,
 };
 
 use crate::codec::encode_text_data;
@@ -50,7 +50,11 @@ fn collect_definitions(view: &ArenaView) -> Vec<Definition> {
                 } else {
                     None
                 };
-                defs.push(Definition { identifier, url, title });
+                defs.push(Definition {
+                    identifier,
+                    url,
+                    title,
+                });
             }
         }
     }
@@ -77,7 +81,11 @@ fn build_props(builder: &mut ArenaBuilder, specs: &[(&str, u8, StringRef)]) -> V
         .iter()
         .map(|&(name, kind, value_ref)| {
             let name_ref = builder.alloc_string(name);
-            PropData { name_ref, value_kind: kind, value_ref }
+            PropData {
+                name_ref,
+                value_kind: kind,
+                value_ref,
+            }
         })
         .collect()
 }
@@ -132,14 +140,18 @@ fn add_void_element_with_props(builder: &mut ArenaBuilder, tag: &str, props: &[P
 fn add_text_node(builder: &mut ArenaBuilder, text: &str) {
     let text_ref = builder.alloc_string(text);
     let leaf_id = builder.add_leaf_raw(HAST_TEXT);
-    builder.arena_mut().set_type_data(leaf_id, &encode_text_data(text_ref));
+    builder
+        .arena_mut()
+        .set_type_data(leaf_id, &encode_text_data(text_ref));
 }
 
 /// Add a HAST_RAW leaf node with the given string.
 fn add_raw_node(builder: &mut ArenaBuilder, html: &str) {
     let html_ref = builder.alloc_string(html);
     let leaf_id = builder.add_leaf_raw(HAST_RAW);
-    builder.arena_mut().set_type_data(leaf_id, &encode_text_data(html_ref));
+    builder
+        .arena_mut()
+        .set_type_data(leaf_id, &encode_text_data(html_ref));
 }
 
 // ---------------------------------------------------------------------------
@@ -218,17 +230,23 @@ fn convert_node(node_id: u32, view: &ArenaView, builder: &mut ArenaBuilder, defs
                     // Task list item — add disabled checkbox
                     let type_ref = builder.alloc_string("checkbox");
                     if item_data.checked == 1 {
-                        let props = build_props(builder, &[
-                            ("type", PROP_STRING, type_ref),
-                            ("disabled", PROP_BOOL_TRUE, StringRef::empty()),
-                            ("checked", PROP_BOOL_TRUE, StringRef::empty()),
-                        ]);
+                        let props = build_props(
+                            builder,
+                            &[
+                                ("type", PROP_STRING, type_ref),
+                                ("disabled", PROP_BOOL_TRUE, StringRef::empty()),
+                                ("checked", PROP_BOOL_TRUE, StringRef::empty()),
+                            ],
+                        );
                         add_void_element_with_props(builder, "input", &props);
                     } else {
-                        let props = build_props(builder, &[
-                            ("type", PROP_STRING, type_ref),
-                            ("disabled", PROP_BOOL_TRUE, StringRef::empty()),
-                        ]);
+                        let props = build_props(
+                            builder,
+                            &[
+                                ("type", PROP_STRING, type_ref),
+                                ("disabled", PROP_BOOL_TRUE, StringRef::empty()),
+                            ],
+                        );
                         add_void_element_with_props(builder, "input", &props);
                     }
                 }
@@ -304,10 +322,13 @@ fn convert_node(node_id: u32, view: &ArenaView, builder: &mut ArenaBuilder, defs
             if link_data.title.len > 0 {
                 let title = view.get_str(link_data.title).to_string();
                 let title_ref = builder.alloc_string(&title);
-                let props = build_props(builder, &[
-                    ("href", PROP_STRING, url_ref),
-                    ("title", PROP_STRING, title_ref),
-                ]);
+                let props = build_props(
+                    builder,
+                    &[
+                        ("href", PROP_STRING, url_ref),
+                        ("title", PROP_STRING, title_ref),
+                    ],
+                );
                 open_element_with_props(builder, "a", &props);
             } else {
                 let props = build_props(builder, &[("href", PROP_STRING, url_ref)]);
@@ -327,17 +348,20 @@ fn convert_node(node_id: u32, view: &ArenaView, builder: &mut ArenaBuilder, defs
             if img_data.title.len > 0 {
                 let title = view.get_str(img_data.title).to_string();
                 let title_ref = builder.alloc_string(&title);
-                let props = build_props(builder, &[
-                    ("src", PROP_STRING, url_ref),
-                    ("alt", PROP_STRING, alt_ref),
-                    ("title", PROP_STRING, title_ref),
-                ]);
+                let props = build_props(
+                    builder,
+                    &[
+                        ("src", PROP_STRING, url_ref),
+                        ("alt", PROP_STRING, alt_ref),
+                        ("title", PROP_STRING, title_ref),
+                    ],
+                );
                 add_void_element_with_props(builder, "img", &props);
             } else {
-                let props = build_props(builder, &[
-                    ("src", PROP_STRING, url_ref),
-                    ("alt", PROP_STRING, alt_ref),
-                ]);
+                let props = build_props(
+                    builder,
+                    &[("src", PROP_STRING, url_ref), ("alt", PROP_STRING, alt_ref)],
+                );
                 add_void_element_with_props(builder, "img", &props);
             }
         }
@@ -408,10 +432,13 @@ fn convert_node(node_id: u32, view: &ArenaView, builder: &mut ArenaBuilder, defs
                     let url_ref = builder.alloc_string(&url);
                     if let Some(ref title) = def.title {
                         let title_ref = builder.alloc_string(title);
-                        let props = build_props(builder, &[
-                            ("href", PROP_STRING, url_ref),
-                            ("title", PROP_STRING, title_ref),
-                        ]);
+                        let props = build_props(
+                            builder,
+                            &[
+                                ("href", PROP_STRING, url_ref),
+                                ("title", PROP_STRING, title_ref),
+                            ],
+                        );
                         open_element_with_props(builder, "a", &props);
                     } else {
                         let props = build_props(builder, &[("href", PROP_STRING, url_ref)]);
@@ -438,17 +465,20 @@ fn convert_node(node_id: u32, view: &ArenaView, builder: &mut ArenaBuilder, defs
                     let alt_ref = builder.alloc_string(&alt);
                     if let Some(ref title) = def.title {
                         let title_ref = builder.alloc_string(title);
-                        let props = build_props(builder, &[
-                            ("src", PROP_STRING, url_ref),
-                            ("alt", PROP_STRING, alt_ref),
-                            ("title", PROP_STRING, title_ref),
-                        ]);
+                        let props = build_props(
+                            builder,
+                            &[
+                                ("src", PROP_STRING, url_ref),
+                                ("alt", PROP_STRING, alt_ref),
+                                ("title", PROP_STRING, title_ref),
+                            ],
+                        );
                         add_void_element_with_props(builder, "img", &props);
                     } else {
-                        let props = build_props(builder, &[
-                            ("src", PROP_STRING, url_ref),
-                            ("alt", PROP_STRING, alt_ref),
-                        ]);
+                        let props = build_props(
+                            builder,
+                            &[("src", PROP_STRING, url_ref), ("alt", PROP_STRING, alt_ref)],
+                        );
                         add_void_element_with_props(builder, "img", &props);
                     }
                 }
@@ -466,7 +496,12 @@ fn convert_node(node_id: u32, view: &ArenaView, builder: &mut ArenaBuilder, defs
     }
 }
 
-fn convert_children(node_id: u32, view: &ArenaView, builder: &mut ArenaBuilder, defs: &[Definition]) {
+fn convert_children(
+    node_id: u32,
+    view: &ArenaView,
+    builder: &mut ArenaBuilder,
+    defs: &[Definition],
+) {
     let children = view.get_children(node_id).to_vec();
     for child_id in children {
         convert_node(child_id, view, builder, defs);
