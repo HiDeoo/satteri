@@ -1,6 +1,5 @@
 //! Integration tests: new parser → HAST → HTML, and new parser → MDX compile.
 
-use mdast_arena::ReadArena;
 use parser::{parse, ParseOptions};
 
 #[test]

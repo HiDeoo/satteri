@@ -1,5 +1,5 @@
 import { test, expect } from "vitest";
-import { DataMap } from "../src/data-map.ts";
+import { DataMap } from "../src/data-map.js";
 
 test("get returns null for unknown keys", () => {
   const dm = new DataMap();

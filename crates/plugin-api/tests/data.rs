@@ -106,7 +106,7 @@ fn data_map_len_and_is_empty() {
 #[test]
 fn typed_data_map_remove() {
     #[derive(Debug)]
-    struct Tag(u32);
+    struct Tag(#[allow(dead_code)] u32);
 
     let mut map = TypedDataMap::new();
     map.set(5u32, Tag(99));

@@ -17,7 +17,6 @@ parser = { path = "../parser" }
 
 [dev-dependencies]
 divan = "0.1"
-mdast-arena = { path = "../mdast-arena" }
 tryckeri-hast = { path = "../hast" }
 mdxjs = { path = "../mdxjs-rs" }
 oxc_allocator = { workspace = true }

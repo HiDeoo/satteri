@@ -1,22 +1,11 @@
 //! Bridge between `markdown-rs` and OXC.
 
-use mdast_arena::mdx_types::{self as message, Location, MdxExpressionKind, MdxSignal, Stop};
+use mdast_arena::mdx_types::{self as message, Location, MdxExpressionKind, Stop};
 use oxc_allocator::Allocator;
 use oxc_ast::ast::{Expression, ObjectPropertyKind, Program, Statement};
 use oxc_codegen::Codegen;
 use oxc_parser::{ParseOptions, Parser};
 use oxc_span::{GetSpan, SPAN, SourceType, Span};
-
-/// Lex ESM in MDX with OXC.
-pub fn parse_esm(value: &str) -> MdxSignal {
-    let allocator = Allocator::default();
-    let result = parse_esm_core(value, &allocator);
-
-    match result {
-        Err((span, message)) => oxc_error_to_signal(span, &message, value.len()),
-        Ok(_) => MdxSignal::Ok,
-    }
-}
 
 /// Parse ESM in MDX with OXC.
 pub fn parse_esm_to_tree<'a>(
@@ -185,17 +174,6 @@ fn parse_expression_core<'a>(
     Ok(Some(expr))
 }
 
-/// Lex expressions in MDX with OXC.
-pub fn parse_expression(value: &str, kind: &MdxExpressionKind) -> MdxSignal {
-    let allocator = Allocator::default();
-    let result = parse_expression_core(value, kind, &allocator);
-
-    match result {
-        Err((span, message)) => oxc_error_to_signal(span, &message, value.len()),
-        Ok(_) => MdxSignal::Ok,
-    }
-}
-
 /// Parse expression in MDX with OXC.
 pub fn parse_expression_to_tree<'a>(
     value: &str,
@@ -221,19 +199,6 @@ pub fn serialize(program: &Program<'_>) -> String {
     });
     let output = codegen.build(program);
     output.code
-}
-
-/// Turn an OXC error into an `MdxSignal`.
-fn oxc_error_to_signal(span: Span, reason: &str, value_len: usize) -> MdxSignal {
-    let error_end = span.end as usize;
-    let source = Box::new("mdxjs-rs".into());
-    let rule_id = Box::new("oxc".into());
-
-    if error_end >= value_len {
-        MdxSignal::Eof(reason.into(), source, rule_id)
-    } else {
-        MdxSignal::Error(reason.into(), span.start as usize, source, rule_id)
-    }
 }
 
 /// Turn an OXC error into a markdown message, resolving the position via stops.

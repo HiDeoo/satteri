@@ -15,8 +15,8 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "erasableSyntaxOnly": true,
-    "skipLibCheck": true,
+    "skipLibCheck": true
   },
   "include": ["packages/**/*"],
-  "exclude": ["node_modules", "dist", "vendor", "target"],
+  "exclude": ["node_modules", "dist", "vendor", "target"]
 }

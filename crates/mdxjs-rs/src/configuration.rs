@@ -18,6 +18,7 @@ use crate::mdx_plugin_recma_document::JsxRuntime;
 ///
 // To do: link all docs when `markdown-rs` is stable.
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[allow(clippy::struct_excessive_bools)]
 #[cfg_attr(feature = "serializable", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serializable", serde(rename_all = "camelCase", default))]
 pub struct MdxConstructs {
@@ -97,6 +98,7 @@ impl MdxConstructs {
     ///
     /// For more information, see the GFM specification:
     /// <https://github.github.com/gfm/>.
+    #[must_use]
     pub fn gfm() -> Self {
         Self {
             gfm_autolink_literal: true,
@@ -148,6 +150,7 @@ impl MdxParseOptions {
     ///
     /// For more information, see the GFM specification:
     /// <https://github.github.com/gfm/>
+    #[must_use]
     pub fn gfm() -> Self {
         Self {
             constructs: MdxConstructs::gfm(),
@@ -267,6 +270,7 @@ impl Options {
     ///
     /// For more information, see the GFM specification:
     /// <https://github.github.com/gfm/>
+    #[must_use]
     pub fn gfm() -> Self {
         Self {
             parse: MdxParseOptions::gfm(),

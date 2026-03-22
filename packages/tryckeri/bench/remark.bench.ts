@@ -55,7 +55,7 @@ function remarkHeadingIds() {
         .replace(/[^\w\s-]/g, "")
         .replace(/[\s_-]+/g, "-")
         .replace(/^-+|-+$/g, "");
-      node.data = { ...node.data, id, hProperties: { id } };
+      (node.data as Record<string, unknown>) = { ...node.data, id, hProperties: { id } };
     });
   };
 }

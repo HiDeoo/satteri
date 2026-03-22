@@ -1,8 +1,8 @@
 import { test, expect } from "vitest";
-import { ArenaReader } from "../src/arena-reader.ts";
-import { DataMap } from "../src/data-map.ts";
-import { materializeNode, materializeTree } from "../src/materializer.ts";
-import { buildHelloWorldBuffer } from "./fixtures.ts";
+import { ArenaReader } from "../src/arena-reader.js";
+import { DataMap } from "../src/data-map.js";
+import { materializeTree } from "../src/materializer.js";
+import { buildHelloWorldBuffer } from "./fixtures.js";
 
 function setup() {
   const buf = buildHelloWorldBuffer();
@@ -30,22 +30,22 @@ test("accessing root.children returns 2 children (heading, paragraph)", () => {
   const root = materializeTree(reader, dataMap);
   const children = root.children!;
   expect(children.length).toBe(2);
-  expect(children[0].type).toBe("heading");
-  expect(children[1].type).toBe("paragraph");
+  expect(children[0]!.type).toBe("heading");
+  expect(children[1]!.type).toBe("paragraph");
 });
 
 test("heading has depth === 1", () => {
   const { reader, dataMap } = setup();
   const root = materializeTree(reader, dataMap);
-  const heading = root.children![0];
+  const heading = root.children![0]!;
   expect(heading.depth).toBe(1);
 });
 
 test('text child of heading has value === "Hello"', () => {
   const { reader, dataMap } = setup();
   const root = materializeTree(reader, dataMap);
-  const heading = root.children![0];
-  const textNode = heading.children![0];
+  const heading = root.children![0]!;
+  const textNode = heading.children![0]!;
   expect(textNode.type).toBe("text");
   expect(textNode.value).toBe("Hello");
 });
@@ -53,8 +53,8 @@ test('text child of heading has value === "Hello"', () => {
 test('text child of paragraph has value === "World"', () => {
   const { reader, dataMap } = setup();
   const root = materializeTree(reader, dataMap);
-  const para = root.children![1];
-  const textNode = para.children![0];
+  const para = root.children![1]!;
+  const textNode = para.children![0]!;
   expect(textNode.type).toBe("text");
   expect(textNode.value).toBe("World");
 });

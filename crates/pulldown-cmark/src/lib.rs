@@ -73,10 +73,6 @@
     clippy::std_instead_of_alloc,
     clippy::std_instead_of_core
 )]
-// When compiled for the rustc compiler itself we want to make sure that this is
-// an unstable crate.
-#![cfg_attr(rustbuild, feature(staged_api, rustc_private))]
-#![cfg_attr(rustbuild, unstable(feature = "rustc_private", issue = "27812"))]
 // Forbid unsafe code unless the SIMD feature is enabled.
 #![cfg_attr(not(feature = "simd"), forbid(unsafe_code))]
 #![warn(missing_debug_implementations)]
@@ -88,8 +84,8 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
-#[cfg(all(not(feature = "std"), not(feature = "hashbrown")))]
-compile_error!("\"hashbrown\" feature should be enabled in \"no_std\" environment.");
+#[cfg(not(feature = "std"))]
+compile_error!("This crate requires the \"std\" feature.");
 
 use alloc::vec::Vec;
 
@@ -716,7 +712,6 @@ impl<'a> Event<'a> {
 /// Table column text alignment.
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-
 pub enum Alignment {
     /// Default text alignment.
     None,

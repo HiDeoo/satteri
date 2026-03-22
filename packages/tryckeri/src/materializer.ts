@@ -1,6 +1,6 @@
-import type { MdastNode } from "./types.ts";
-import type { ArenaReader } from "./arena-reader.ts";
-import type { DataMap } from "./data-map.ts";
+import type { MdastNode } from "./types.js";
+import type { ArenaReader } from "./arena-reader.js";
+import type { DataMap } from "./data-map.js";
 
 export const TYPE_NAMES: Record<number, string> = {
   0: "root",

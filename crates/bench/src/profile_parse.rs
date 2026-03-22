@@ -2,7 +2,6 @@
 /// gets enough samples to show a meaningful call graph.
 ///
 /// Run via: cargo flamegraph -p tryckeri-bench --bin profile_parse
-
 fn main() {
     let src = include_str!("../fixtures/markdown.md");
     let opts = parser::ParseOptions::default();

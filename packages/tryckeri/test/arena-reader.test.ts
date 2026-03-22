@@ -1,6 +1,6 @@
 import { test, expect } from "vitest";
-import { ArenaReader, NodeType, NodeTypeName } from "../src/arena-reader.ts";
-import { buildHelloWorldBuffer, buildTestBuffer } from "./fixtures.ts";
+import { ArenaReader, NodeType, NodeTypeName } from "../src/arena-reader.js";
+import { buildHelloWorldBuffer, buildTestBuffer } from "./fixtures.js";
 
 test("NodeType constants", () => {
   expect(NodeType.Root).toBe(0);
@@ -88,7 +88,7 @@ test("ArenaReader.walk visits all nodes", () => {
     visited.push({ nodeId, nodeType });
   });
   expect(visited.length).toBe(5);
-  expect(visited[0].nodeId).toBe(0);
+  expect(visited[0]!.nodeId).toBe(0);
 });
 
 test("ArenaReader.walk skip children", () => {

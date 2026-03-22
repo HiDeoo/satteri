@@ -63,7 +63,7 @@ export function buildTestBuffer({
   // Nodes
   for (let i = 0; i < nodes.length; i++) {
     const base = nodesOffset + i * NODE_STRUCT_SIZE;
-    const n = nodes[i];
+    const n = nodes[i]!;
     view.setUint32(base + 0, n.id ?? i, true);
     view.setUint8(base + 4, n.type ?? 0);
     view.setUint32(base + 8, n.parent ?? 0, true);
@@ -81,7 +81,7 @@ export function buildTestBuffer({
 
   // Children
   for (let i = 0; i < children.length; i++) {
-    view.setUint32(childrenOffset + i * 4, children[i], true);
+    view.setUint32(childrenOffset + i * 4, children[i]!, true);
   }
 
   // Type data

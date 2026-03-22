@@ -1,7 +1,7 @@
-import { materializeNode, TYPE_NAMES } from "./materializer.ts";
-import type { MdastNode } from "./types.ts";
-import type { ArenaReader } from "./arena-reader.ts";
-import type { DataMap } from "./data-map.ts";
+import { materializeNode, TYPE_NAMES } from "./materializer.js";
+import type { MdastNode } from "./types.js";
+import type { ArenaReader } from "./arena-reader.js";
+import type { DataMap } from "./data-map.js";
 
 export const MutationType = {
   Replace: "replace",
@@ -26,8 +26,8 @@ export interface Mutation {
 
 export interface Diagnostic {
   message: string;
-  nodeId?: number;
-  position?: MdastNode["position"];
+  nodeId?: number | undefined;
+  position?: MdastNode["position"] | undefined;
   severity: "error" | "warning" | "info";
 }
 
@@ -226,7 +226,7 @@ export function visitArena(
 
       const childIds = reader.getChildIds(nodeId);
       for (let i = childIds.length - 1; i >= 0; i--) {
-        stack.push(childIds[i]);
+        stack.push(childIds[i]!);
       }
     }
   }

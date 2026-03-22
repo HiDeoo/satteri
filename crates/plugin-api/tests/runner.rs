@@ -148,10 +148,7 @@ fn two_plugins_run_in_sequence() {
 /// 4. before and after are called around the traversal
 #[test]
 fn before_and_after_hooks_called() {
-    struct HookTracker {
-        before_called: bool,
-        after_called: bool,
-    }
+    struct HookTracker;
 
     impl Plugin for HookTracker {
         fn meta(&self) -> PluginMeta {
@@ -168,10 +165,7 @@ fn before_and_after_hooks_called() {
     }
 
     let arena = build_test_arena();
-    let mut runner = PluginRunner::new(vec![Box::new(HookTracker {
-        before_called: false,
-        after_called: false,
-    })]);
+    let mut runner = PluginRunner::new(vec![Box::new(HookTracker)]);
     let mut data_map = DataMap::new();
     let mut typed_data = TypedDataMap::new();
     runner.run(arena, &mut data_map, &mut typed_data);

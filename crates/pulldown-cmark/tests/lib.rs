@@ -6,6 +6,7 @@ use pulldown_cmark::{Options, Parser};
 mod suite;
 
 #[inline(never)]
+#[allow(clippy::too_many_arguments)]
 pub fn test_markdown_html(
     input: &str,
     output: &str,

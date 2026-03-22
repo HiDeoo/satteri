@@ -1,10 +1,10 @@
-import { visitArena } from "./visitor.ts";
-import { DataMap } from "./data-map.ts";
-import { ArenaReader } from "./arena-reader.ts";
-import { materializeNode } from "./materializer.ts";
-import type { PluginDefinition } from "./plugin.ts";
-import type { MdastNode } from "./types.ts";
-import type { Mutation, Diagnostic } from "./visitor.ts";
+import { visitArena } from "./visitor.js";
+import { DataMap } from "./data-map.js";
+import { ArenaReader } from "./arena-reader.js";
+import { materializeNode } from "./materializer.js";
+import type { PluginDefinition } from "./plugin.js";
+import type { MdastNode } from "./types.js";
+import type { Mutation, Diagnostic } from "./visitor.js";
 
 export class ProcessorContext {
   readonly #diagnostics: Diagnostic[] = [];

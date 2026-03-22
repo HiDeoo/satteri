@@ -2,10 +2,7 @@
 //!
 //! *   [`compile()`][] — turn MDX into JavaScript
 #![deny(clippy::pedantic)]
-#![allow(clippy::implicit_hasher)]
-#![allow(clippy::must_use_candidate)]
 #![allow(clippy::too_many_lines)]
-#![allow(clippy::struct_excessive_bools)]
 #![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::cast_precision_loss)]
 
@@ -29,7 +26,7 @@ use crate::{
     mdx_plugin_recma_jsx_rewrite::{
         Options as RewriteOptions, mdx_plugin_recma_jsx_rewrite as recma_jsx_rewrite,
     },
-    oxc::{parse_esm, parse_expression, serialize},
+    oxc::serialize,
     oxc_util_build_jsx::{Options as BuildOptions, oxc_util_build_jsx},
 };
 use mdast_arena::mdx_types::{self as message, Location};
@@ -127,6 +124,7 @@ pub fn compile_arena_bytes(buf: &[u8], options: &Options) -> Result<String, mess
 /// ## Errors
 ///
 /// This function currently does not emit errors.
+#[allow(clippy::implicit_hasher)]
 pub fn hast_util_to_oxc_program<'a>(
     hast: &hast::Node,
     options: &Options,
@@ -171,6 +169,7 @@ pub fn mdx_plugin_recma_document<'a>(
 ///
 /// This functions errors for incorrect JSX runtime configuration *inside*
 /// MDX files and problems with OXC (broken JS syntax).
+#[allow(clippy::implicit_hasher)]
 pub fn mdx_plugin_recma_jsx_rewrite<'a>(
     program: &mut MdxProgram<'a>,
     options: &Options,

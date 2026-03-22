@@ -31,6 +31,8 @@ use crate::{
     LinkType,
 };
 
+type NewlineHandler<'a> = Option<&'a dyn Fn(&[u8]) -> usize>;
+
 // sorted for binary search
 const HTML_TAGS: [&str; 62] = [
     "address",
@@ -272,7 +274,7 @@ impl<'a> LineStart<'a> {
     pub(crate) fn scan_closing_container_extensions_fence(&mut self, length: u8) -> bool {
         let fence_length = scan_while_max(&self.bytes[self.ix..], |c| c == b':', u8::MAX as usize);
         if fence_length >= length as usize {
-            self.ix = self.ix + fence_length;
+            self.ix += fence_length;
             true
         } else {
             false
@@ -512,11 +514,11 @@ fn scan_attr_value_chars(data: &[u8]) -> usize {
 }
 
 pub(crate) fn scan_eol(bytes: &[u8]) -> Option<usize> {
-    match bytes {
-        &[] => Some(0),
-        &[b'\n', ..] => Some(1),
-        &[b'\r', b'\n', ..] => Some(2),
-        &[b'\r', ..] => Some(1),
+    match *bytes {
+        [] => Some(0),
+        [b'\n', ..] => Some(1),
+        [b'\r', b'\n', ..] => Some(2),
+        [b'\r', ..] => Some(1),
         _ => None,
     }
 }
@@ -645,7 +647,7 @@ pub(crate) fn scan_hrule(bytes: &[u8]) -> Result<usize, usize> {
 /// Returns number of bytes in prefix and level.
 pub(crate) fn scan_atx_heading(data: &[u8]) -> Option<HeadingLevel> {
     let level = scan_ch_repeat(data, b'#');
-    if data.get(level).copied().map_or(true, is_ascii_whitespace) {
+    if data.get(level).copied().is_none_or(is_ascii_whitespace) {
         HeadingLevel::try_from(level).ok()
     } else {
         None
@@ -752,7 +754,7 @@ pub(crate) fn scan_code_fence(data: &[u8]) -> Option<(usize, u8)> {
             let suffix = &data[i..];
             let next_line = i + scan_nextline(suffix);
             // FIXME: make sure this is correct
-            if suffix[..(next_line - i)].iter().any(|&b| b == b'`') {
+            if suffix[..(next_line - i)].contains(&b'`') {
                 return None;
             }
         }
@@ -768,11 +770,7 @@ pub(crate) fn scan_interrupting_container_extensions_fence(data: &[u8]) -> bool 
     let kind_length = scan_while(&data[kind_start..], |c| {
         is_ascii_alphanumeric(c) || c == b'_' || c == b'-' || c == b':' || c == b'.'
     });
-    if fence_length > 2 && kind_length > 0 {
-        true
-    } else {
-        false
-    }
+    fence_length > 2 && kind_length > 0
 }
 
 /// Scan metadata block, returning the number of delimiter bytes
@@ -1059,7 +1057,7 @@ fn scan_attribute_name(data: &[u8]) -> Option<usize> {
 fn scan_attribute(
     data: &[u8],
     mut ix: usize,
-    newline_handler: Option<&dyn Fn(&[u8]) -> usize>,
+    newline_handler: NewlineHandler<'_>,
     buffer: &mut Vec<u8>,
     buffer_ix: &mut usize,
 ) -> Option<usize> {
@@ -1090,7 +1088,7 @@ fn scan_attribute(
 fn scan_whitespace_with_newline_handler(
     data: &[u8],
     mut i: usize,
-    newline_handler: Option<&dyn Fn(&[u8]) -> usize>,
+    newline_handler: NewlineHandler<'_>,
     buffer: &mut Vec<u8>,
     buffer_ix: &mut usize,
 ) -> Option<usize> {
@@ -1127,7 +1125,7 @@ fn scan_whitespace_with_newline_handler(
 fn scan_whitespace_with_newline_handler_without_buffer(
     data: &[u8],
     mut i: usize,
-    newline_handler: Option<&dyn Fn(&[u8]) -> usize>,
+    newline_handler: NewlineHandler<'_>,
 ) -> Option<usize> {
     while i < data.len() {
         if !is_ascii_whitespace(data[i]) {
@@ -1150,7 +1148,7 @@ fn scan_whitespace_with_newline_handler_without_buffer(
 fn scan_attribute_value(
     data: &[u8],
     mut i: usize,
-    newline_handler: Option<&dyn Fn(&[u8]) -> usize>,
+    newline_handler: NewlineHandler<'_>,
     buffer: &mut Vec<u8>,
     buffer_ix: &mut usize,
 ) -> Option<usize> {
@@ -1298,7 +1296,7 @@ pub(crate) fn scan_html_type_7(data: &[u8]) -> Option<usize> {
 /// If no bytes were skipped, the buffer will be empty.
 pub(crate) fn scan_html_block_inner(
     data: &[u8],
-    newline_handler: Option<&dyn Fn(&[u8]) -> usize>,
+    newline_handler: NewlineHandler<'_>,
 ) -> Option<(Vec<u8>, usize)> {
     let mut buffer = Vec::new();
     let mut last_buf_index = 0;
@@ -1552,51 +1550,6 @@ pub(crate) fn scan_inline_html_processing(
     }
     scan_guard.processing = ix;
     None
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    #[test]
-    fn overflow_list() {
-        assert!(
-            scan_listitem(b"4444444444444444444444444444444444444444444444444444444444!").is_none()
-        );
-    }
-
-    #[test]
-    fn overflow_by_addition() {
-        assert!(scan_listitem(b"1844674407370955161615!").is_none());
-    }
-
-    #[test]
-    fn good_emails() {
-        const EMAILS: &[&str] = &[
-            "<a@b.c>",
-            "<a@b>",
-            "<a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-@example.com>",
-            "<a@sixty-three-letters-in-this-identifier-----------------------63>",
-        ];
-        for email in EMAILS {
-            assert!(scan_email(email, 1).is_some());
-        }
-    }
-
-    #[test]
-    fn bad_emails() {
-        const EMAILS: &[&str] = &[
-            "<@b.c>",
-            "<foo@-example.com>",
-            "<foo@example-.com>",
-            "<a@notrailingperiod.>",
-            "<a(noparens)@example.com>",
-            "<\"noquotes\"@example.com>",
-            "<a@sixty-four-letters-in-this-identifier-------------------------64>",
-        ];
-        for email in EMAILS {
-            assert!(scan_email(email, 1).is_none());
-        }
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -2040,4 +1993,49 @@ pub(crate) fn scan_mdx_inline_jsx(bytes: &[u8]) -> Option<usize> {
         }
     }
     None
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn overflow_list() {
+        assert!(
+            scan_listitem(b"4444444444444444444444444444444444444444444444444444444444!").is_none()
+        );
+    }
+
+    #[test]
+    fn overflow_by_addition() {
+        assert!(scan_listitem(b"1844674407370955161615!").is_none());
+    }
+
+    #[test]
+    fn good_emails() {
+        const EMAILS: &[&str] = &[
+            "<a@b.c>",
+            "<a@b>",
+            "<a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-@example.com>",
+            "<a@sixty-three-letters-in-this-identifier-----------------------63>",
+        ];
+        for email in EMAILS {
+            assert!(scan_email(email, 1).is_some());
+        }
+    }
+
+    #[test]
+    fn bad_emails() {
+        const EMAILS: &[&str] = &[
+            "<@b.c>",
+            "<foo@-example.com>",
+            "<foo@example-.com>",
+            "<a@notrailingperiod.>",
+            "<a(noparens)@example.com>",
+            "<\"noquotes\"@example.com>",
+            "<a@sixty-four-letters-in-this-identifier-------------------------64>",
+        ];
+        for email in EMAILS {
+            assert!(scan_email(email, 1).is_none());
+        }
+    }
 }

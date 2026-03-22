@@ -1,4 +1,4 @@
-import type { ArenaNodeRaw, BufferHeader, StringRefRaw } from "./types.ts";
+import type { ArenaNodeRaw, BufferHeader, StringRefRaw } from "./types.js";
 
 // Node type discriminant values (must match NodeType enum in node.rs)
 export const NodeType = Object.freeze({
@@ -244,7 +244,7 @@ export class ArenaReader {
 
   /** HeadingData: depth u8 @ 0. */
   getHeadingDepth(nodeId: number): number {
-    return this.getTypeData(nodeId)[0];
+    return this.getTypeData(nodeId)[0]!;
   }
 
   /**
@@ -376,7 +376,7 @@ export class ArenaReader {
     const data = this.getTypeData(nodeId);
     const identifierRef = this.readStringRef(data, 0);
     const labelRef = this.readStringRef(data, 8);
-    const kindByte = data[16];
+    const kindByte = data[16]!;
     const referenceTypes = ["shortcut", "collapsed", "full"];
     return {
       identifier: this.getString(identifierRef.offset, identifierRef.len),
@@ -410,7 +410,7 @@ export class ArenaReader {
     const alignNames: (string | null)[] = [null, "left", "right", "center"];
     const result: (string | null)[] = [];
     for (let i = 0; i < count; i++) {
-      result.push(alignNames[data[4 + i]] ?? null);
+      result.push(alignNames[data[4 + i]!] ?? null);
     }
     return result;
   }
@@ -448,7 +448,7 @@ export class ArenaReader {
       if (result !== false) {
         const childIds = this.getChildIds(nodeId);
         for (let i = childIds.length - 1; i >= 0; i--) {
-          stack.push(childIds[i]);
+          stack.push(childIds[i]!);
         }
       }
     }

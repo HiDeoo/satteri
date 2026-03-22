@@ -326,12 +326,6 @@ mod test_special_string {
     }
 
     #[test]
-    fn max_inline_str_len_atleast_four() {
-        // we need 4 bytes to store a char
-        assert!(MAX_INLINE_STR_LEN >= 4);
-    }
-
-    #[test]
     #[cfg(target_pointer_width = "64")]
     fn inlinestr_fits_twentytwo() {
         let s = "0123456789abcdefghijkl";

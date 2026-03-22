@@ -6,7 +6,6 @@ use crate::node::{ArenaNode, NodeType, StringRef};
 ///
 /// Strings are NOT copied — the arena holds the source and nodes reference it
 /// via `StringRef` (byte offset + length into `source`).
-#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Arena {
     /// All nodes in order of creation.

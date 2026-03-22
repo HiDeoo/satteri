@@ -1,5 +1,5 @@
+use rustc_hash::FxHashMap;
 use std::any::{Any, TypeId};
-use std::collections::HashMap;
 
 /// A value that can be stored in the untyped data map (interoperable with JS node.data).
 #[derive(Debug, Clone)]
@@ -40,7 +40,7 @@ impl DataValue {
 /// When a JS plugin runs after a Rust plugin, this gets synced to the JS DataMap.
 #[derive(Debug, Default)]
 pub struct DataMap {
-    inner: HashMap<(u32, String), DataValue>,
+    inner: FxHashMap<(u32, String), DataValue>,
 }
 
 impl DataMap {
@@ -83,13 +83,13 @@ impl DataMap {
 /// Typed data map: stores strongly-typed data keyed by TypeId + node_id.
 /// Rust-only — never crosses to JS.
 pub struct TypedDataMap {
-    inner: HashMap<(u32, TypeId), Box<dyn Any + Send + Sync>>,
+    inner: FxHashMap<(u32, TypeId), Box<dyn Any + Send + Sync>>,
 }
 
 impl TypedDataMap {
     pub fn new() -> Self {
         Self {
-            inner: HashMap::new(),
+            inner: FxHashMap::default(),
         }
     }
 

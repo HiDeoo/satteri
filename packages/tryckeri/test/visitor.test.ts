@@ -1,9 +1,9 @@
 import { test, expect } from "vitest";
-import { ArenaReader } from "../src/arena-reader.ts";
-import { DataMap } from "../src/data-map.ts";
-import { visitArena, MutationType } from "../src/visitor.ts";
-import { buildHelloWorldBuffer } from "./fixtures.ts";
-import type { MdastNode } from "../src/types.ts";
+import { ArenaReader } from "../src/arena-reader.js";
+import { DataMap } from "../src/data-map.js";
+import { visitArena, MutationType, type VisitorContext } from "../src/visitor.js";
+import { buildHelloWorldBuffer } from "./fixtures.js";
+import type { MdastNode } from "../src/types.js";
 
 function setup() {
   const buf = buildHelloWorldBuffer();
@@ -65,8 +65,8 @@ test("return value from visitor creates a Replace mutation", () => {
     dataMap,
   );
   expect(result.mutations.length).toBe(1);
-  expect(result.mutations[0].type).toBe(MutationType.Replace);
-  expect(result.mutations[0].newNode).toBe(newNode);
+  expect(result.mutations[0]!.type).toBe(MutationType.Replace);
+  expect(result.mutations[0]!.newNode).toBe(newNode);
 });
 
 test("context.removeNode creates a Remove mutation", () => {
@@ -74,15 +74,15 @@ test("context.removeNode creates a Remove mutation", () => {
   const result = visitArena(
     reader,
     {
-      heading(node, context) {
+      heading(node: MdastNode, context: VisitorContext) {
         context.removeNode(node);
       },
     },
     dataMap,
   );
   expect(result.mutations.length).toBe(1);
-  expect(result.mutations[0].type).toBe(MutationType.Remove);
-  expect(result.mutations[0].nodeId).toBe(1);
+  expect(result.mutations[0]!.type).toBe(MutationType.Remove);
+  expect(result.mutations[0]!.nodeId).toBe(1);
 });
 
 test("context.report creates a diagnostic entry", () => {
@@ -90,16 +90,16 @@ test("context.report creates a diagnostic entry", () => {
   const result = visitArena(
     reader,
     {
-      heading(node, context) {
+      heading(node: MdastNode, context: VisitorContext) {
         context.report({ message: "test diagnostic", node, severity: "warning" });
       },
     },
     dataMap,
   );
   expect(result.diagnostics.length).toBe(1);
-  expect(result.diagnostics[0].message).toBe("test diagnostic");
-  expect(result.diagnostics[0].severity).toBe("warning");
-  expect(result.diagnostics[0].nodeId).toBe(1);
+  expect(result.diagnostics[0]!.message).toBe("test diagnostic");
+  expect(result.diagnostics[0]!.severity).toBe("warning");
+  expect(result.diagnostics[0]!.nodeId).toBe(1);
 });
 
 test("plugin.before is called before traversal", () => {
@@ -117,8 +117,8 @@ test("plugin.before is called before traversal", () => {
     },
     dataMap,
   );
-  expect(order[0]).toBe("before");
-  expect(order[1]).toBe("heading");
+  expect(order[0]!).toBe("before");
+  expect(order[1]!).toBe("heading");
 });
 
 test("plugin.after is called after traversal", () => {
@@ -136,8 +136,8 @@ test("plugin.after is called after traversal", () => {
     },
     dataMap,
   );
-  expect(order[0]).toBe("heading");
-  expect(order[1]).toBe("after");
+  expect(order[0]!).toBe("heading");
+  expect(order[1]!).toBe("after");
 });
 
 test("transformRoot gets the full materialized root", () => {
@@ -148,6 +148,7 @@ test("transformRoot gets the full materialized root", () => {
     {
       transformRoot(root, _context) {
         capturedRoot = root;
+        return undefined;
       },
     },
     dataMap,
@@ -223,7 +224,7 @@ test("hasMutations is false when no mutations, true when there are mutations", (
   const mutResult = visitArena(
     reader,
     {
-      heading(node, context) {
+      heading(node: MdastNode, context: VisitorContext) {
         context.removeNode(node);
       },
     },

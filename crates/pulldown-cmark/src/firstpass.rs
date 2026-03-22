@@ -2,7 +2,7 @@
 //! are in a linear chain with potential inline markup identified.
 
 use alloc::{string::String, vec::Vec};
-use core::{cmp::max, ops::Range, u8};
+use core::{cmp::max, ops::Range};
 
 use unicase::UniCase;
 
@@ -698,7 +698,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
         let body = if let Some(ItemBody::DefinitionList(_)) =
             self.tree.peek_up().map(|idx| self.tree[idx].item.body)
         {
-            if self.tree.cur().map_or(true, |idx| {
+            if self.tree.cur().is_none_or(|idx| {
                 matches!(
                     &self.tree[idx].item.body,
                     ItemBody::DefinitionListDefinition(..)
@@ -794,11 +794,11 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     }
                     break;
                 }
-                if self.options.contains(Options::ENABLE_CONTAINER_EXTENSIONS) && !current_container
+                if self.options.contains(Options::ENABLE_CONTAINER_EXTENSIONS)
+                    && !current_container
+                    && line_start.scan_closing_container_extensions_fence(3)
                 {
-                    if line_start.scan_closing_container_extensions_fence(3) {
-                        break;
-                    }
+                    break;
                 }
             }
             line_start.scan_all_space();
@@ -1018,12 +1018,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         }),
                     )
                 }
-                b'\\'
-                    if bytes
-                        .get(ix + 1)
-                        .copied()
-                        .map_or(false, is_ascii_punctuation) =>
-                {
+                b'\\' if bytes.get(ix + 1).copied().is_some_and(is_ascii_punctuation) => {
                     self.tree.append_text(begin_text, ix, backslash_escaped);
                     if bytes[ix + 1] == b'`' {
                         let count = 1 + scan_ch_repeat(&bytes[(ix + 2)..], b'`');
@@ -1079,7 +1074,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                         mode,
                         self.options,
                     );
-                    let is_valid_seq = (c != b'~' || count <= 2) || (c == b'~' && count == 2);
+                    let is_valid_seq = c != b'~' || count == 2;
 
                     if (can_open || can_close) && is_valid_seq {
                         self.tree.append_text(begin_text, ix, backslash_escaped);
@@ -1100,12 +1095,9 @@ impl<'a, 'b> FirstPass<'a, 'b> {
                     let can_open = !byte_suffix[1..]
                         .first()
                         .copied()
-                        .map_or(true, is_ascii_whitespace);
-                    let can_close = ix > start
-                        && !bytes[..ix]
-                            .last()
-                            .copied()
-                            .map_or(true, is_ascii_whitespace);
+                        .is_none_or(is_ascii_whitespace);
+                    let can_close =
+                        ix > start && !bytes[..ix].last().copied().is_none_or(is_ascii_whitespace);
 
                     // 0xFFFF_FFFF... represents the root brace context. Using None would require
                     // storing Option<u8>, which is bigger than u8.
@@ -1972,7 +1964,7 @@ impl<'a, 'b> FirstPass<'a, 'b> {
     /// Returns number of bytes scanned, label and definition on success.
     fn parse_refdef_total(&mut self, start: usize) -> Option<(usize, LinkLabel<'a>, LinkDef<'a>)> {
         let bytes = &self.text.as_bytes()[start..];
-        if bytes.get(0) != Some(&b'[') {
+        if bytes.first() != Some(&b'[') {
             return None;
         }
         let (mut i, label) = self.parse_refdef_label(start + 1)?;
@@ -2339,7 +2331,7 @@ fn scan_paragraph_interrupt_no_table(
         || scan_code_fence(bytes).is_some()
         || scan_interrupting_container_extensions_fence(bytes)
         || scan_blockquote_start(bytes).is_some()
-        || scan_listitem(bytes).map_or(false, |(ix, delim, index, _)| {
+        || scan_listitem(bytes).is_some_and(|(ix, delim, index, _)| {
             ! current_container ||
             tree.is_in_table() ||
             // we don't allow interruption by either empty lists or
@@ -2351,7 +2343,7 @@ fn scan_paragraph_interrupt_no_table(
             && (get_html_end_tag(&bytes[1..]).is_some() || starts_html_block_type_6(&bytes[1..]))
         || definition_list
             && ((current_container
-                && tree.peek_up().map_or(false, |cur| {
+                && tree.peek_up().is_some_and(|cur| {
                     matches!(
                         tree[cur].item.body,
                         ItemBody::Paragraph
@@ -2359,7 +2351,7 @@ fn scan_paragraph_interrupt_no_table(
                             | ItemBody::MaybeDefinitionListTitle
                     )
                 }))
-                || tree.walk_spine().nth(tree_position).map_or(false, |cur| {
+                || tree.walk_spine().nth(tree_position).is_some_and(|cur| {
                     matches!(tree[*cur].item.body, ItemBody::DefinitionListDefinition(_))
                 }))
             && bytes.starts_with(b":")
@@ -2370,7 +2362,7 @@ fn scan_paragraph_interrupt_no_table(
                 &|_| None,
                 tree.is_in_table(),
             )
-            .map_or(false, |(len, _)| bytes.get(2 + len) == Some(&b':')))
+            .is_some_and(|(len, _)| bytes.get(2 + len) == Some(&b':')))
 }
 
 /// Assumes `text_bytes` is preceded by `<`.
@@ -2595,7 +2587,7 @@ fn special_bytes(options: &Options) -> [bool; 256] {
         bytes[b'}' as usize] = true;
     }
     if options.contains(Options::ENABLE_SMART_PUNCTUATION) {
-        for &byte in &[b'.', b'-', b'"', b'\''] {
+        for &byte in b".-\"'" {
             bytes[byte as usize] = true;
         }
     }

@@ -27,11 +27,7 @@ use core::{
     num::NonZeroUsize,
     ops::{Index, Range},
 };
-#[cfg(all(feature = "std", not(feature = "hashbrown")))]
-use std::collections::HashMap;
-
-#[cfg(feature = "hashbrown")]
-use hashbrown::HashMap;
+use rustc_hash::FxHashMap;
 use unicase::UniCase;
 
 use crate::{
@@ -468,7 +464,8 @@ impl<'input> ParserInner<'input> {
                             continue;
                         }
 
-                        if let Some(total_len) = scan_mdx_inline_jsx(block_text[start..].as_bytes())
+                        if let Some(total_len) =
+                            scan_mdx_inline_jsx(&block_text.as_bytes()[start..])
                         {
                             let end = start + total_len;
                             let node = scan_nodes_to_ix(&self.tree, self.tree[cur_ix].next, end);
@@ -566,7 +563,7 @@ impl<'input> ParserInner<'input> {
                         cur = self.tree[cur_ix].next;
                         continue;
                     }
-                    let is_display = self.tree[cur_ix].next.map_or(false, |next_ix| {
+                    let is_display = self.tree[cur_ix].next.is_some_and(|next_ix| {
                         matches!(
                             self.tree[next_ix].item.body,
                             ItemBody::MaybeMath(_can_open, _can_close, _brace_context)
@@ -592,7 +589,7 @@ impl<'input> ParserInner<'input> {
                                 self.tree[scan_ix].item.body
                             {
                                 let delim_is_display =
-                                    self.tree[scan_ix].next.map_or(false, |next_ix| {
+                                    self.tree[scan_ix].next.is_some_and(|next_ix| {
                                         matches!(
                                             self.tree[next_ix].item.body,
                                             ItemBody::MaybeMath(
@@ -1096,18 +1093,13 @@ impl<'input> ParserInner<'input> {
                                                 backslash_escaped: false,
                                             }
                                         }
+                                    } else if self.options.contains(Options::ENABLE_SUBSCRIPT) {
+                                        ItemBody::Subscript
+                                    } else if self.options.contains(Options::ENABLE_STRIKETHROUGH) {
+                                        ItemBody::Strikethrough
                                     } else {
-                                        if self.options.contains(Options::ENABLE_SUBSCRIPT) {
-                                            ItemBody::Subscript
-                                        } else if self
-                                            .options
-                                            .contains(Options::ENABLE_STRIKETHROUGH)
-                                        {
-                                            ItemBody::Strikethrough
-                                        } else {
-                                            ItemBody::Text {
-                                                backslash_escaped: false,
-                                            }
+                                        ItemBody::Text {
+                                            backslash_escaped: false,
                                         }
                                     }
                                 } else if c == b'^' {
@@ -1743,8 +1735,8 @@ impl InlineStack {
                 }
                 el.c == c
                     && (!both && !el.both
-                        || (run_length + el.run_length) % 3 != 0
-                        || run_length % 3 == 0)
+                        || !(run_length + el.run_length).is_multiple_of(3)
+                        || run_length.is_multiple_of(3))
             });
 
         if let Some((matching_ix, matching_el)) = res {
@@ -1936,7 +1928,7 @@ pub struct FootnoteDef {
 /// Tracks tree indices of code span delimiters of each length. It should prevent
 /// quadratic scanning behaviours by providing (amortized) constant time lookups.
 struct CodeDelims {
-    inner: HashMap<usize, VecDeque<TreeIndex>>,
+    inner: FxHashMap<usize, VecDeque<TreeIndex>>,
     seen_first: bool,
 }
 
@@ -1980,7 +1972,7 @@ impl CodeDelims {
 /// Tracks brace contexts and delimiter length for math delimiters.
 /// Provides amortized constant-time lookups.
 struct MathDelims {
-    inner: HashMap<u8, VecDeque<(TreeIndex, bool, bool)>>,
+    inner: FxHashMap<u8, VecDeque<(TreeIndex, bool, bool)>>,
 }
 
 impl MathDelims {
@@ -2071,11 +2063,11 @@ pub(crate) struct HeadingAttributes<'a> {
 
 /// Keeps track of the reference definitions defined in the document.
 #[derive(Clone, Default, Debug)]
-pub struct RefDefs<'input>(pub(crate) HashMap<LinkLabel<'input>, LinkDef<'input>>);
+pub struct RefDefs<'input>(pub(crate) FxHashMap<LinkLabel<'input>, LinkDef<'input>>);
 
 /// Keeps track of the footnote definitions defined in the document.
 #[derive(Clone, Default, Debug)]
-pub struct FootnoteDefs<'input>(pub(crate) HashMap<FootnoteLabel<'input>, FootnoteDef>);
+pub struct FootnoteDefs<'input>(pub(crate) FxHashMap<FootnoteLabel<'input>, FootnoteDef>);
 
 impl<'input, 'b, 's> RefDefs<'input>
 where
@@ -2837,15 +2829,12 @@ mod test {
             Parser::new_with_broken_link_callback(test_str, Options::empty(), Some(&mut callback));
         let mut link_tag_count = 0;
         for (typ, url, title, id) in parser.filter_map(|event| match event {
-            Event::Start(tag) => match tag {
-                Tag::Link {
-                    link_type,
-                    dest_url,
-                    title,
-                    id,
-                } => Some((link_type, dest_url, title, id)),
-                _ => None,
-            },
+            Event::Start(Tag::Link {
+                link_type,
+                dest_url,
+                title,
+                id,
+            }) => Some((link_type, dest_url, title, id)),
             _ => None,
         }) {
             link_tag_count += 1;
@@ -2862,12 +2851,9 @@ mod test {
         let parser = Parser::new("hello\n```test\ntadam\n```");
         let mut found = 0;
         for (ev, _range) in parser.into_offset_iter() {
-            match ev {
-                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(syntax))) => {
-                    assert_eq!(syntax.as_ref(), "test");
-                    found += 1;
-                }
-                _ => {}
+            if let Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(syntax))) = ev {
+                assert_eq!(syntax.as_ref(), "test");
+                found += 1;
             }
         }
         assert_eq!(found, 1);
@@ -2878,11 +2864,8 @@ mod test {
         let parser = Parser::new("hello\n\n    ```test\n    tadam\nhello");
         let mut found = 0;
         for (ev, _range) in parser.into_offset_iter() {
-            match ev {
-                Event::Start(Tag::CodeBlock(CodeBlockKind::Indented)) => {
-                    found += 1;
-                }
-                _ => {}
+            if let Event::Start(Tag::CodeBlock(CodeBlockKind::Indented)) = ev {
+                found += 1;
             }
         }
         assert_eq!(found, 1);
@@ -2912,6 +2895,7 @@ text
     }
 
     #[test]
+    #[allow(clippy::extra_unused_lifetimes)]
     fn common_lifetime_patterns_allowed<'b>() {
         let temporary_str = String::from("xyz");
 
@@ -3020,7 +3004,7 @@ text
     #[test]
     fn mdx_jsx_flow_self_closing() {
         let events: Vec<_> = mdx_parser("<Chart values={[1,2,3]} />\n").collect();
-        assert!(events.len() >= 1);
+        assert!(!events.is_empty());
         assert!(
             matches!(&events[0], Event::Start(Tag::MdxJsxFlowElement(s)) if s.contains("Chart"))
         );
@@ -3029,7 +3013,7 @@ text
     #[test]
     fn mdx_jsx_flow_fragment() {
         let events: Vec<_> = mdx_parser("<>\n").collect();
-        assert!(events.len() >= 1);
+        assert!(!events.is_empty());
         assert!(matches!(
             &events[0],
             Event::Start(Tag::MdxJsxFlowElement(_))

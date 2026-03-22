@@ -1,10 +1,10 @@
-import { ProcessorContext, runPluginsOnBuffer } from "./pipeline.ts";
-import { ArenaReader } from "./arena-reader.ts";
-import { materializeTree } from "./materializer.ts";
-import { DataMap } from "./data-map.ts";
-import type { PluginDefinition } from "./plugin.ts";
-import type { MdastNode } from "./types.ts";
-import type { Diagnostic } from "./visitor.ts";
+import { ProcessorContext, runPluginsOnBuffer } from "./pipeline.js";
+import { ArenaReader } from "./arena-reader.js";
+import { materializeTree } from "./materializer.js";
+import { DataMap } from "./data-map.js";
+import type { PluginDefinition } from "./plugin.js";
+import type { MdastNode } from "./types.js";
+import type { Diagnostic } from "./visitor.js";
 
 export { ProcessorContext };
 
@@ -38,8 +38,8 @@ class Processor {
 
   constructor(pluginDefs: PluginDefinition[]) {
     for (const def of pluginDefs) {
-      if (!def.meta?.name || typeof def.createOnce !== "function") {
-        throw new Error(`Invalid plugin: ${JSON.stringify(def.meta)}`);
+      if (!def.name || typeof def.createOnce !== "function") {
+        throw new Error(`Invalid plugin: ${JSON.stringify(def.name)}`);
       }
     }
     this.#pluginDefs = pluginDefs;
@@ -50,7 +50,7 @@ class Processor {
     if (this.#initializedPlugins === null) {
       this.#initializedPlugins = this.#pluginDefs.map((def) => ({
         instance: def.createOnce(this.#processorCtx),
-        name: def.meta.name,
+        name: def.name,
       }));
     }
     return this.#initializedPlugins;

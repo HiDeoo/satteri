@@ -1,8 +1,8 @@
 import { test, expect } from "vitest";
-import { runPluginsOnBuffer } from "../src/pipeline.ts";
-import { DataMap } from "../src/data-map.ts";
-import { buildHelloWorldBuffer } from "./fixtures.ts";
-import type { MdastNode } from "../src/types.ts";
+import { runPluginsOnBuffer } from "../src/pipeline.js";
+import { DataMap } from "../src/data-map.js";
+import { buildHelloWorldBuffer } from "./fixtures.js";
+import type { MdastNode } from "../src/types.js";
 
 function makePlugin(instance: Record<string, unknown>, name = "test-plugin") {
   return { instance, name };

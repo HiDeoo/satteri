@@ -1,13 +1,10 @@
 //! HTML syntax tree: [hast][].
 //!
 //! [hast]: https://github.com/syntax-tree/hast
-#![allow(dead_code)]
-#![allow(clippy::to_string_trait_impl)]
-
 extern crate alloc;
 
-#[allow(unused_imports)]
-pub use mdast_arena::mdx_types::MdxJsxAttribute;
+use alloc::string::String;
+use core::fmt;
 use mdast_arena::mdx_types::Position;
 pub use mdast_arena::mdx_types::{AttributeContent, AttributeValue, Stop};
 
@@ -63,26 +60,28 @@ impl alloc::fmt::Debug for Node {
     }
 }
 
-/// Turn a slice of hast nodes into a string.
-fn children_to_string(children: &[Node]) -> String {
-    children.iter().map(ToString::to_string).collect()
+/// Write child nodes to a formatter.
+fn write_children(f: &mut fmt::Formatter<'_>, children: &[Node]) -> fmt::Result {
+    for child in children {
+        write!(f, "{child}")?;
+    }
+    Ok(())
 }
 
-impl ToString for Node {
-    /// Turn a hast node into a string.
-    fn to_string(&self) -> String {
+impl fmt::Display for Node {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             // Parents.
-            Node::Root(x) => children_to_string(&x.children),
-            Node::Element(x) => children_to_string(&x.children),
-            Node::MdxJsxElement(x) | Node::MdxJsxTextElement(x) => children_to_string(&x.children),
+            Node::Root(x) => write_children(f, &x.children),
+            Node::Element(x) => write_children(f, &x.children),
+            Node::MdxJsxElement(x) | Node::MdxJsxTextElement(x) => write_children(f, &x.children),
             // Literals.
-            Node::Comment(x) => x.value.clone(),
-            Node::Text(x) => x.value.clone(),
-            Node::MdxExpression(x) => x.value.clone(),
-            Node::MdxjsEsm(x) => x.value.clone(),
+            Node::Comment(x) => f.write_str(&x.value),
+            Node::Text(x) => f.write_str(&x.value),
+            Node::MdxExpression(x) => f.write_str(&x.value),
+            Node::MdxjsEsm(x) => f.write_str(&x.value),
             // Voids.
-            Node::Doctype(_) => String::new(),
+            Node::Doctype(_) => Ok(()),
         }
     }
 }
@@ -114,6 +113,7 @@ impl Node {
     }
 
     /// Get the position of a hast node.
+    #[must_use]
     pub fn position(&self) -> Option<&Position> {
         match self {
             Node::Root(x) => x.position.as_ref(),
@@ -241,8 +241,8 @@ impl PartialEq for PropertyValue {
                 a.to_bits() == b.to_bits()
             }
             (PropertyValue::String(a), PropertyValue::String(b)) => a == b,
-            (PropertyValue::CommaSeparated(a), PropertyValue::CommaSeparated(b)) => a == b,
-            (PropertyValue::SpaceSeparated(a), PropertyValue::SpaceSeparated(b)) => a == b,
+            (PropertyValue::CommaSeparated(a), PropertyValue::CommaSeparated(b))
+            | (PropertyValue::SpaceSeparated(a), PropertyValue::SpaceSeparated(b)) => a == b,
             (PropertyValue::Null, PropertyValue::Null) => true,
             _ => false,
         }

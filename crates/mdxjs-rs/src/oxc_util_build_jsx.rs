@@ -1139,7 +1139,6 @@ fn jsx_children_to_expressions<'a>(
                 )?;
                 result.push(call);
             }
-            _ => {}
         }
     }
 

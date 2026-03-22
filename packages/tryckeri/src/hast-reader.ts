@@ -1,4 +1,4 @@
-import type { BufferHeader } from "./types.ts";
+import type { BufferHeader } from "./types.js";
 
 // HAST node type constants (must match node_types.rs)
 export const HAST_ROOT = 0;

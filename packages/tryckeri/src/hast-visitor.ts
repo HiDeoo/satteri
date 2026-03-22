@@ -1,4 +1,4 @@
-import { materializeHastNode, type HastNode } from "./hast-materializer.ts";
+import { materializeHastNode, type HastNode } from "./hast-materializer.js";
 import {
   HastArenaReader,
   HAST_ROOT,
@@ -6,8 +6,8 @@ import {
   HAST_TEXT,
   HAST_COMMENT,
   HAST_RAW,
-} from "./hast-reader.ts";
-import type { DataMap } from "./data-map.ts";
+} from "./hast-reader.js";
+import type { DataMap } from "./data-map.js";
 
 export interface Mutation {
   type: "replace" | "remove" | "setProperty";
@@ -19,7 +19,7 @@ export interface Mutation {
 
 export interface Diagnostic {
   message: string;
-  nodeId?: number;
+  nodeId?: number | undefined;
   severity: "error" | "warning" | "info";
 }
 
@@ -116,7 +116,6 @@ export function visitHastArena(
     }
   } else {
     // Fast path: walk raw bytes, only materialize on subscription match
-    const nodeCount = reader.nodeCount;
     const stack: number[] = [0];
 
     while (stack.length > 0) {
@@ -139,7 +138,7 @@ export function visitHastArena(
 
       const childIds = reader.getChildIds(nodeId);
       for (let i = childIds.length - 1; i >= 0; i--) {
-        stack.push(childIds[i]);
+        stack.push(childIds[i]!);
       }
     }
   }

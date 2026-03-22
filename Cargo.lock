@@ -256,9 +256,7 @@ dependencies = [
  "mdast-arena",
  "oxc_allocator",
  "oxc_ast",
- "oxc_ast_visit",
  "oxc_codegen",
- "oxc_diagnostics",
  "oxc_parser",
  "oxc_span",
  "oxc_syntax",
@@ -266,7 +264,6 @@ dependencies = [
  "pretty_assertions",
  "rustc-hash",
  "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -734,6 +731,7 @@ dependencies = [
  "bitflags",
  "memchr",
  "pulldown-cmark-escape",
+ "rustc-hash",
  "serde",
  "unicase",
 ]
@@ -953,7 +951,6 @@ name = "tryckeri-bench"
 version = "0.1.0"
 dependencies = [
  "divan",
- "mdast-arena",
  "mdxjs",
  "oxc_allocator",
  "parser",
@@ -988,6 +985,7 @@ name = "tryckeri-plugin-api"
 version = "0.1.0"
 dependencies = [
  "mdast-arena",
+ "rustc-hash",
 ]
 
 [[package]]

@@ -4,14 +4,13 @@
 //! representation used by the rest of the pipeline (HAST, plugins, MDX compile).
 
 use mdast_arena::{
-    encode_code_data, encode_definition_data, encode_expression_data,
-    encode_footnote_definition_data, encode_heading_data, encode_image_data, encode_link_data,
-    encode_list_data, encode_list_item_data, encode_math_data, encode_mdx_jsx_element_data,
-    encode_string_ref_data, encode_table_data, Arena, ArenaBuilder, ColumnAlign, LineIndex,
-    NodeType, StringRef,
+    encode_code_data, encode_expression_data, encode_footnote_definition_data, encode_heading_data,
+    encode_image_data, encode_link_data, encode_list_data, encode_list_item_data, encode_math_data,
+    encode_mdx_jsx_element_data, encode_string_ref_data, encode_table_data, Arena, ArenaBuilder,
+    ColumnAlign, LineIndex, NodeType, StringRef,
 };
 use pulldown_cmark::{
-    CodeBlockKind, Event, HeadingLevel, LinkType, Options, Parser, Tag, TagEnd, TextMergeWithOffset,
+    CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, TagEnd, TextMergeWithOffset,
 };
 
 pub use mdast_arena;
@@ -833,7 +832,7 @@ fn heading_level_to_u8(level: HeadingLevel) -> u8 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mdast_arena::{decode_heading_data, decode_string_ref_data, ReadArena};
+    use mdast_arena::decode_heading_data;
 
     #[test]
     fn parse_simple_paragraph() {

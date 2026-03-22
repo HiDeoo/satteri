@@ -108,7 +108,7 @@ impl PluginRunner {
 /// SetData commands are skipped (they are applied directly through the DataMap,
 /// not via arena structural mutation).
 /// NewNode::Raw commands are skipped (need parser, Phase 8).
-fn commands_to_patches<'a>(commands: Vec<&'a Command>, arena: &Arena) -> Vec<Patch> {
+fn commands_to_patches(commands: Vec<&Command>, arena: &Arena) -> Vec<Patch> {
     commands
         .into_iter()
         .filter_map(|cmd| match cmd {

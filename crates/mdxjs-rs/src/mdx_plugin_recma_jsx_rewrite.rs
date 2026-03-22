@@ -671,7 +671,7 @@ fn collect_jsx_refs_in_child(
         JSXChild::Spread(spread) => {
             collect_jsx_refs_in_expr(&spread.expression, explicit_jsxs, info);
         }
-        _ => {}
+        JSXChild::Text(_) => {}
     }
 }
 
@@ -905,7 +905,7 @@ fn rewrite_jsx_child<'a>(
         JSXChild::Spread(spread) => {
             rewrite_jsx_tags_in_expr(&mut spread.expression, scope, explicit_jsxs, allocator);
         }
-        _ => {}
+        JSXChild::Text(_) => {}
     }
 }
 

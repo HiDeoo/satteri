@@ -6,11 +6,9 @@ import {
   HAST_COMMENT,
   HAST_DOCTYPE,
   HAST_RAW,
-  PROP_BOOL_TRUE,
-  PROP_BOOL_FALSE,
   type HastProperty,
-} from "./hast-reader.ts";
-import type { DataMap } from "./data-map.ts";
+} from "./hast-reader.js";
+import type { DataMap } from "./data-map.js";
 
 export interface HastNode {
   type: string;
@@ -22,9 +20,6 @@ export interface HastNode {
   value?: string;
   data: Record<string, unknown> | null;
 }
-
-/** Nodes that have no children in the HAST model. */
-const HAST_LEAF_TYPES = new Set([HAST_TEXT, HAST_COMMENT, HAST_DOCTYPE, HAST_RAW]);
 
 function lazyProp<T>(key: string, get: () => T): PropertyDescriptor {
   return {

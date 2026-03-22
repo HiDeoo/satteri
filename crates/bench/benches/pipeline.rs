@@ -2,7 +2,6 @@
 ///
 /// Covers the full stack: parse → HAST → HTML and MDX → JS.
 /// Run with: `cargo bench -p tryckeri-bench`
-
 const MARKDOWN: &str = include_str!("../fixtures/markdown.md");
 
 /// A short MDX snippet representative of real-world usage.

@@ -1,9 +1,9 @@
-export { ArenaReader, NodeType, NodeTypeName } from "./arena-reader.ts";
-export { DataMap } from "./data-map.ts";
-export { materializeNode, materializeTree, TYPE_NAMES } from "./materializer.ts";
-export { visitArena, MutationType } from "./visitor.ts";
-export { definePlugin } from "./plugin.ts";
-export { createProcessor, ProcessorContext } from "./processor.ts";
+export { ArenaReader, NodeType, NodeTypeName } from "./arena-reader.js";
+export { DataMap } from "./data-map.js";
+export { materializeNode, materializeTree, TYPE_NAMES } from "./materializer.js";
+export { visitArena, MutationType } from "./visitor.js";
+export { definePlugin } from "./plugin.js";
+export { createProcessor, ProcessorContext } from "./processor.js";
 export {
   parseToBuffer,
   parseToHastBuffer,
@@ -11,7 +11,7 @@ export {
   hastBufferToHtmlStr,
   compileMdx,
   compileMdxFromBuffer,
-} from "./parse.ts";
+} from "./parse.js";
 
 // HAST support
 export {
@@ -27,21 +27,15 @@ export {
   PROP_BOOL_FALSE,
   PROP_SPACE_SEP,
   PROP_COMMA_SEP,
-} from "./hast-reader.ts";
-export type { HastProperty } from "./hast-reader.ts";
-export { materializeHastNode, materializeHastTree } from "./hast-materializer.ts";
-export type { HastNode } from "./hast-materializer.ts";
-export { visitHastArena } from "./hast-visitor.ts";
+} from "./hast-reader.js";
+export type { HastProperty } from "./hast-reader.js";
+export { materializeHastNode, materializeHastTree } from "./hast-materializer.js";
+export type { HastNode } from "./hast-materializer.js";
+export { visitHastArena } from "./hast-visitor.js";
 export type {
   HastVisitorInstance,
   HastVisitorContext,
   VisitResult as HastVisitResult,
-} from "./hast-visitor.ts";
+} from "./hast-visitor.js";
 
-// Built-in plugins
-export { default as headingIds } from "./plugins/heading-ids.ts";
-export { default as lintHeadingDepth } from "./plugins/lint-heading-depth.ts";
-export { default as flattenHeadings } from "./plugins/flatten-headings.ts";
-export { default as collectHeadings } from "./plugins/collect-headings.ts";
-
-export type { MdastNode, Position, Point } from "./types.ts";
+export type { MdastNode, Position, Point } from "./types.js";

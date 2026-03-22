@@ -21,14 +21,10 @@
 //! HTML renderer that takes an iterator of events as input.
 
 use alloc::{string::String, vec::Vec};
-#[cfg(all(feature = "std", not(feature = "hashbrown")))]
-use std::collections::HashMap;
-
-#[cfg(feature = "hashbrown")]
-use hashbrown::HashMap;
 #[cfg(feature = "std")]
 use pulldown_cmark_escape::IoWriter;
 use pulldown_cmark_escape::{escape_href, escape_html, escape_html_body_text, FmtWriter, StrWrite};
+use rustc_hash::FxHashMap;
 
 use crate::{
     strings::CowStr,
@@ -59,7 +55,7 @@ struct HtmlWriter<'a, I, W> {
     table_state: TableState,
     table_alignments: Vec<Alignment>,
     table_cell_index: usize,
-    numbers: HashMap<CowStr<'a>, usize>,
+    numbers: FxHashMap<CowStr<'a>, usize>,
 }
 
 impl<'a, I, W> HtmlWriter<'a, I, W>
@@ -76,7 +72,7 @@ where
             table_state: TableState::Head,
             table_alignments: vec![],
             table_cell_index: 0,
-            numbers: HashMap::new(),
+            numbers: FxHashMap::default(),
         }
     }
 

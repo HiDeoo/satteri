@@ -13,7 +13,7 @@ use mdast_arena::codec::{
 };
 use mdast_arena::mdx_types::{Point, Position, sanitize_uri as sanitize};
 use mdast_arena::{NodeType, ReadArena};
-use std::collections::HashMap;
+use rustc_hash::FxHashMap;
 
 // ---------------------------------------------------------------------------
 // Public entry point
@@ -59,10 +59,10 @@ pub fn arena_to_hast(arena: &dyn ReadArena) -> hast::Node {
     // Main conversion.
     let result = one(&mut ctx, 0, None);
 
-    if ctx.footnote_calls.is_empty() {
-        if let NodeResult::Node(node) = result {
-            return node;
-        }
+    if ctx.footnote_calls.is_empty()
+        && let NodeResult::Node(node) = result
+    {
+        return node;
     }
 
     // Build root and append footnote section if needed.
@@ -265,20 +265,20 @@ pub fn arena_to_hast(arena: &dyn ReadArena) -> hast::Node {
 struct Context<'a> {
     arena: &'a dyn ReadArena,
     /// identifier (lowercase) → (url, title)
-    definitions: HashMap<String, (String, Option<String>)>,
+    definitions: FxHashMap<String, (String, Option<String>)>,
     /// footnote call list: (identifier, count), in encounter order.
     footnote_calls: Vec<(String, usize)>,
-    /// identifier → arena node_id of the FootnoteDefinition.
-    footnote_defs: HashMap<String, u32>,
+    /// identifier → arena `node_id` of the `FootnoteDefinition`.
+    footnote_defs: FxHashMap<String, u32>,
 }
 
 impl<'a> Context<'a> {
     fn new(arena: &'a dyn ReadArena) -> Self {
         Context {
             arena,
-            definitions: HashMap::new(),
+            definitions: FxHashMap::default(),
             footnote_calls: Vec::new(),
-            footnote_defs: HashMap::new(),
+            footnote_defs: FxHashMap::default(),
         }
     }
 }
@@ -297,6 +297,7 @@ enum NodeResult {
 // Conversion helpers
 // ---------------------------------------------------------------------------
 
+#[allow(clippy::unnecessary_wraps)]
 fn to_position(node: &mdast_arena::ArenaNode) -> Option<Position> {
     Some(Position {
         start: Point {
@@ -334,9 +335,9 @@ fn one(ctx: &mut Context<'_>, node_id: u32, parent_id: Option<u32>) -> NodeResul
         NodeType::Blockquote => transform_blockquote(ctx, node_id, position),
         NodeType::List => transform_list(ctx, node_id, position),
         NodeType::ListItem => transform_list_item(ctx, node_id, parent_id, position),
-        NodeType::Html => NodeResult::None, // Raw HTML: ignored (same as mdast_util_to_hast)
+        // Raw HTML ignored; Definition collected in pre-pass; Frontmatter is metadata-only.
+        NodeType::Html | NodeType::Definition | NodeType::Yaml | NodeType::Toml => NodeResult::None,
         NodeType::Code => transform_code(ctx, node_id, position),
-        NodeType::Definition => NodeResult::None, // collected in pre-pass
         NodeType::Text => transform_text(ctx, node_id, position),
         NodeType::Emphasis => transform_emphasis(ctx, node_id, position),
         NodeType::Strong => transform_strong(ctx, node_id, position),
@@ -364,8 +365,6 @@ fn one(ctx: &mut Context<'_>, node_id: u32, parent_id: Option<u32>) -> NodeResul
             transform_mdx_expression(ctx, node_id, position)
         }
         NodeType::MdxjsEsm => transform_mdxjs_esm(ctx, node_id, position),
-        // Frontmatter nodes produce no HTML output (they are metadata).
-        NodeType::Yaml | NodeType::Toml => NodeResult::None,
         NodeType::Math => transform_math(ctx, node_id, position),
         NodeType::InlineMath => transform_inline_math(ctx, node_id, position),
     }
