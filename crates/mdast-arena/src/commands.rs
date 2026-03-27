@@ -79,7 +79,7 @@ pub struct JsNode {
     pub node_type: String,
     #[serde(default)]
     pub children: Option<Vec<JsNode>>,
-    // Type-specific fields (all optional)
+    // MDAST type-specific fields (all optional)
     pub depth: Option<u8>,
     pub value: Option<String>,
     pub url: Option<String>,
@@ -96,7 +96,36 @@ pub struct JsNode {
     #[serde(rename = "referenceType")]
     pub reference_type: Option<String>,
     pub name: Option<String>,
+    // HAST-specific fields
+    #[serde(rename = "tagName")]
+    pub tag_name: Option<String>,
+    #[serde(default)]
+    pub properties: Option<serde_json::Map<String, serde_json::Value>>,
+    /// Marker: when true, this node is a HAST node (not MDAST).
+    #[serde(rename = "_hast", default)]
+    pub is_hast: bool,
 }
+
+// ---------------------------------------------------------------------------
+// HAST node type constants (duplicated from node_types.rs to avoid dependency)
+// ---------------------------------------------------------------------------
+
+const HAST_ROOT_TYPE: u8 = 0;
+const HAST_ELEMENT_TYPE: u8 = 1;
+const HAST_TEXT_TYPE: u8 = 2;
+const HAST_COMMENT_TYPE: u8 = 3;
+const HAST_DOCTYPE_TYPE: u8 = 4;
+const HAST_RAW_TYPE: u8 = 5;
+const HAST_MDX_JSX_ELEMENT_TYPE: u8 = 10;
+const HAST_MDX_JSX_TEXT_ELEMENT_TYPE: u8 = 11;
+const HAST_MDX_EXPRESSION_TYPE: u8 = 12;
+const HAST_MDX_ESM_TYPE: u8 = 13;
+
+// HAST property value type bytes
+const HAST_PROP_STRING: u8 = 0;
+const HAST_PROP_BOOL_TRUE: u8 = 1;
+const HAST_PROP_BOOL_FALSE: u8 = 2;
+const HAST_PROP_SPACE_SEP: u8 = 3;
 
 // ---------------------------------------------------------------------------
 // Command parsing error
@@ -295,11 +324,7 @@ fn apply_set_bool(
     Ok(())
 }
 
-fn apply_set_null(
-    arena: &mut MdastArena,
-    node_id: u32,
-    field_id: u16,
-) -> Result<(), CommandError> {
+fn apply_set_null(arena: &mut MdastArena, node_id: u32, field_id: u16) -> Result<(), CommandError> {
     let node = arena.get_node(node_id);
     let node_type = node.node_type;
     let data_offset = node.data_offset as usize;
@@ -381,10 +406,7 @@ fn set_string_ref(
 // ---------------------------------------------------------------------------
 
 /// Parse a raw Markdown string payload into a sub-arena using the provided parser.
-fn parse_raw_markdown(
-    markdown: &str,
-    parse_markdown: &dyn Fn(&str) -> MdastArena,
-) -> MdastArena {
+fn parse_raw_markdown(markdown: &str, parse_markdown: &dyn Fn(&str) -> MdastArena) -> MdastArena {
     parse_markdown(markdown)
 }
 
@@ -396,6 +418,11 @@ fn js_node_to_arena(js_node: &JsNode) -> Result<MdastArena, CommandError> {
 }
 
 fn emit_js_node(js_node: &JsNode, builder: &mut MdastBuilder) -> Result<(), CommandError> {
+    // Dispatch: HAST nodes use raw u8 types, MDAST uses NodeType enum
+    if js_node.is_hast {
+        return emit_hast_js_node(js_node, builder);
+    }
+
     let node_type = name_to_node_type(&js_node.node_type)?;
     builder.open_node(node_type);
 
@@ -416,14 +443,154 @@ fn emit_js_node(js_node: &JsNode, builder: &mut MdastBuilder) -> Result<(), Comm
     Ok(())
 }
 
-fn encode_js_node_data(js_node: &JsNode, node_type: NodeType, builder: &mut MdastBuilder) -> Vec<u8> {
+fn emit_hast_js_node(js_node: &JsNode, builder: &mut MdastBuilder) -> Result<(), CommandError> {
+    let raw_type = name_to_hast_raw_type(&js_node.node_type)
+        .ok_or_else(|| CommandError::UnknownNodeType(js_node.node_type.clone()))?;
+    builder.open_node_raw(raw_type);
+
+    let type_data = encode_hast_js_node_data(js_node, raw_type, builder);
+    if !type_data.is_empty() {
+        builder.set_data_current(&type_data);
+    }
+
+    if let Some(children) = &js_node.children {
+        for child in children {
+            emit_hast_js_node(child, builder)?;
+        }
+    }
+
+    builder.close_node();
+    Ok(())
+}
+
+fn name_to_hast_raw_type(name: &str) -> Option<u8> {
+    match name {
+        "root" => Some(HAST_ROOT_TYPE),
+        "element" => Some(HAST_ELEMENT_TYPE),
+        "text" => Some(HAST_TEXT_TYPE),
+        "comment" => Some(HAST_COMMENT_TYPE),
+        "doctype" => Some(HAST_DOCTYPE_TYPE),
+        "raw" => Some(HAST_RAW_TYPE),
+        "mdxJsxElement" => Some(HAST_MDX_JSX_ELEMENT_TYPE),
+        "mdxJsxTextElement" => Some(HAST_MDX_JSX_TEXT_ELEMENT_TYPE),
+        "mdxExpression" => Some(HAST_MDX_EXPRESSION_TYPE),
+        "mdxjsEsm" => Some(HAST_MDX_ESM_TYPE),
+        _ => None,
+    }
+}
+
+fn encode_hast_js_node_data(js_node: &JsNode, raw_type: u8, builder: &mut MdastBuilder) -> Vec<u8> {
+    match raw_type {
+        HAST_ELEMENT_TYPE => {
+            let tag = js_node.tag_name.as_deref().unwrap_or("div");
+            let tag_ref = builder.alloc_string(tag);
+
+            // Encode properties
+            let mut props: Vec<(StringRef, u8, StringRef)> = Vec::new();
+            if let Some(properties) = &js_node.properties {
+                for (key, value) in properties {
+                    let name_ref = builder.alloc_string(key);
+                    match value {
+                        serde_json::Value::Bool(true) => {
+                            props.push((name_ref, HAST_PROP_BOOL_TRUE, StringRef::empty()));
+                        }
+                        serde_json::Value::Bool(false) => {
+                            props.push((name_ref, HAST_PROP_BOOL_FALSE, StringRef::empty()));
+                        }
+                        serde_json::Value::String(s) => {
+                            let val_ref = builder.alloc_string(s);
+                            props.push((name_ref, HAST_PROP_STRING, val_ref));
+                        }
+                        serde_json::Value::Array(arr) => {
+                            // Space-separated list
+                            let joined: String = arr
+                                .iter()
+                                .filter_map(|v| v.as_str())
+                                .collect::<Vec<_>>()
+                                .join(" ");
+                            let val_ref = builder.alloc_string(&joined);
+                            props.push((name_ref, HAST_PROP_SPACE_SEP, val_ref));
+                        }
+                        _ => {} // skip null/number/object
+                    }
+                }
+            }
+
+            // Element data layout: [tag: StringRef(8)][prop_count: u32(4)][pad: u32(4)]
+            // + prop_count * [name: StringRef(8)][kind: u8][pad: 3][value: StringRef(8)]
+            let mut out = Vec::with_capacity(16 + props.len() * 20);
+            out.extend_from_slice(&tag_ref.offset.to_le_bytes());
+            out.extend_from_slice(&tag_ref.len.to_le_bytes());
+            out.extend_from_slice(&(props.len() as u32).to_le_bytes());
+            out.extend_from_slice(&0u32.to_le_bytes());
+            for (name_ref, kind, val_ref) in &props {
+                out.extend_from_slice(&name_ref.offset.to_le_bytes());
+                out.extend_from_slice(&name_ref.len.to_le_bytes());
+                out.push(*kind);
+                out.extend_from_slice(&[0u8; 3]);
+                out.extend_from_slice(&val_ref.offset.to_le_bytes());
+                out.extend_from_slice(&val_ref.len.to_le_bytes());
+            }
+            out
+        }
+
+        HAST_TEXT_TYPE | HAST_COMMENT_TYPE | HAST_RAW_TYPE => {
+            let value = js_node.value.as_deref().unwrap_or("");
+            let sref = builder.alloc_string(value);
+            let mut out = [0u8; 8];
+            out[0..4].copy_from_slice(&sref.offset.to_le_bytes());
+            out[4..8].copy_from_slice(&sref.len.to_le_bytes());
+            out.to_vec()
+        }
+
+        HAST_MDX_JSX_ELEMENT_TYPE | HAST_MDX_JSX_TEXT_ELEMENT_TYPE => {
+            // Same layout as element but with MDX attribute encoding
+            // For now, encode name only (attributes via source text parsing)
+            let name = js_node
+                .name
+                .as_deref()
+                .or(js_node.tag_name.as_deref())
+                .unwrap_or("");
+            let name_ref = builder.alloc_string(name);
+            // 16-byte header: name(8) + attr_count(4) + pad(4), no attrs
+            let mut out = Vec::with_capacity(16);
+            out.extend_from_slice(&name_ref.offset.to_le_bytes());
+            out.extend_from_slice(&name_ref.len.to_le_bytes());
+            out.extend_from_slice(&0u32.to_le_bytes()); // attr_count = 0
+            out.extend_from_slice(&0u32.to_le_bytes()); // pad
+            out
+        }
+
+        HAST_MDX_EXPRESSION_TYPE | HAST_MDX_ESM_TYPE => {
+            let value = js_node.value.as_deref().unwrap_or("");
+            let sref = builder.alloc_string(value);
+            let mut out = [0u8; 8];
+            out[0..4].copy_from_slice(&sref.offset.to_le_bytes());
+            out[4..8].copy_from_slice(&sref.len.to_le_bytes());
+            out.to_vec()
+        }
+
+        // root, doctype: no type_data
+        _ => Vec::new(),
+    }
+}
+
+fn encode_js_node_data(
+    js_node: &JsNode,
+    node_type: NodeType,
+    builder: &mut MdastBuilder,
+) -> Vec<u8> {
     match node_type {
         NodeType::Heading => {
             let depth = js_node.depth.unwrap_or(1);
             encode_heading_data(depth)
         }
-        NodeType::Text | NodeType::InlineCode | NodeType::Html | NodeType::Yaml
-        | NodeType::Toml | NodeType::InlineMath => {
+        NodeType::Text
+        | NodeType::InlineCode
+        | NodeType::Html
+        | NodeType::Yaml
+        | NodeType::Toml
+        | NodeType::InlineMath => {
             let value = js_node.value.as_deref().unwrap_or("");
             let sref = builder.alloc_string(value);
             encode_string_ref_data(sref)
@@ -862,7 +1029,8 @@ mod tests {
         let arena = build_hello_world();
         let heading_id = arena.get_children(0)[0];
 
-        let json = r#"{"type":"heading","depth":2,"children":[{"type":"text","value":"Replaced"}]}"#;
+        let json =
+            r#"{"type":"heading","depth":2,"children":[{"type":"text","value":"Replaced"}]}"#;
         let mut buf = Vec::new();
         buf.push(CMD_REPLACE);
         push_u32(&mut buf, heading_id);
@@ -922,16 +1090,42 @@ mod tests {
                 node_type: "text".to_string(),
                 children: None,
                 value: Some("Hello".to_string()),
-                depth: None, url: None, title: None, alt: None,
-                lang: None, meta: None, ordered: None, start: None,
-                spread: None, checked: None, identifier: None, label: None,
-                reference_type: None, name: None,
+                depth: None,
+                url: None,
+                title: None,
+                alt: None,
+                lang: None,
+                meta: None,
+                ordered: None,
+                start: None,
+                spread: None,
+                checked: None,
+                identifier: None,
+                label: None,
+                reference_type: None,
+                name: None,
+                tag_name: None,
+                properties: None,
+                is_hast: false,
             }]),
             depth: Some(2),
-            value: None, url: None, title: None, alt: None,
-            lang: None, meta: None, ordered: None, start: None,
-            spread: None, checked: None, identifier: None, label: None,
-            reference_type: None, name: None,
+            value: None,
+            url: None,
+            title: None,
+            alt: None,
+            lang: None,
+            meta: None,
+            ordered: None,
+            start: None,
+            spread: None,
+            checked: None,
+            identifier: None,
+            label: None,
+            reference_type: None,
+            name: None,
+            tag_name: None,
+            properties: None,
+            is_hast: false,
         };
 
         let arena = js_node_to_arena(&js).unwrap();

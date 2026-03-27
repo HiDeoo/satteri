@@ -73,6 +73,62 @@ pub fn decode_element_prop(data: &[u8], index: u32) -> (StringRef, u8, StringRef
 }
 
 // ---------------------------------------------------------------------------
+// MDX JSX Element encode/decode
+// ---------------------------------------------------------------------------
+
+/// Encode MDX JSX element type_data.
+///
+/// Layout:
+///   [name: StringRef(8B)][attr_count: u32(4B)][_pad: u32(4B)] = 16-byte header
+///   then attr_count * MdxAttrEntry (20 bytes each):
+///     [kind: u8(1B)][_pad: [u8;3](3B)][name: StringRef(8B)][value: StringRef(8B)]
+///
+/// Attribute kinds (from node_types.rs):
+///   0 = BooleanProp (name only, no value)
+///   1 = LiteralProp (name="literal")
+///   2 = ExpressionProp (name={expr})
+///   3 = Spread ({...expr})
+pub fn encode_mdx_jsx_element_data(
+    name: StringRef,
+    attrs: &[(u8, StringRef, StringRef)], // (kind, name, value)
+) -> Vec<u8> {
+    let mut out = Vec::with_capacity(16 + attrs.len() * 20);
+
+    out.extend_from_slice(&encode_string_ref(name));
+    out.extend_from_slice(&(attrs.len() as u32).to_le_bytes());
+    out.extend_from_slice(&0u32.to_le_bytes()); // _pad
+
+    for &(kind, attr_name, attr_value) in attrs {
+        out.push(kind);
+        out.extend_from_slice(&[0u8; 3]); // _pad
+        out.extend_from_slice(&encode_string_ref(attr_name));
+        out.extend_from_slice(&encode_string_ref(attr_value));
+    }
+
+    out
+}
+
+/// Decode the element name StringRef from MDX JSX element type_data.
+pub fn decode_mdx_jsx_element_name(data: &[u8]) -> StringRef {
+    decode_string_ref(&data[0..8])
+}
+
+/// Decode the attribute count from MDX JSX element type_data.
+pub fn decode_mdx_jsx_attr_count(data: &[u8]) -> u32 {
+    u32::from_le_bytes(data[8..12].try_into().unwrap())
+}
+
+/// Decode an attribute entry by index from MDX JSX element type_data.
+/// Returns (kind: u8, name: StringRef, value: StringRef).
+pub fn decode_mdx_jsx_attr(data: &[u8], index: u32) -> (u8, StringRef, StringRef) {
+    let base = 16 + index as usize * 20;
+    let kind = data[base];
+    let name = decode_string_ref(&data[base + 4..base + 12]);
+    let value = decode_string_ref(&data[base + 12..base + 20]);
+    (kind, name, value)
+}
+
+// ---------------------------------------------------------------------------
 // Text/Comment/Raw encode/decode — just a StringRef
 // ---------------------------------------------------------------------------
 
@@ -122,6 +178,40 @@ mod tests {
         assert_eq!(kind, crate::node_types::PROP_STRING);
         assert_eq!(v.offset, 10);
         assert_eq!(v.len, 6);
+    }
+
+    #[test]
+    fn mdx_jsx_element_no_attrs() {
+        let name = StringRef::new(0, 6);
+        let data = encode_mdx_jsx_element_data(name, &[]);
+        assert_eq!(data.len(), 16);
+        assert_eq!(decode_mdx_jsx_element_name(&data).offset, 0);
+        assert_eq!(decode_mdx_jsx_element_name(&data).len, 6);
+        assert_eq!(decode_mdx_jsx_attr_count(&data), 0);
+    }
+
+    #[test]
+    fn mdx_jsx_element_with_attrs() {
+        let name = StringRef::new(0, 3);
+        let attr_name = StringRef::new(10, 5);
+        let attr_value = StringRef::new(20, 8);
+        let attrs = vec![
+            (crate::node_types::MDX_ATTR_LITERAL_PROP, attr_name, attr_value),
+            (crate::node_types::MDX_ATTR_SPREAD, StringRef::empty(), StringRef::new(30, 10)),
+        ];
+        let data = encode_mdx_jsx_element_data(name, &attrs);
+        assert_eq!(data.len(), 56); // 16 + 2*20
+        assert_eq!(decode_mdx_jsx_attr_count(&data), 2);
+
+        let (kind0, n0, v0) = decode_mdx_jsx_attr(&data, 0);
+        assert_eq!(kind0, crate::node_types::MDX_ATTR_LITERAL_PROP);
+        assert_eq!(n0.offset, 10);
+        assert_eq!(v0.offset, 20);
+
+        let (kind1, n1, v1) = decode_mdx_jsx_attr(&data, 1);
+        assert_eq!(kind1, crate::node_types::MDX_ATTR_SPREAD);
+        assert!(n1.is_empty());
+        assert_eq!(v1.offset, 30);
     }
 
     #[test]

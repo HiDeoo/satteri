@@ -4,7 +4,7 @@ use crate::node::{HastArena, HastNodeType, PropertyValue};
 
 /// Serialize a HAST arena to an HTML string.
 pub fn hast_to_html(hast: &HastArena) -> String {
-    let mut out = String::with_capacity(256);
+    let mut out = String::with_capacity(hast.strings.len());
     serialize_node(0, hast, &mut out);
     out
 }
@@ -20,7 +20,11 @@ fn serialize_node(node_id: u32, hast: &HastArena, out: &mut String) {
         }
 
         HastNodeType::Element => {
-            let tag = node.tag_name.as_deref().unwrap_or("div");
+            let tag = if node.tag_name.is_empty() {
+                "div"
+            } else {
+                hast.get_str(node.tag_name)
+            };
             let is_void = is_void_element(tag);
 
             out.push('<');
@@ -32,15 +36,15 @@ fn serialize_node(node_id: u32, hast: &HastArena, out: &mut String) {
                     continue;
                 }
                 out.push(' ');
-                out.push_str(&prop.name);
+                out.push_str(hast.get_str(prop.name));
                 match &prop.value {
                     PropertyValue::Bool(true) => {
                         // boolean attribute: just the name, no value
                     }
                     _ => {
                         out.push_str("=\"");
-                        let val = prop.value.to_html_string();
-                        out.push_str(&escape_attribute(&val));
+                        let val = hast.get_str(prop.value.as_string_ref());
+                        pulldown_cmark_escape::escape_html(&mut *out, val).unwrap();
                         out.push('"');
                     }
                 }
@@ -60,19 +64,22 @@ fn serialize_node(node_id: u32, hast: &HastArena, out: &mut String) {
         }
 
         HastNodeType::Text => {
-            if let Some(text) = &node.value {
-                out.push_str(&escape_text(text));
+            if !node.value.is_empty() {
+                let text = hast.get_str(node.value);
+                pulldown_cmark_escape::escape_html_body_text(&mut *out, text).unwrap();
             }
         }
 
         HastNodeType::Raw => {
-            if let Some(html) = &node.value {
+            if !node.value.is_empty() {
+                let html = hast.get_str(node.value);
                 out.push_str(html);
             }
         }
 
         HastNodeType::Comment => {
-            if let Some(text) = &node.value {
+            if !node.value.is_empty() {
+                let text = hast.get_str(node.value);
                 out.push_str("<!--");
                 out.push_str(text);
                 out.push_str("-->");
@@ -82,6 +89,12 @@ fn serialize_node(node_id: u32, hast: &HastArena, out: &mut String) {
         HastNodeType::Doctype => {
             out.push_str("<!doctype html>");
         }
+
+        // MDX nodes have no HTML representation.
+        HastNodeType::MdxJsxElement
+        | HastNodeType::MdxJsxTextElement
+        | HastNodeType::MdxExpression
+        | HastNodeType::MdxEsm => {}
     }
 }
 
@@ -104,32 +117,4 @@ fn is_void_element(tag: &str) -> bool {
             | "track"
             | "wbr"
     )
-}
-
-/// Escape text content for HTML
-fn escape_text(s: &str) -> String {
-    let mut out = String::with_capacity(s.len());
-    for c in s.chars() {
-        match c {
-            '&' => out.push_str("&amp;"),
-            '<' => out.push_str("&lt;"),
-            '>' => out.push_str("&gt;"),
-            '"' => out.push_str("&quot;"),
-            _ => out.push(c),
-        }
-    }
-    out
-}
-
-/// Escape attribute values for HTML
-fn escape_attribute(s: &str) -> String {
-    let mut out = String::with_capacity(s.len());
-    for c in s.chars() {
-        match c {
-            '&' => out.push_str("&amp;"),
-            '"' => out.push_str("&quot;"),
-            _ => out.push(c),
-        }
-    }
-    out
 }

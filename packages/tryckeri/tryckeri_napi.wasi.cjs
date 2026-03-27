@@ -39,9 +39,9 @@ if (__nodeFs.existsSync(__wasmDebugFilePath)) {
   __wasmFilePath = __wasmDebugFilePath
 } else if (!__nodeFs.existsSync(__wasmFilePath)) {
   try {
-    __wasmFilePath = require.resolve('@tryckeri/core-wasm32-wasi/tryckeri_napi.wasm32-wasi.wasm')
+    __wasmFilePath = require.resolve('tryckeri-wasm32-wasi/tryckeri_napi.wasm32-wasi.wasm')
   } catch {
-    throw new Error('Cannot find tryckeri_napi.wasm32-wasi.wasm file, and @tryckeri/core-wasm32-wasi package is not installed.')
+    throw new Error('Cannot find tryckeri_napi.wasm32-wasi.wasm file, and tryckeri-wasm32-wasi package is not installed.')
   }
 }
 
@@ -109,6 +109,7 @@ const { instance: __napiInstance, module: __wasiModule, napiModule: __napiModule
 })
 module.exports = __napiModule.exports
 module.exports.applyMutations = __napiModule.exports.applyMutations
+module.exports.compileHastBufferToJs = __napiModule.exports.compileHastBufferToJs
 module.exports.compileMdx = __napiModule.exports.compileMdx
 module.exports.compileMdxFromBuffer = __napiModule.exports.compileMdxFromBuffer
 module.exports.getBufferFormat = __napiModule.exports.getBufferFormat

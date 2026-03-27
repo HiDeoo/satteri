@@ -1,0 +1,284 @@
+import { describe, test, expect } from "vitest";
+import { compileMarkdownToHtml, compileMdxToJs, definePlugin } from "../src/index.js";
+import type { HastNode } from "../src/hast-materializer.js";
+import type { HastVisitorInstance, HastVisitorContext } from "../src/hast-visitor.js";
+import type { MdastNode } from "../src/types.js";
+
+// ---------------------------------------------------------------------------
+// compileMarkdownToHtml — no plugins
+// ---------------------------------------------------------------------------
+
+describe("compileMarkdownToHtml", () => {
+  test("basic markdown to HTML", () => {
+    const html = compileMarkdownToHtml("# Hello\n\nWorld");
+    expect(html).toContain("<h1>");
+    expect(html).toContain("Hello");
+    expect(html).toContain("<p>");
+    expect(html).toContain("World");
+  });
+
+  test("empty string produces empty output", () => {
+    const html = compileMarkdownToHtml("");
+    expect(html).toBe("");
+  });
+
+  test("inline formatting", () => {
+    const html = compileMarkdownToHtml("**bold** and *italic*");
+    expect(html).toContain("<strong>bold</strong>");
+    expect(html).toContain("<em>italic</em>");
+  });
+
+  test("link renders as anchor", () => {
+    const html = compileMarkdownToHtml("[click](https://example.com)");
+    expect(html).toContain('<a href="https://example.com">click</a>');
+  });
+
+  test("code block with language", () => {
+    const html = compileMarkdownToHtml("```js\nconsole.log(1)\n```");
+    expect(html).toContain('<code class="language-js">');
+    expect(html).toContain("console.log(1)");
+  });
+
+  // ---------------------------------------------------------------------------
+  // compileMarkdownToHtml — with MDAST plugins only
+  // ---------------------------------------------------------------------------
+
+  test("MDAST plugin removes headings", () => {
+    const removeHeadings = definePlugin({
+      name: "remove-headings",
+      createOnce: () => ({
+        heading(node: MdastNode, ctx: { removeNode(n: MdastNode): void }) {
+          ctx.removeNode(node);
+        },
+      }),
+    });
+
+    const html = compileMarkdownToHtml("# Title\n\nKeep this", {
+      mdastPlugins: [removeHeadings],
+    });
+    expect(html).not.toContain("<h1>");
+    expect(html).not.toContain("Title");
+    expect(html).toContain("Keep this");
+  });
+
+  test("MDAST plugin replaces text with raw markdown", () => {
+    const uppercaseHeadings = definePlugin({
+      name: "uppercase-headings",
+      createOnce: () => ({
+        heading(_node: MdastNode) {
+          return { raw: "# REPLACED" };
+        },
+      }),
+    });
+
+    const html = compileMarkdownToHtml("# Original\n\npara", {
+      mdastPlugins: [uppercaseHeadings],
+    });
+    expect(html).toContain("REPLACED");
+    expect(html).not.toContain("Original");
+  });
+
+  // ---------------------------------------------------------------------------
+  // compileMarkdownToHtml — with HAST plugins only
+  // ---------------------------------------------------------------------------
+
+  test("HAST plugin adds class to all elements", () => {
+    const addClasses: HastVisitorInstance = {
+      element(node: HastNode, ctx: HastVisitorContext) {
+        ctx.setProperty(node, "class", "styled");
+      },
+    };
+
+    const html = compileMarkdownToHtml("# Hello\n\nWorld", {
+      hastPlugins: [addClasses],
+    });
+    expect(html).toContain('<h1 class="styled">');
+    expect(html).toContain('<p class="styled">');
+  });
+
+  test("HAST plugin removes elements", () => {
+    const removeHeadings: HastVisitorInstance = {
+      element(node: HastNode, ctx: HastVisitorContext) {
+        if (node.tagName === "h1") {
+          ctx.removeNode(node);
+        }
+      },
+    };
+
+    const html = compileMarkdownToHtml("# Gone\n\nStays", {
+      hastPlugins: [removeHeadings],
+    });
+    expect(html).not.toContain("<h1>");
+    expect(html).not.toContain("Gone");
+    expect(html).toContain("Stays");
+  });
+
+  test("HAST plugin replaces element via return value", () => {
+    const replaceH1: HastVisitorInstance = {
+      element(node: HastNode) {
+        if (node.tagName === "h1") {
+          return {
+            type: "element",
+            _nodeId: -1,
+            tagName: "h2",
+            properties: { class: "demoted" },
+            children: node.children,
+            data: null,
+          };
+        }
+      },
+    };
+
+    const html = compileMarkdownToHtml("# Title", {
+      hastPlugins: [replaceH1],
+    });
+    expect(html).toContain("<h2");
+    expect(html).toContain('class="demoted"');
+    expect(html).toContain("Title");
+    expect(html).not.toContain("<h1");
+  });
+
+  test("HAST plugin sets id on heading", () => {
+    const addIds: HastVisitorInstance = {
+      element(node: HastNode, ctx: HastVisitorContext) {
+        if (node.tagName === "h1") {
+          ctx.setProperty(node, "id", "main-title");
+        }
+      },
+    };
+
+    const html = compileMarkdownToHtml("# Hello", {
+      hastPlugins: [addIds],
+    });
+    expect(html).toContain('id="main-title"');
+  });
+
+  test("HAST plugin wraps text in span via transformRoot", () => {
+    const wrapTexts: HastVisitorInstance = {
+      transformRoot(root: HastNode) {
+        function walk(node: HastNode): HastNode {
+          if (node.type === "text") {
+            return {
+              type: "element",
+              _nodeId: -1,
+              tagName: "span",
+              properties: { class: "text-wrap" },
+              children: [node],
+              data: null,
+            };
+          }
+          if (node.children) {
+            return { ...node, children: node.children.map(walk) };
+          }
+          return node;
+        }
+        return walk(root);
+      },
+    };
+
+    const html = compileMarkdownToHtml("Hello", {
+      hastPlugins: [wrapTexts],
+    });
+    expect(html).toContain('<span class="text-wrap">Hello</span>');
+  });
+
+  test("no mutations — fast Rust path still works", () => {
+    const noopPlugin: HastVisitorInstance = {
+      element() {
+        // inspect but don't mutate
+      },
+    };
+
+    const html = compileMarkdownToHtml("# Test\n\nParagraph", {
+      hastPlugins: [noopPlugin],
+    });
+    expect(html).toContain("<h1>");
+    expect(html).toContain("Test");
+    expect(html).toContain("<p>");
+  });
+
+  // ---------------------------------------------------------------------------
+  // compileMarkdownToHtml — with both MDAST and HAST plugins
+  // ---------------------------------------------------------------------------
+
+  test("MDAST plugin removes headings, HAST plugin adds class", () => {
+    const removeHeadings = definePlugin({
+      name: "remove-headings",
+      createOnce: () => ({
+        heading(node: MdastNode, ctx: { removeNode(n: MdastNode): void }) {
+          ctx.removeNode(node);
+        },
+      }),
+    });
+
+    const addClasses: HastVisitorInstance = {
+      element(node: HastNode, ctx: HastVisitorContext) {
+        ctx.setProperty(node, "class", "styled");
+      },
+    };
+
+    const html = compileMarkdownToHtml("# Gone\n\nKeep", {
+      mdastPlugins: [removeHeadings],
+      hastPlugins: [addClasses],
+    });
+    expect(html).not.toContain("<h1>");
+    expect(html).toContain('<p class="styled">');
+    expect(html).toContain("Keep");
+  });
+
+  test("multiple HAST plugins compose", () => {
+    const addIds: HastVisitorInstance = {
+      element(node: HastNode, ctx: HastVisitorContext) {
+        if (node.tagName === "h1") {
+          ctx.setProperty(node, "id", "title");
+        }
+      },
+    };
+
+    const addClasses: HastVisitorInstance = {
+      element(node: HastNode, ctx: HastVisitorContext) {
+        ctx.setProperty(node, "class", "styled");
+      },
+    };
+
+    const html = compileMarkdownToHtml("# Hello", {
+      hastPlugins: [addIds, addClasses],
+    });
+    expect(html).toContain('id="title"');
+    expect(html).toContain('class="styled"');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// compileMdxToJs
+// ---------------------------------------------------------------------------
+
+describe("compileMdxToJs", () => {
+  test("basic MDX compilation", () => {
+    const js = compileMdxToJs("# Hello\n\nWorld");
+    expect(js).toContain("function");
+    expect(js).toContain("Hello");
+  });
+
+  test("MDX with JSX element", () => {
+    const js = compileMdxToJs("<MyComponent />", {});
+    expect(js).toContain("MyComponent");
+  });
+
+  test("MDAST plugin affects MDX output", () => {
+    const removeHeadings = definePlugin({
+      name: "remove-headings",
+      createOnce: () => ({
+        heading(node: MdastNode, ctx: { removeNode(n: MdastNode): void }) {
+          ctx.removeNode(node);
+        },
+      }),
+    });
+
+    const js = compileMdxToJs("# Gone\n\nKept", {
+      mdastPlugins: [removeHeadings],
+    });
+    expect(js).not.toContain("Gone");
+    expect(js).toContain("Kept");
+  });
+});

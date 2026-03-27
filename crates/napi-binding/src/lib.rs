@@ -16,7 +16,7 @@ pub fn compile_mdx(source: String) -> Result<String> {
 
 /// Compile a pre-parsed MDAST binary buffer to MDX JavaScript output.
 #[napi]
-pub fn compile_mdx_from_buffer(buf: Buffer) -> Result<String> {
+pub fn compile_mdx_from_buffer(buf: Uint8Array) -> Result<String> {
     mdxjs::compile_arena_bytes(&buf, &mdxjs::Options::default())
         .map_err(|e| napi::Error::from_reason(e.to_string()))
 }
@@ -41,20 +41,20 @@ pub fn parse_mdx_to_buffer(source: String) -> Result<Uint8Array> {
 
 /// Parse Markdown source and return a HAST binary buffer.
 #[napi]
-pub fn parse_to_hast_buffer(source: String) -> Result<Buffer> {
+pub fn parse_to_hast_buffer(source: String) -> Result<Uint8Array> {
     let (arena, _) = parser::parse(&source, &parser::ParseOptions::default());
     let hast_buf = tryckeri_hast::mdast_to_hast_buffer(&arena.to_raw_buffer())
         .map_err(|e| napi::Error::from_reason(format!("{e:?}")))?;
-    Ok(Buffer::from(hast_buf))
+    Ok(Uint8Array::new(hast_buf))
 }
 
 /// Parse MDX source and return a HAST binary buffer (MDX mode).
 #[napi]
-pub fn parse_mdx_to_hast_buffer(source: String) -> Result<Buffer> {
+pub fn parse_mdx_to_hast_buffer(source: String) -> Result<Uint8Array> {
     let (arena, _) = parser::parse(&source, &parser::ParseOptions::mdx());
     let hast_buf = tryckeri_hast::mdast_to_hast_buffer(&arena.to_raw_buffer())
         .map_err(|e| napi::Error::from_reason(format!("{e:?}")))?;
-    Ok(Buffer::from(hast_buf))
+    Ok(Uint8Array::new(hast_buf))
 }
 
 /// Parse Markdown source and return HTML string directly.
@@ -76,17 +76,27 @@ pub fn parse_mdx_to_html(source: String) -> Result<String> {
 // ---------------------------------------------------------------------------
 
 /// Convert an existing MDAST binary buffer to a HAST binary buffer.
+/// Works for both Markdown and MDX — MDX nodes are converted to MDX HAST types.
 #[napi]
-pub fn mdast_buffer_to_hast_buffer(buf: Buffer) -> Result<Buffer> {
+pub fn mdast_buffer_to_hast_buffer(buf: Uint8Array) -> Result<Uint8Array> {
     let hast_buf = tryckeri_hast::mdast_to_hast_buffer(&buf)
         .map_err(|e| napi::Error::from_reason(format!("{e:?}")))?;
-    Ok(Buffer::from(hast_buf))
+    Ok(Uint8Array::new(hast_buf))
 }
 
 /// Convert a HAST binary buffer to an HTML string.
 #[napi]
-pub fn hast_buffer_to_html_str(buf: Buffer) -> Result<String> {
+pub fn hast_buffer_to_html_str(buf: Uint8Array) -> Result<String> {
     tryckeri_hast::hast_buffer_to_html(&buf).map_err(|e| napi::Error::from_reason(format!("{e:?}")))
+}
+
+/// Compile a HAST binary buffer (with MDX node types) to JavaScript.
+/// This is the split-pipeline entry point for MDX: after MDAST→HAST conversion
+/// and any HAST plugin mutations, this function does the final hast→JS step.
+#[napi]
+pub fn compile_hast_buffer_to_js(buf: Uint8Array) -> Result<String> {
+    mdxjs::compile_hast_buffer(&buf, &mdxjs::Options::default())
+        .map_err(|e| napi::Error::from_reason(e.to_string()))
 }
 
 // ---------------------------------------------------------------------------
@@ -101,10 +111,7 @@ pub fn hast_buffer_to_html_str(buf: Buffer) -> Result<String> {
 ///
 /// Returns a new MDAST arena buffer with all mutations applied.
 #[napi]
-pub fn apply_mutations(
-    arena_buf: Buffer,
-    command_buf: Buffer,
-) -> Result<Uint8Array> {
+pub fn apply_mutations(arena_buf: Uint8Array, command_buf: Uint8Array) -> Result<Uint8Array> {
     // Deserialize the arena from its binary buffer
     let view = mdast_arena::MdastArena::from_raw_buffer(&arena_buf)
         .map_err(|e| napi::Error::from_reason(format!("invalid arena buffer: {e:?}")))?;

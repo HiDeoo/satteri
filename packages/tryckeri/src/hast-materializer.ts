@@ -6,6 +6,10 @@ import {
   HAST_COMMENT,
   HAST_DOCTYPE,
   HAST_RAW,
+  HAST_MDX_JSX_ELEMENT,
+  HAST_MDX_JSX_TEXT_ELEMENT,
+  HAST_MDX_EXPRESSION,
+  HAST_MDX_ESM,
   type HastProperty,
 } from "./hast-reader.js";
 import type { DataMap } from "./data-map.js";
@@ -75,6 +79,18 @@ export function materializeHastNode(
       break;
     case HAST_RAW:
       typeName = "raw";
+      break;
+    case HAST_MDX_JSX_ELEMENT:
+      typeName = "mdxJsxElement";
+      break;
+    case HAST_MDX_JSX_TEXT_ELEMENT:
+      typeName = "mdxJsxTextElement";
+      break;
+    case HAST_MDX_EXPRESSION:
+      typeName = "mdxExpression";
+      break;
+    case HAST_MDX_ESM:
+      typeName = "mdxjsEsm";
       break;
     default:
       typeName = `unknown(${nodeType})`;
@@ -161,6 +177,41 @@ export function materializeHastNode(
 
     case HAST_DOCTYPE:
       // No extra properties
+      break;
+
+    case HAST_MDX_JSX_ELEMENT:
+    case HAST_MDX_JSX_TEXT_ELEMENT:
+      // MDX JSX elements have name and children (attributes are in type_data
+      // but we expose them as-is for now)
+      Object.defineProperties(node, {
+        name: lazyProp("name", () => {
+          // Read element name from type_data (same layout as element tag)
+          const data = reader.getElementData(nodeId);
+          return data.tagName || null;
+        }),
+      });
+      Object.defineProperty(node, "children", {
+        get(this: HastNode) {
+          const childIds = reader.getChildIds(nodeId);
+          const children = childIds.map((id) => materializeHastNode(reader, id, dataMap));
+          Object.defineProperty(this, "children", {
+            value: children,
+            writable: true,
+            configurable: true,
+            enumerable: true,
+          });
+          return children;
+        },
+        configurable: true,
+        enumerable: true,
+      });
+      break;
+
+    case HAST_MDX_EXPRESSION:
+    case HAST_MDX_ESM:
+      Object.defineProperties(node, {
+        value: lazyProp("value", () => reader.getTextValue(nodeId)),
+      });
       break;
   }
 

@@ -16,17 +16,6 @@ use oxc_ast::ast::{
 use oxc_span::{Atom, SPAN, Span};
 use oxc_syntax::node::NodeId;
 
-/// Turn a unist position, into an OXC span, of two byte positions.
-///
-/// > 👉 **Note**: OXC byte positions are zero-based, and we use offset+1 as
-/// > convention to distinguish valid spans from dummy spans. A span where
-/// > `start == 0 && end == 0` is considered dummy (like `SPAN`).
-pub fn position_to_span(position: Option<&Position>) -> Span {
-    position.map_or(SPAN, |d| {
-        Span::new(d.start.offset as u32 + 1, d.end.offset as u32 + 1)
-    })
-}
-
 /// Turn an OXC span, of two byte positions, into a unist position.
 ///
 /// This assumes the span comes from a fixed tree, or is a dummy.

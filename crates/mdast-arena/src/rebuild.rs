@@ -287,19 +287,59 @@ fn remap_string_refs(data: &mut [u8], node_type: u8, base: u32) {
         100 | 101 => &[0],
         // MdxFlowExpression, MdxTextExpression, MdxjsEsm: value(0)
         102 | 103 | 104 => &[0],
-        // Heading(depth u8), List, ListItem, Table, etc. — no StringRefs
+        // HAST_TEXT(2), HAST_COMMENT(3), HAST_RAW(5),
+        // HAST_MDX_EXPRESSION(12): single StringRef at 0
+        // (HAST_MDX_ESM=13 is already covered by InlineCode=13 above)
+        2 | 3 | 5 | 12 => &[0],
+        // Heading(depth u8), List, ListItem, Table, HAST_ROOT(0), HAST_DOCTYPE(4), etc.
         _ => &[],
     };
 
-    for &off in ref_offsets {
-        if off + 4 <= data.len() {
-            let current = u32::from_le_bytes([data[off], data[off + 1], data[off + 2], data[off + 3]]);
-            let len = u32::from_le_bytes([data[off + 4], data[off + 5], data[off + 6], data[off + 7]]);
-            // Only remap non-empty StringRefs (len > 0)
-            if len > 0 {
-                let new_offset = current + base;
-                data[off..off + 4].copy_from_slice(&new_offset.to_le_bytes());
+    // HAST element types (1, 10, 11) have variable-length property/attribute data.
+    // Handle them specially: tag/name StringRef at 0, then props/attrs at fixed stride.
+    match node_type {
+        // HAST_ELEMENT: tag(0), then each prop: name at 16+i*20, value at 16+i*20+12
+        1 => {
+            remap_one_ref(data, 0, base);
+            if data.len() >= 12 {
+                let prop_count =
+                    u32::from_le_bytes([data[8], data[9], data[10], data[11]]) as usize;
+                for i in 0..prop_count {
+                    let prop_base = 16 + i * 20;
+                    remap_one_ref(data, prop_base, base); // name
+                    remap_one_ref(data, prop_base + 12, base); // value
+                }
             }
+            return;
+        }
+        // HAST_MDX_JSX_ELEMENT(10), HAST_MDX_JSX_TEXT_ELEMENT(11): name(0), then attrs
+        10 | 11 if data.len() >= 16 => {
+            remap_one_ref(data, 0, base);
+            let attr_count =
+                u32::from_le_bytes([data[8], data[9], data[10], data[11]]) as usize;
+            for i in 0..attr_count {
+                let attr_base = 16 + i * 20;
+                remap_one_ref(data, attr_base + 4, base); // name
+                remap_one_ref(data, attr_base + 12, base); // value
+            }
+            return;
+        }
+        _ => {}
+    }
+
+    for &off in ref_offsets {
+        remap_one_ref(data, off, base);
+    }
+}
+
+fn remap_one_ref(data: &mut [u8], off: usize, base: u32) {
+    if off + 8 <= data.len() {
+        let current = u32::from_le_bytes([data[off], data[off + 1], data[off + 2], data[off + 3]]);
+        let len =
+            u32::from_le_bytes([data[off + 4], data[off + 5], data[off + 6], data[off + 7]]);
+        if len > 0 {
+            let new_offset = current + base;
+            data[off..off + 4].copy_from_slice(&new_offset.to_le_bytes());
         }
     }
 }

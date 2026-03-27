@@ -221,6 +221,17 @@ export class CommandBuffer {
     this.writeStructuralCommand(CMD_REPLACE, nodeId, newNode);
   }
 
+  /** Write a REPLACE command with a pre-serialized JSON payload. */
+  replaceRawJson(nodeId: number, json: string): void {
+    const encoded = encoder.encode(json);
+    this.ensureCapacity(10 + encoded.length);
+    this.writeU8(CMD_REPLACE);
+    this.writeU32(nodeId);
+    this.writeU8(PAYLOAD_SERDE_JSON);
+    this.writeU32(encoded.length);
+    this.writeBytes(encoded);
+  }
+
   // -- Result accessors -----------------------------------------------------
 
   /** Return a Uint8Array view of the written bytes (no copy). */

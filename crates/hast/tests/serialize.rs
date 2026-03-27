@@ -15,7 +15,7 @@ fn serialize_simple_paragraph() {
     let mut b = HastBuilder::new();
     b.open_root();
     b.open_element("p");
-    b.add_text("Hello".to_string());
+    b.add_text("Hello");
     b.close();
     let hast = b.finish();
     assert_eq!(hast_to_html(&hast), "<p>Hello</p>");
@@ -26,14 +26,16 @@ fn serialize_element_with_attribute() {
     let mut b = HastBuilder::new();
     b.open_root();
     let a_id = b.open_element("a");
+    let name = b.alloc_string("href");
+    let val = b.alloc_string("url");
     b.set_properties(
         a_id,
-        vec![Property {
-            name: "href".to_string(),
-            value: PropertyValue::String("url".to_string()),
+        &[Property {
+            name,
+            value: PropertyValue::String(val),
         }],
     );
-    b.add_text("text".to_string());
+    b.add_text("text");
     b.close();
     let hast = b.finish();
     assert_eq!(hast_to_html(&hast), "<a href=\"url\">text</a>");
@@ -44,10 +46,11 @@ fn serialize_boolean_attribute_true() {
     let mut b = HastBuilder::new();
     b.open_root();
     let input_id = b.open_element("input");
+    let name = b.alloc_string("disabled");
     b.set_properties(
         input_id,
-        vec![Property {
-            name: "disabled".to_string(),
+        &[Property {
+            name,
             value: PropertyValue::Bool(true),
         }],
     );
@@ -61,10 +64,11 @@ fn serialize_boolean_attribute_false_omitted() {
     let mut b = HastBuilder::new();
     b.open_root();
     let input_id = b.open_element("input");
+    let name = b.alloc_string("checked");
     b.set_properties(
         input_id,
-        vec![Property {
-            name: "checked".to_string(),
+        &[Property {
+            name,
             value: PropertyValue::Bool(false),
         }],
     );
@@ -99,13 +103,11 @@ fn serialize_text_escaping() {
     let mut b = HastBuilder::new();
     b.open_root();
     b.open_element("p");
-    b.add_text("<foo> & \"bar\"".to_string());
+    b.add_text("<foo> & \"bar\"");
     b.close();
     let hast = b.finish();
-    assert_eq!(
-        hast_to_html(&hast),
-        "<p>&lt;foo&gt; &amp; &quot;bar&quot;</p>"
-    );
+    // Double quotes don't need escaping in text content (only in attributes)
+    assert_eq!(hast_to_html(&hast), "<p>&lt;foo&gt; &amp; \"bar\"</p>");
 }
 
 #[test]
@@ -113,14 +115,16 @@ fn serialize_attribute_escaping() {
     let mut b = HastBuilder::new();
     b.open_root();
     let a_id = b.open_element("a");
+    let name = b.alloc_string("href");
+    let val = b.alloc_string("url?a=1&b=\"2\"");
     b.set_properties(
         a_id,
-        vec![Property {
-            name: "href".to_string(),
-            value: PropertyValue::String("url?a=1&b=\"2\"".to_string()),
+        &[Property {
+            name,
+            value: PropertyValue::String(val),
         }],
     );
-    b.add_text("link".to_string());
+    b.add_text("link");
     b.close();
     let hast = b.finish();
     assert_eq!(
@@ -135,7 +139,7 @@ fn serialize_nested_elements() {
     b.open_root();
     b.open_element("p");
     b.open_element("strong");
-    b.add_text("bold".to_string());
+    b.add_text("bold");
     b.close(); // strong
     b.close(); // p
     let hast = b.finish();
@@ -148,10 +152,10 @@ fn serialize_multiple_children_in_list() {
     b.open_root();
     b.open_element("ul");
     b.open_element("li");
-    b.add_text("a".to_string());
+    b.add_text("a");
     b.close();
     b.open_element("li");
-    b.add_text("b".to_string());
+    b.add_text("b");
     b.close();
     b.close(); // ul
     let hast = b.finish();
@@ -162,7 +166,7 @@ fn serialize_multiple_children_in_list() {
 fn serialize_comment_node() {
     let mut b = HastBuilder::new();
     b.open_root();
-    b.add_comment("comment".to_string());
+    b.add_comment("comment");
     let hast = b.finish();
     assert_eq!(hast_to_html(&hast), "<!--comment-->");
 }
@@ -180,7 +184,7 @@ fn serialize_doctype() {
 fn serialize_raw_passthrough_not_escaped() {
     let mut b = HastBuilder::new();
     b.open_root();
-    b.add_raw("<div class=\"foo\">raw &amp; content</div>".to_string());
+    b.add_raw("<div class=\"foo\">raw &amp; content</div>");
     let hast = b.finish();
     // Raw nodes must not be escaped
     assert_eq!(
@@ -194,14 +198,16 @@ fn serialize_space_separated_class_property() {
     let mut b = HastBuilder::new();
     b.open_root();
     let span_id = b.open_element("span");
+    let name = b.alloc_string("class");
+    let val = b.alloc_string("foo bar");
     b.set_properties(
         span_id,
-        vec![Property {
-            name: "class".to_string(),
-            value: PropertyValue::SpaceSeparated(vec!["foo".to_string(), "bar".to_string()]),
+        &[Property {
+            name,
+            value: PropertyValue::SpaceSeparated(val),
         }],
     );
-    b.add_text("text".to_string());
+    b.add_text("text");
     b.close();
     let hast = b.finish();
     assert_eq!(hast_to_html(&hast), "<span class=\"foo bar\">text</span>");
@@ -234,7 +240,7 @@ fn build_h1_paragraph_mdast() -> mdast_arena::MdastArena {
 fn e2e_heading_and_paragraph() {
     let mdast = build_h1_paragraph_mdast();
     let html = mdast_to_html(&mdast);
-    assert_eq!(html, "<h1>Hello</h1><p>World</p>");
+    assert_eq!(html, "<h1>Hello</h1>\n<p>World</p>");
 }
 
 #[test]

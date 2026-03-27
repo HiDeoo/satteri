@@ -236,8 +236,9 @@ fn jsx_flow_with_children() {
 fn jsx_flow_with_children_html() {
     let (arena, _) = parse("<h1>asd</h1>\n# qwe", &ParseOptions::mdx());
     let html = tryckeri_hast::mdast_to_html(&arena);
-    // Both the explicit <h1> and the markdown # heading should be present.
-    assert!(html.contains("asd"), "expected asd in: {html}");
+    // MDX JSX elements have no HTML representation — they're only used in the
+    // MDX→JS compilation path. The markdown heading should still be present.
+    assert!(!html.contains("asd"), "MDX JSX should not render as HTML, got: {html}");
     assert!(html.contains("qwe"), "expected qwe in: {html}");
 }
 

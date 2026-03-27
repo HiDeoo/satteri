@@ -14,6 +14,7 @@ export {
   hastBufferToHtmlStr,
   compileMdx,
   compileMdxFromBuffer,
+  compileHastBufferToJs,
   parseToHtml,
   parseMdxToHtml,
   applyMutations,
@@ -28,6 +29,10 @@ export {
   HAST_COMMENT,
   HAST_DOCTYPE,
   HAST_RAW,
+  HAST_MDX_JSX_ELEMENT,
+  HAST_MDX_JSX_TEXT_ELEMENT,
+  HAST_MDX_EXPRESSION,
+  HAST_MDX_ESM,
   PROP_STRING,
   PROP_BOOL_TRUE,
   PROP_BOOL_FALSE,
@@ -43,5 +48,8 @@ export type {
   HastVisitorContext,
   VisitResult as HastVisitResult,
 } from "./hast-visitor.js";
+
+export { compileMarkdownToHtml, compileMdxToJs } from "./compile.js";
+export type { CompileOptions } from "./compile.js";
 
 export type { MdastNode, Position, Point } from "./types.js";

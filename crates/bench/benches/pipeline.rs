@@ -183,32 +183,22 @@ fn mdx_step1_parse(bencher: divan::Bencher) {
     bencher.bench(|| parser::parse(MDX, &opts));
 }
 
-/// Step 2 of MDX compile: Arena → boxed hast::Node tree.
+/// Step 2 of MDX compile: MDAST binary → HAST binary.
 #[divan::bench]
 fn mdx_step2_mdast_to_hast(bencher: divan::Bencher) {
     let (arena, _) = parser::parse(MDX, &parser::ParseOptions::mdx());
+    let mdast_buf = arena.to_raw_buffer();
 
-    bencher.bench(|| mdxjs::mdast_to_hast(&arena));
+    bencher.bench(|| tryckeri_hast::mdast_to_hast_buffer(&mdast_buf).unwrap());
 }
 
-/// Step 3 of MDX compile: hast::Node tree → OXC ES AST + recma plugins + serialize.
+/// Step 3 of MDX compile: HAST binary → OXC ES AST → JavaScript.
 #[divan::bench]
 fn mdx_step3_hast_to_js(bencher: divan::Bencher) {
-    use mdxjs::hast_util_to_oxc_program;
-    use oxc_allocator::Allocator;
-    use rustc_hash::FxHashSet;
-
     let (arena, _) = parser::parse(MDX, &parser::ParseOptions::mdx());
-    let hast = mdxjs::mdast_to_hast(&arena);
+    let mdast_buf = arena.to_raw_buffer();
+    let hast_buf = tryckeri_hast::mdast_to_hast_buffer(&mdast_buf).unwrap();
     let opts = mdxjs::Options::default();
 
-    bencher.bench(|| {
-        let alloc = Allocator::default();
-        let mut explicit_jsxs = FxHashSet::default();
-        let mut program =
-            hast_util_to_oxc_program(&hast, &opts, None, &mut explicit_jsxs, &alloc).unwrap();
-        mdxjs::mdx_plugin_recma_document(&mut program, &opts, None, &alloc).unwrap();
-        mdxjs::mdx_plugin_recma_jsx_rewrite(&mut program, &opts, None, &explicit_jsxs, &alloc)
-            .unwrap();
-    });
+    bencher.bench(|| mdxjs::compile_hast_buffer(&hast_buf, &opts).unwrap());
 }

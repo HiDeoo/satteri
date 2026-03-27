@@ -7,16 +7,12 @@
 #![allow(clippy::cast_precision_loss)]
 
 mod configuration;
-pub mod hast;
 mod hast_util_to_oxc;
-mod mdast_to_hast;
 mod mdx_plugin_recma_document;
 mod mdx_plugin_recma_jsx_rewrite;
 mod oxc;
 mod oxc_util_build_jsx;
 mod oxc_utils;
-
-pub use mdast_to_hast::mdast_to_hast;
 
 use crate::{
     hast_util_to_oxc::{MdxProgram, hast_util_to_oxc},
@@ -73,26 +69,72 @@ pub fn compile(value: &str, options: &Options) -> Result<String, message::Messag
             source: Box::new("mdx-jsx".into()),
         });
     }
-    compile_arena(&arena, options)
+    let mdast_buf = arena.to_raw_buffer();
+    compile_arena_bytes(&mdast_buf, options)
 }
 
-/// Compile a pre-parsed arena directly to JavaScript, skipping the parse step.
+/// Compile a raw MDAST binary buffer (as produced by the NAPI layer) to JavaScript.
 ///
-/// This is the zero-reparse path: mdast → hast → OXC → JS.
+/// This is the main compilation path: MDAST binary → HAST binary → OXC → JS.
+/// All other compile functions route through this.
 ///
 /// ## Errors
 ///
-/// Errors propagate from the downstream hast → OXC pipeline.
-pub fn compile_arena(
-    arena: &dyn mdast_arena::ReadMdast,
+/// Returns an error if the buffer is malformed or compilation fails.
+pub fn compile_arena_bytes(buf: &[u8], options: &Options) -> Result<String, message::Message> {
+    // Extract source text from MDAST buffer for position resolution.
+    let mdast_view =
+        mdast_arena::MdastArena::from_raw_buffer(buf).map_err(|e| message::Message {
+            reason: format!("invalid MDAST buffer: {e:?}"),
+            place: None,
+            rule_id: Box::new(String::new()),
+            source: Box::new("mdxjs".into()),
+        })?;
+    let source = mdast_view.get_source().to_string();
+
+    let hast_buf = tryckeri_hast::mdast_to_hast_buffer(buf).map_err(|e| message::Message {
+        reason: format!("invalid MDAST buffer: {e:?}"),
+        place: None,
+        rule_id: Box::new(String::new()),
+        source: Box::new("mdxjs".into()),
+    })?;
+    compile_hast_buffer_with_source(&hast_buf, options, source.as_bytes())
+}
+
+/// Compile a HAST binary buffer (with MDX node types) to JavaScript.
+///
+/// This is the split-pipeline entry point: takes a HAST binary buffer
+/// and runs hast → OXC → JS directly from the binary format.
+///
+/// ## Errors
+///
+/// Returns an error if the buffer is malformed or compilation fails.
+pub fn compile_hast_buffer(buf: &[u8], options: &Options) -> Result<String, message::Message> {
+    compile_hast_buffer_with_source(buf, options, &[])
+}
+
+/// Compile a HAST binary buffer to JavaScript, with source text for position resolution.
+///
+/// ## Errors
+///
+/// Returns an error if the buffer is malformed or compilation fails.
+pub fn compile_hast_buffer_with_source(
+    buf: &[u8],
     options: &Options,
+    source: &[u8],
 ) -> Result<String, message::Message> {
+    let view = mdast_arena::MdastArena::from_raw_buffer(buf).map_err(|e| message::Message {
+        reason: format!("invalid HAST buffer: {e:?}"),
+        place: None,
+        rule_id: Box::new(String::new()),
+        source: Box::new("mdxjs".into()),
+    })?;
+
     let allocator = Allocator::default();
-    let hast = mdast_to_hast(arena);
-    let location = Location::new(arena.source().as_bytes());
+    let location = Location::new(source);
     let mut explicit_jsxs = FxHashSet::default();
     let mut program = hast_util_to_oxc(
-        &hast,
+        &view,
         options.filepath.clone(),
         Some(&location),
         &mut explicit_jsxs,
@@ -107,45 +149,6 @@ pub fn compile_arena(
         &allocator,
     )?;
     Ok(serialize(&program.program))
-}
-
-/// Compile a raw MDAST binary buffer (as produced by the NAPI layer) to JavaScript.
-///
-/// This is the zero-copy NAPI path: raw bytes → mdast → hast → OXC → JS.
-///
-/// ## Errors
-///
-/// Returns an error if the buffer is malformed or compilation fails.
-pub fn compile_arena_bytes(buf: &[u8], options: &Options) -> Result<String, message::Message> {
-    let view = mdast_arena::MdastArena::from_raw_buffer(buf).map_err(|e| message::Message {
-        reason: format!("invalid arena buffer: {e:?}"),
-        place: None,
-        rule_id: Box::new(String::new()),
-        source: Box::new("mdxjs".into()),
-    })?;
-    compile_arena(&view, options)
-}
-
-/// Compile hast into OXC's ES AST.
-///
-/// ## Errors
-///
-/// This function currently does not emit errors.
-#[allow(clippy::implicit_hasher)]
-pub fn hast_util_to_oxc_program<'a>(
-    hast: &hast::Node,
-    options: &Options,
-    location: Option<&'a Location>,
-    explicit_jsxs: &mut FxHashSet<Span>,
-    allocator: &'a Allocator,
-) -> Result<MdxProgram<'a>, message::Message> {
-    hast_util_to_oxc(
-        hast,
-        options.filepath.clone(),
-        location,
-        explicit_jsxs,
-        allocator,
-    )
 }
 
 /// Wrap the ES AST nodes coming from hast into a whole document.

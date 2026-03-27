@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 mdast-arena = { path = "../mdast-arena" }
+pulldown-cmark-escape = { path = "../pulldown-cmark-escape" }
 
 [dev-dependencies]
 parser = { path = "../parser" }

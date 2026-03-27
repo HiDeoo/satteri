@@ -1,6 +1,7 @@
 [dependencies]
 mdast-arena = { path = "../mdast-arena" }
 parser = { path = "../parser" }
+tryckeri-hast = { path = "../hast" }
 rustc-hash = "2"
 serde = { version = "1", features = ["derive"] }
 oxc_allocator = { workspace = true }

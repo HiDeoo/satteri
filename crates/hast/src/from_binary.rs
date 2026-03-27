@@ -7,29 +7,31 @@ use crate::codec::{
 };
 use crate::node_types::*;
 
-const VOID_ELEMENTS: &[&str] = &[
-    "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source",
-    "track", "wbr",
-];
-
 fn is_void(tag: &str) -> bool {
-    VOID_ELEMENTS.contains(&tag)
-}
-
-fn escape_text(s: &str) -> String {
-    s.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-}
-
-fn escape_attr(s: &str) -> String {
-    s.replace('&', "&amp;").replace('"', "&quot;")
+    matches!(
+        tag,
+        "area"
+            | "base"
+            | "br"
+            | "col"
+            | "embed"
+            | "hr"
+            | "img"
+            | "input"
+            | "link"
+            | "meta"
+            | "param"
+            | "source"
+            | "track"
+            | "wbr"
+    )
 }
 
 /// Convert a HAST binary buffer to an HTML string.
 pub fn hast_buffer_to_html(buf: &[u8]) -> Result<String, BufferError> {
     let view = MdastArena::from_raw_buffer(buf)?;
-    let mut out = String::new();
+    // Pre-allocate: source len is a reasonable lower bound for HTML output size
+    let mut out = String::with_capacity(view.get_source().len());
     render_node(0, &view, &mut out);
     Ok(out)
 }
@@ -75,7 +77,7 @@ fn render_node(node_id: u32, view: &MdastView, out: &mut String) {
                         out.push(' ');
                         out.push_str(name);
                         out.push_str("=\"");
-                        out.push_str(&escape_attr(value));
+                        pulldown_cmark_escape::escape_html(&mut *out, value).unwrap();
                         out.push('"');
                     }
                     _ => {}
@@ -101,7 +103,7 @@ fn render_node(node_id: u32, view: &MdastView, out: &mut String) {
             if data.len() >= 8 {
                 let sr = decode_text_data(data);
                 let text = view.get_str(sr);
-                out.push_str(&escape_text(text));
+                pulldown_cmark_escape::escape_html_body_text(&mut *out, text).unwrap();
             }
         }
 
@@ -127,6 +129,11 @@ fn render_node(node_id: u32, view: &MdastView, out: &mut String) {
                 let html = view.get_str(sr);
                 out.push_str(html);
             }
+        }
+
+        HAST_MDX_JSX_ELEMENT | HAST_MDX_JSX_TEXT_ELEMENT | HAST_MDX_EXPRESSION | HAST_MDX_ESM => {
+            // MDX nodes have no HTML representation — they're only used
+            // in the MDX→JS compilation path.
         }
 
         _ => {

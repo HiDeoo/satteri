@@ -6,16 +6,13 @@ import {
   HAST_TEXT,
   HAST_COMMENT,
   HAST_RAW,
+  HAST_MDX_JSX_ELEMENT,
+  HAST_MDX_JSX_TEXT_ELEMENT,
+  HAST_MDX_EXPRESSION,
+  HAST_MDX_ESM,
 } from "./hast-reader.js";
+import { CommandBuffer } from "./command-buffer.js";
 import type { DataMap } from "./data-map.js";
-
-export interface Mutation {
-  type: "replace" | "remove" | "setProperty";
-  nodeId: number;
-  newNode?: HastNode;
-  key?: string;
-  value?: unknown;
-}
 
 export interface Diagnostic {
   message: string;
@@ -28,24 +25,44 @@ export interface HastVisitorContext {
   replaceNode(node: HastNode, newNode: HastNode): void;
   setProperty(node: HastNode, key: string, value: unknown): void;
   report(opts: { message: string; node?: HastNode; severity?: "error" | "warning" | "info" }): void;
-  getMutations(): Mutation[];
   getDiagnostics(): Diagnostic[];
 }
 
+/** Inject `_hast: true` marker on a HastNode and all its children for JSON serialization. */
+function markHast(node: HastNode): Record<string, unknown> {
+  const obj: Record<string, unknown> = { _hast: true, type: node.type };
+  if (node.tagName !== undefined) obj.tagName = node.tagName;
+  if (node.properties !== undefined) obj.properties = node.properties;
+  if (node.value !== undefined) obj.value = node.value;
+  // MDX JSX elements store name on the node
+  const anyNode = node as unknown as Record<string, unknown>;
+  if (anyNode.name !== undefined) obj.name = anyNode.name;
+  if (node.children) {
+    obj.children = node.children.map(markHast);
+  }
+  return obj;
+}
+
 class HastVisitorContextImpl implements HastVisitorContext {
-  readonly #mutations: Mutation[] = [];
+  readonly #commandBuffer: CommandBuffer = new CommandBuffer();
   readonly #diagnostics: Diagnostic[] = [];
 
   removeNode(node: HastNode): void {
-    this.#mutations.push({ type: "remove", nodeId: node._nodeId });
+    this.#commandBuffer.removeNode(node._nodeId);
   }
 
   replaceNode(node: HastNode, newNode: HastNode): void {
-    this.#mutations.push({ type: "replace", nodeId: node._nodeId, newNode });
+    // Encode as a REPLACE command with _hast marker for Rust deserialization
+    this.#commandBuffer.replaceRawJson(node._nodeId, JSON.stringify(markHast(newNode)));
   }
 
   setProperty(node: HastNode, key: string, value: unknown): void {
-    this.#mutations.push({ type: "setProperty", nodeId: node._nodeId, key, value });
+    // For HAST, setProperty modifies an element's HTML attributes.
+    // We implement this as a full replace of the node with updated properties.
+    const updated = { ...node };
+    if (!updated.properties) updated.properties = {};
+    updated.properties = { ...updated.properties, [key]: value as string | boolean | string[] };
+    this.replaceNode(node, updated as HastNode);
   }
 
   report({
@@ -60,9 +77,10 @@ class HastVisitorContextImpl implements HastVisitorContext {
     this.#diagnostics.push({ message, nodeId: node?._nodeId, severity });
   }
 
-  getMutations(): Mutation[] {
-    return this.#mutations;
+  getCommandBuffer(): CommandBuffer {
+    return this.#commandBuffer;
   }
+
   getDiagnostics(): Diagnostic[] {
     return this.#diagnostics;
   }
@@ -77,10 +95,14 @@ export interface HastVisitorInstance {
   comment?(node: HastNode, ctx: HastVisitorContext): HastNode | void;
   raw?(node: HastNode, ctx: HastVisitorContext): HastNode | void;
   doctype?(node: HastNode, ctx: HastVisitorContext): HastNode | void;
+  mdxJsxElement?(node: HastNode, ctx: HastVisitorContext): HastNode | void;
+  mdxJsxTextElement?(node: HastNode, ctx: HastVisitorContext): HastNode | void;
+  mdxExpression?(node: HastNode, ctx: HastVisitorContext): HastNode | void;
+  mdxjsEsm?(node: HastNode, ctx: HastVisitorContext): HastNode | void;
 }
 
 export interface VisitResult {
-  mutations: Mutation[];
+  commandBuffer: Uint8Array;
   diagnostics: Diagnostic[];
   hasMutations: boolean;
 }
@@ -92,10 +114,16 @@ const TYPE_TO_METHOD: Record<number, keyof HastVisitorInstance> = {
   [HAST_TEXT]: "text",
   [HAST_COMMENT]: "comment",
   [HAST_RAW]: "raw",
+  [HAST_MDX_JSX_ELEMENT]: "mdxJsxElement",
+  [HAST_MDX_JSX_TEXT_ELEMENT]: "mdxJsxTextElement",
+  [HAST_MDX_EXPRESSION]: "mdxExpression",
+  [HAST_MDX_ESM]: "mdxjsEsm",
 };
 
 /**
  * Walk a HAST binary buffer and dispatch to visitor methods.
+ *
+ * Mutations are collected into a binary CommandBuffer (same as MDAST plugins).
  */
 export function visitHast(
   reader: HastReader,
@@ -103,7 +131,7 @@ export function visitHast(
   dataMap: DataMap,
 ): VisitResult {
   const ctx = new HastVisitorContextImpl();
-  const mutations: Mutation[] = [];
+  const returnBuffer = new CommandBuffer();
 
   plugin.before?.(ctx);
 
@@ -112,7 +140,7 @@ export function visitHast(
     const root = materializeHastNode(reader, 0, dataMap);
     const result = plugin.transformRoot(root, ctx);
     if (result != null) {
-      mutations.push({ type: "replace", nodeId: 0, newNode: result });
+      returnBuffer.replaceRawJson(0, JSON.stringify(markHast(result)));
     }
   } else {
     // Fast path: walk raw bytes, only materialize on subscription match
@@ -131,7 +159,7 @@ export function visitHast(
           const node = materializeHastNode(reader, nodeId, dataMap);
           const result = fn.call(plugin, node, ctx);
           if (result != null) {
-            mutations.push({ type: "replace", nodeId, newNode: result });
+            returnBuffer.replaceRawJson(nodeId, JSON.stringify(markHast(result)));
           }
         }
       }
@@ -145,12 +173,23 @@ export function visitHast(
 
   plugin.after?.(ctx);
 
-  const allMutations = [...mutations, ...ctx.getMutations()];
-  const diagnostics = ctx.getDiagnostics();
+  // Merge: return-value commands first, then context commands
+  const ctxBuf = ctx.getCommandBuffer().getBuffer();
+  const retBuf = returnBuffer.getBuffer();
+  const totalLen = retBuf.length + ctxBuf.length;
+
+  let merged: Uint8Array;
+  if (totalLen === 0) {
+    merged = new Uint8Array(0);
+  } else {
+    merged = new Uint8Array(totalLen);
+    merged.set(retBuf, 0);
+    merged.set(ctxBuf, retBuf.length);
+  }
 
   return {
-    mutations: allMutations,
-    diagnostics,
-    hasMutations: allMutations.length > 0,
+    commandBuffer: merged,
+    diagnostics: ctx.getDiagnostics(),
+    hasMutations: totalLen > 0,
   };
 }

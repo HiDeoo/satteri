@@ -12,6 +12,20 @@ members = [
 ]
 resolver = "2"
 
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = "symbols"
+debug = false
+panic = "abort"
+
+[profile.profiling]
+inherits = "release"
+strip = false
+debug = true
+panic = "unwind"
+
 [workspace.dependencies]
 oxc_allocator = "0.121.0"
 oxc_ast = "0.121.0"

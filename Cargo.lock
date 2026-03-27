@@ -366,6 +366,7 @@ dependencies = [
  "pretty_assertions",
  "rustc-hash",
  "serde",
+ "tryckeri-hast",
 ]
 
 [[package]]
@@ -1050,6 +1051,7 @@ version = "0.1.0"
 dependencies = [
  "mdast-arena",
  "parser",
+ "pulldown-cmark-escape",
 ]
 
 [[package]]
@@ -1062,7 +1064,6 @@ dependencies = [
  "napi-build",
  "napi-derive",
  "parser",
- "serde_json",
  "tryckeri-hast",
 ]
 

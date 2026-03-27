@@ -42,7 +42,7 @@ Some *emphasis* and **strong** content.
 `;
 
 // Pre-computed buffers so intermediate benchmarks measure only their step.
-const mdastBuf = Buffer.from(parseToBuffer(MARKDOWN));
+const mdastBuf = parseToBuffer(MARKDOWN);
 const hastBuf = mdastBufferToHastBuffer(mdastBuf);
 
 // ---------------------------------------------------------------------------
@@ -73,7 +73,7 @@ describe("hast", () => {
   });
 
   bench("full pipeline — parseToBuffer → mdastBufferToHastBuffer → hastBufferToHtmlStr", () => {
-    const buf = Buffer.from(parseToBuffer(MARKDOWN));
+    const buf = parseToBuffer(MARKDOWN);
     const hast = mdastBufferToHastBuffer(buf);
     hastBufferToHtmlStr(hast);
   });
@@ -113,7 +113,7 @@ try {
   // Pre-parse MDX with MDX constructs enabled so compileMdxFromBuffer has a valid buffer.
   // (parseToBuffer uses default ParseOptions which don't enable MDX constructs, so we
   // use compileMdx itself as the parse step for that bench.)
-  const mdxBuf = Buffer.from(parseToBuffer(MDX)); // MDAST binary (no MDX constructs — intentional: measures the buffer path perf)
+  const mdxBuf = parseToBuffer(MDX); // MDAST binary (no MDX constructs — intentional: measures the buffer path perf)
   describe("mdx", () => {
     bench("compileMdx — MDX source → JavaScript (parse + compile)", () => {
       compileMdx(MDX);

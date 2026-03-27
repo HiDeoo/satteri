@@ -57,6 +57,7 @@ const {
 })
 export default __napiModule.exports
 export const applyMutations = __napiModule.exports.applyMutations
+export const compileHastBufferToJs = __napiModule.exports.compileHastBufferToJs
 export const compileMdx = __napiModule.exports.compileMdx
 export const compileMdxFromBuffer = __napiModule.exports.compileMdxFromBuffer
 export const getBufferFormat = __napiModule.exports.getBufferFormat
