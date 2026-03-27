@@ -429,6 +429,50 @@ fn parse_raw_markdown(markdown: &str, parse_markdown: &dyn Fn(&str) -> MdastAren
     parse_markdown(markdown)
 }
 
+/// Escape `{` and `}` in HTML text content so they are not interpreted as MDX
+/// expressions when the HTML is re-parsed through the MDX parser.
+///
+/// Only braces in **text content** (outside of HTML tags) are escaped — braces
+/// inside quoted attribute values are left untouched. The escape form `{'{'}` /
+/// `{'}'}` produces a valid MDX expression that evaluates to the literal brace
+/// character.
+fn escape_braces_in_html_text(html: &str) -> String {
+    let mut result = String::with_capacity(html.len());
+    let mut in_tag = false;
+    let mut in_quote: Option<char> = None;
+
+    for ch in html.chars() {
+        if in_tag {
+            match ch {
+                '"' | '\'' if in_quote == Some(ch) => {
+                    in_quote = None;
+                    result.push(ch);
+                }
+                '"' | '\'' if in_quote.is_none() => {
+                    in_quote = Some(ch);
+                    result.push(ch);
+                }
+                '>' if in_quote.is_none() => {
+                    in_tag = false;
+                    result.push(ch);
+                }
+                _ => result.push(ch),
+            }
+        } else {
+            match ch {
+                '<' => {
+                    in_tag = true;
+                    result.push(ch);
+                }
+                '{' => result.push_str("{'{'}"),
+                '}' => result.push_str("{'}'}"),
+                _ => result.push(ch),
+            }
+        }
+    }
+    result
+}
+
 /// Convert a JSON-deserialized JsNode tree into a sub-arena.
 fn js_node_to_arena(js_node: &JsNode) -> Result<MdastArena, CommandError> {
     let mut builder = MdastBuilder::new(String::new());
@@ -783,8 +827,11 @@ fn read_payload(
         PAYLOAD_RAW_HTML => {
             // Re-parse the HTML through the markdown/MDX parser so that
             // HTML tags become proper JSX element nodes in MDX mode.
+            // Escape { and } in text content first so they are treated as
+            // literal characters rather than MDX expression boundaries.
             let html = reader.read_str(len)?;
-            Ok(parse_raw_markdown(html, parse_markdown))
+            let escaped = escape_braces_in_html_text(html);
+            Ok(parse_raw_markdown(&escaped, parse_markdown))
         }
         PAYLOAD_SERDE_JSON => {
             let json_str = reader.read_str(len)?;
@@ -1186,5 +1233,46 @@ mod tests {
         assert_eq!(arena.get_children(0).len(), 1);
         let text_id = arena.get_children(0)[0];
         assert_eq!(arena.get_node(text_id).node_type, NodeType::Text as u8);
+    }
+
+    #[test]
+    fn escape_braces_in_html_text_basic() {
+        // Braces in text content should be escaped
+        assert_eq!(
+            escape_braces_in_html_text("<span>{foo: 1}</span>"),
+            "<span>{'{'}foo: 1{'}'}</span>"
+        );
+    }
+
+    #[test]
+    fn escape_braces_preserves_attributes() {
+        // Braces inside quoted attribute values should NOT be escaped
+        assert_eq!(
+            escape_braces_in_html_text(r#"<span data-x="{a}">{b}</span>"#),
+            r#"<span data-x="{a}">{'{'} b{'}'}</span>"#.replace(" b", "b") // just {'{'}b{'}'}
+        );
+        // More direct test
+        let result = escape_braces_in_html_text(r#"<span data-x="{a}">{b}</span>"#);
+        assert!(result.contains(r#"data-x="{a}""#), "attribute braces preserved");
+        assert!(result.contains("{'{'}"), "text braces escaped");
+    }
+
+    #[test]
+    fn escape_braces_no_braces() {
+        // No braces → no change
+        let html = r#"<pre class="shiki"><code><span style="color:red">hello</span></code></pre>"#;
+        assert_eq!(escape_braces_in_html_text(html), html);
+    }
+
+    #[test]
+    fn escape_braces_shiki_output() {
+        let html = r#"<pre class="shiki"><code><span style="color:#E1E4E8">const x = </span><span style="color:#B392F0">{</span><span style="color:#E1E4E8">foo: 1</span><span style="color:#B392F0">}</span></code></pre>"#;
+        let escaped = escape_braces_in_html_text(html);
+        // The lone { and } between spans should be escaped
+        assert!(!escaped.contains(">{<"), "bare braces in text should be escaped");
+        assert!(!escaped.contains(">}<"), "bare braces in text should be escaped");
+        // Attributes should be untouched
+        assert!(escaped.contains(r#"class="shiki""#));
+        assert!(escaped.contains(r#"style="color:#E1E4E8""#));
     }
 }
