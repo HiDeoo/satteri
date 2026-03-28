@@ -40,13 +40,6 @@
     "mdast-util-mdxjs-esm": "^2.0.1",
     "vitest": "^4"
   },
-  "optionalDependencies": {
-    "@bruits/tryckeri-linux-x64-gnu": "0.1.13",
-    "@bruits/tryckeri-darwin-x64": "0.1.13",
-    "@bruits/tryckeri-darwin-arm64": "0.1.13",
-    "@bruits/tryckeri-win32-x64-msvc": "0.1.13",
-    "@bruits/tryckeri-wasm32-wasi": "0.1.13"
-  },
   "napi": {
     "binaryName": "tryckeri_napi",
     "packageName": "@bruits/tryckeri",
