@@ -1,7 +1,7 @@
 //! JSX attribute parser: extract attributes from raw JSX source text.
 //!
-//! Shared between the MDAST parser (stores attributes at parse time) and the
-//! HAST converter (reads them back).
+//! Used at parse time to split a JSX opening tag into structured attributes
+//! that are then binary-encoded into the MDAST arena's `type_data`.
 
 /// Parsed JSX attribute — intermediate representation before binary encoding.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -184,11 +184,6 @@ pub fn extract_opening_tag(text: &str) -> &str {
     }
     text
 }
-
-pub const MDX_ATTR_BOOLEAN_PROP: u8 = 0;
-pub const MDX_ATTR_LITERAL_PROP: u8 = 1;
-pub const MDX_ATTR_EXPRESSION_PROP: u8 = 2;
-pub const MDX_ATTR_SPREAD: u8 = 3;
 
 #[cfg(test)]
 mod tests {

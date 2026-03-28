@@ -149,6 +149,11 @@ pub struct ExpressionData {
     pub value: StringRef,
 }
 
+pub const MDX_ATTR_BOOLEAN_PROP: u8 = 0;
+pub const MDX_ATTR_LITERAL_PROP: u8 = 1;
+pub const MDX_ATTR_EXPRESSION_PROP: u8 = 2;
+pub const MDX_ATTR_SPREAD: u8 = 3;
+
 /// Safety: T must be #[repr(C)] and contain no padding with undefined bytes.
 unsafe fn struct_to_bytes<T: Copy>(val: &T) -> &[u8] {
     std::slice::from_raw_parts(val as *const T as *const u8, std::mem::size_of::<T>())

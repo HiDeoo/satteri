@@ -79,20 +79,6 @@ impl MdastArena {
         }
     }
 
-    /// Only for finalising a node (from `MdastArenaBuilder::close_node`) —
-    /// each call appends to the shared flat children array, so interleaving
-    /// calls for different parents would corrupt child ranges.
-    pub fn add_child(&mut self, parent_id: u32, child_id: u32) {
-        let start = self.children.len() as u32;
-        self.children.push(child_id);
-        let parent = &mut self.nodes[parent_id as usize];
-        if parent.children_count == 0 {
-            parent.children_start = start;
-        }
-        parent.children_count += 1;
-        self.nodes[child_id as usize].parent = parent_id;
-    }
-
     pub fn set_type_data(&mut self, node_id: u32, data: &[u8]) {
         let offset = self.type_data.len() as u32;
         self.type_data.extend_from_slice(data);

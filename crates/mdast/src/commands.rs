@@ -26,9 +26,6 @@
 //!   0x12  SERDE_JSON       [len: u32][utf8...]
 
 use crate::codec::*;
-use crate::jsx_attr_parser::{
-    MDX_ATTR_BOOLEAN_PROP, MDX_ATTR_EXPRESSION_PROP, MDX_ATTR_LITERAL_PROP, MDX_ATTR_SPREAD,
-};
 use crate::node::{MdastNodeType, StringRef};
 use crate::rebuild::Patch;
 use crate::{MdastArena, MdastBuilder};

@@ -13,7 +13,6 @@ pub mod arena;
 pub mod builder;
 pub mod codec;
 pub mod commands;
-pub mod jsx_attr_parser;
 pub mod line_index;
 pub mod mdx_types;
 pub mod node;
@@ -36,11 +35,10 @@ pub use codec::{
     ExpressionData, FootnoteDefinitionData, HeadingData, ImageData, LinkData, ListData,
     ListItemData, MathData, MdxJsxElementData, ReferenceData, TableData,
 };
-pub use commands::{apply_commands, CommandError};
-pub use jsx_attr_parser::{
-    extract_opening_tag, parse_jsx_attributes_from_tag, JsxAttr, MDX_ATTR_BOOLEAN_PROP,
-    MDX_ATTR_EXPRESSION_PROP, MDX_ATTR_LITERAL_PROP, MDX_ATTR_SPREAD,
+pub use codec::{
+    MDX_ATTR_BOOLEAN_PROP, MDX_ATTR_EXPRESSION_PROP, MDX_ATTR_LITERAL_PROP, MDX_ATTR_SPREAD,
 };
+pub use commands::{apply_commands, CommandError};
 pub use line_index::LineIndex;
 pub use node::{MdastNode, MdastNodeType, StringRef, NODE_STRUCT_SIZE};
 pub use raw_buffer::{BufferError, BufferHeader, MdastView, BUFFER_MAGIC, BUFFER_VERSION};

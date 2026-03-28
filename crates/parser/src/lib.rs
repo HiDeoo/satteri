@@ -9,11 +9,13 @@ use pulldown_cmark::{
 use tryckeri_mdast::{
     encode_code_data, encode_expression_data, encode_footnote_definition_data, encode_heading_data,
     encode_image_data, encode_link_data, encode_list_data, encode_list_item_data, encode_math_data,
-    encode_mdx_jsx_element_data, encode_string_ref_data, encode_table_data,
-    parse_jsx_attributes_from_tag, ColumnAlign, JsxAttr, LineIndex, MdastArena, MdastBuilder,
-    MdastNodeType, StringRef, MDX_ATTR_BOOLEAN_PROP, MDX_ATTR_EXPRESSION_PROP,
-    MDX_ATTR_LITERAL_PROP, MDX_ATTR_SPREAD,
+    encode_mdx_jsx_element_data, encode_string_ref_data, encode_table_data, ColumnAlign, LineIndex,
+    MdastArena, MdastBuilder, MdastNodeType, StringRef, MDX_ATTR_BOOLEAN_PROP,
+    MDX_ATTR_EXPRESSION_PROP, MDX_ATTR_LITERAL_PROP, MDX_ATTR_SPREAD,
 };
+
+mod jsx_attr_parser;
+use jsx_attr_parser::{parse_jsx_attributes_from_tag, JsxAttr};
 
 pub use tryckeri_mdast;
 
