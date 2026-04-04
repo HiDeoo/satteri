@@ -20,6 +20,22 @@ impl StringRef {
     pub fn is_empty(self) -> bool {
         self.len == 0
     }
+
+    /// Return the raw bytes of this StringRef (8 bytes, repr(C)).
+    pub fn as_bytes(self) -> [u8; 8] {
+        let mut buf = [0u8; 8];
+        buf[0..4].copy_from_slice(&self.offset.to_ne_bytes());
+        buf[4..8].copy_from_slice(&self.len.to_ne_bytes());
+        buf
+    }
+
+    /// Read a StringRef from raw bytes (inverse of `as_bytes`).
+    pub fn from_bytes(bytes: &[u8]) -> Self {
+        Self {
+            offset: u32::from_ne_bytes(bytes[0..4].try_into().unwrap()),
+            len: u32::from_ne_bytes(bytes[4..8].try_into().unwrap()),
+        }
+    }
 }
 
 /// All positions use byte offsets and 1-based line/column numbers from the

@@ -8,28 +8,15 @@ use crate::node::NODE_STRUCT_SIZE;
 const BUFFER_MAGIC: [u8; 4] = *b"MDAR";
 const BUFFER_VERSION: u32 = 1;
 
-/// Wire-format header placed at the very start of the exported buffer.
-#[derive(Debug, Clone, Copy)]
-#[repr(C)]
-struct BufferHeader {
-    magic: [u8; 4],
-    version: u32,
-    node_struct_size: u32,
-    node_count: u32,
-    nodes_offset: u32,
-    children_count: u32,
-    children_offset: u32,
-    type_data_len: u32,
-    type_data_offset: u32,
-    source_len: u32,
-    source_offset: u32,
-}
-
-const HEADER_SIZE: usize = std::mem::size_of::<BufferHeader>();
+// Header field sizes (all u32 or [u8;4]):
+//   magic(4) + version(4) + node_struct_size(4) + node_count(4) + nodes_offset(4)
+//   + children_count(4) + children_offset(4) + type_data_len(4) + type_data_offset(4)
+//   + source_len(4) + source_offset(4) = 44 bytes
+const HEADER_SIZE: usize = 44;
 
 impl Arena {
     /// Serialize to a flat byte buffer:
-    /// `[BufferHeader][nodes][children u32s][type_data][source]`
+    /// `[Header][nodes][children u32s][type_data][source]`
     pub fn to_raw_buffer(&self) -> Vec<u8> {
         let nodes_bytes = self.nodes.len() * NODE_STRUCT_SIZE;
         let children_bytes = self.children.len() * 4;
@@ -41,42 +28,39 @@ impl Arena {
         let type_data_offset = children_offset + children_bytes as u32;
         let source_offset = type_data_offset + type_data_bytes as u32;
 
-        let header = BufferHeader {
-            magic: BUFFER_MAGIC,
-            version: BUFFER_VERSION,
-            node_struct_size: NODE_STRUCT_SIZE as u32,
-            node_count: self.nodes.len() as u32,
-            nodes_offset,
-            children_count: self.children.len() as u32,
-            children_offset,
-            type_data_len: self.type_data.len() as u32,
-            type_data_offset,
-            source_len: self.source.len() as u32,
-            source_offset,
-        };
-
         let total = source_offset as usize + source_bytes;
         let mut buf = Vec::with_capacity(total);
 
-        let header_bytes: &[u8] = unsafe {
-            std::slice::from_raw_parts(&header as *const BufferHeader as *const u8, HEADER_SIZE)
-        };
-        buf.extend_from_slice(header_bytes);
+        // Write header fields as little-endian u32s.
+        buf.extend_from_slice(&BUFFER_MAGIC);
+        buf.extend_from_slice(&BUFFER_VERSION.to_ne_bytes());
+        buf.extend_from_slice(&(NODE_STRUCT_SIZE as u32).to_ne_bytes());
+        buf.extend_from_slice(&(self.nodes.len() as u32).to_ne_bytes());
+        buf.extend_from_slice(&nodes_offset.to_ne_bytes());
+        buf.extend_from_slice(&(self.children.len() as u32).to_ne_bytes());
+        buf.extend_from_slice(&children_offset.to_ne_bytes());
+        buf.extend_from_slice(&(self.type_data.len() as u32).to_ne_bytes());
+        buf.extend_from_slice(&type_data_offset.to_ne_bytes());
+        buf.extend_from_slice(&(self.source.len() as u32).to_ne_bytes());
+        buf.extend_from_slice(&source_offset.to_ne_bytes());
 
-        let nodes_slice: &[u8] =
-            unsafe { std::slice::from_raw_parts(self.nodes.as_ptr() as *const u8, nodes_bytes) };
+        // SAFETY: ArenaNode is #[repr(C)] with all fields explicitly defined
+        // (no implicit padding — _pad is explicit). The buffer is only read back
+        // on the same platform via the JS DataView, never deserialized into Rust.
+        let nodes_slice: &[u8] = unsafe {
+            std::slice::from_raw_parts(self.nodes.as_ptr() as *const u8, nodes_bytes)
+        };
         buf.extend_from_slice(nodes_slice);
 
+        // SAFETY: u32 has no padding or alignment concerns for ne bytes.
         let children_slice: &[u8] = unsafe {
             std::slice::from_raw_parts(self.children.as_ptr() as *const u8, children_bytes)
         };
         buf.extend_from_slice(children_slice);
 
         buf.extend_from_slice(&self.type_data);
-
         buf.extend_from_slice(self.source.as_bytes());
 
         buf
     }
-
 }

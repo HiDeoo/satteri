@@ -1,4 +1,4 @@
-use crate::arena::Arena;
+use crate::arena::{Arena, TypeDataWriter};
 use crate::node::StringRef;
 
 /// Builds an `Arena` using an open/close node pattern suitable for
@@ -182,6 +182,22 @@ impl ArenaBuilder {
             .expect("set_data_current called with empty stack")
             .0;
         self.arena.set_type_data(node_id, data);
+    }
+
+    /// Begin writing variable-length type data for the current node.
+    /// Write bytes directly to `self.arena_mut().type_data`, then call `finish_data_current`.
+    pub fn begin_data_current(&mut self) -> TypeDataWriter {
+        let node_id = self
+            .stack
+            .last()
+            .expect("begin_data_current called with empty stack")
+            .0;
+        self.arena.begin_type_data(node_id)
+    }
+
+    /// Finish writing variable-length type data.
+    pub fn finish_data_current(&mut self, writer: TypeDataWriter) {
+        self.arena.finish_type_data(writer);
     }
 
     pub fn alloc_string(&mut self, s: &str) -> StringRef {

@@ -7,28 +7,31 @@
 //!
 //! Text/Comment/Raw type_data: just StringRef (8 bytes).
 
-use tryckeri_arena::{decode_string_ref_data, encode_string_ref_data, StringRef};
+use tryckeri_arena::StringRef;
 
 /// Props tuple: (name, value_type, value).
 pub fn encode_element_data(tag_name: StringRef, props: &[(StringRef, u8, StringRef)]) -> Vec<u8> {
     let mut out = Vec::with_capacity(16 + props.len() * 20);
+    encode_element_data_into(tag_name, props, &mut out);
+    out
+}
 
-    out.extend_from_slice(&encode_string_ref_data(tag_name));
+/// Write element data directly into a target buffer (zero-alloc).
+pub fn encode_element_data_into(tag_name: StringRef, props: &[(StringRef, u8, StringRef)], out: &mut Vec<u8>) {
+    out.extend_from_slice(&tag_name.as_bytes());
     out.extend_from_slice(&(props.len() as u32).to_le_bytes());
     out.extend_from_slice(&0u32.to_le_bytes());
 
     for &(name, value_type, value) in props {
-        out.extend_from_slice(&encode_string_ref_data(name));
+        out.extend_from_slice(&name.as_bytes());
         out.push(value_type);
         out.extend_from_slice(&[0u8; 3]);
-        out.extend_from_slice(&encode_string_ref_data(value));
+        out.extend_from_slice(&value.as_bytes());
     }
-
-    out
 }
 
 pub fn decode_element_tag(data: &[u8]) -> StringRef {
-    decode_string_ref_data(&data[0..8])
+    StringRef::from_bytes(&data[0..8])
 }
 
 pub fn decode_element_prop_count(data: &[u8]) -> u32 {
@@ -38,18 +41,18 @@ pub fn decode_element_prop_count(data: &[u8]) -> u32 {
 /// Returns (name, value_type, value).
 pub fn decode_element_prop(data: &[u8], index: u32) -> (StringRef, u8, StringRef) {
     let base = 16 + index as usize * 20;
-    let name = decode_string_ref_data(&data[base..base + 8]);
+    let name = StringRef::from_bytes(&data[base..base + 8]);
     let value_type = data[base + 8];
-    let value = decode_string_ref_data(&data[base + 12..base + 20]);
+    let value = StringRef::from_bytes(&data[base + 12..base + 20]);
     (name, value_type, value)
 }
 
 pub fn encode_text_data(sr: StringRef) -> Vec<u8> {
-    encode_string_ref_data(sr)
+    sr.as_bytes().to_vec()
 }
 
 pub fn decode_text_data(data: &[u8]) -> StringRef {
-    decode_string_ref_data(data)
+    StringRef::from_bytes(data)
 }
 
 #[cfg(test)]
@@ -59,8 +62,8 @@ mod tests {
     #[test]
     fn string_ref_round_trip() {
         let sr = StringRef::new(42, 10);
-        let encoded = encode_string_ref_data(sr);
-        let decoded = decode_string_ref_data(&encoded);
+        let encoded = encode_text_data(sr);
+        let decoded = decode_text_data(&encoded);
         assert_eq!(decoded.offset, 42);
         assert_eq!(decoded.len, 10);
     }

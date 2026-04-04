@@ -17,7 +17,7 @@ pub use codec::{
     encode_expression_data, encode_footnote_definition_data, encode_heading_data,
     encode_image_data, encode_link_data, encode_list_data, encode_list_item_data, encode_math_data,
     encode_mdx_jsx_element_data, encode_reference_data, encode_table_data,
-    CodeData, ColumnAlign, DefinitionData, ExpressionData, HeadingData,
+    CodeData, ColumnAlign, DefinitionData, ExpressionData, FootnoteDefinitionData, HeadingData,
     ImageData, LinkData, ListData, ListItemData, MathData, MdxJsxElementData, ReferenceData,
 };
 pub use codec::{

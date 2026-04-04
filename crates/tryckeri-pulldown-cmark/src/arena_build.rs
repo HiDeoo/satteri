@@ -1,11 +1,10 @@
 //! Direct arena builder: walks the pulldown-cmark internal tree and builds
 //! a `tryckeri_arena::Arena` without going through the Event iterator.
 
-use tryckeri_arena::{encode_string_ref_data, Arena, ArenaBuilder, LineIndex, StringRef};
+use tryckeri_arena::{Arena, ArenaBuilder, LineIndex, StringRef};
 use tryckeri_mdast::{
-    encode_code_data, encode_expression_data, encode_footnote_definition_data, encode_heading_data,
-    encode_image_data, encode_link_data, encode_list_data, encode_list_item_data, encode_math_data,
     encode_mdx_jsx_element_data, encode_table_data, ColumnAlign, MdastNodeType,
+    CodeData, ExpressionData, FootnoteDefinitionData, ImageData, LinkData, ListData, ListItemData, MathData, ReferenceData,
     MDX_ATTR_BOOLEAN_PROP, MDX_ATTR_EXPRESSION_PROP, MDX_ATTR_LITERAL_PROP, MDX_ATTR_SPREAD,
 };
 
@@ -95,8 +94,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                             let existing_data = builder.arena_ref().get_type_data(id).to_vec();
                             if existing_data.len() >= 16 {
                                 let mut data = existing_data;
-                                let sr_bytes = encode_string_ref_data(sr);
-                                data[16..24].copy_from_slice(&sr_bytes);
+                                data[16..24].copy_from_slice(&sr.as_bytes());
                                 builder.set_data_current(&data);
                             }
                             let node = builder.arena_ref().get_node(id);
@@ -131,7 +129,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                                 end_line,
                                 end_col,
                             );
-                            builder.set_data_current(&encode_string_ref_data(sr));
+                            builder.set_data_current(&sr.as_bytes());
                             builder.close_node();
                         }
                     }
@@ -152,7 +150,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                                 end_line,
                                 end_col,
                             );
-                            builder.set_data_current(&encode_string_ref_data(sr));
+                            builder.set_data_current(&sr.as_bytes());
                             builder.close_node();
                         }
                     }
@@ -166,8 +164,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                             let existing_data = builder.arena_ref().get_type_data(id).to_vec();
                             if existing_data.len() >= 24 {
                                 let mut data = existing_data;
-                                let sr_bytes = encode_string_ref_data(alt_ref);
-                                data[8..16].copy_from_slice(&sr_bytes);
+                                data[8..16].copy_from_slice(&alt_ref.as_bytes());
                                 builder.set_data_current(&data);
                             }
                         }
@@ -294,7 +291,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                         builder.set_position_current(
                             start, end, start_line, start_col, end_line, end_col,
                         );
-                        builder.set_data_current(&encode_heading_data(depth));
+                        builder.set_data_current(&[depth]);
                         inner.tree.push();
                     }
                     ItemBody::BlockQuote(_) => {
@@ -325,13 +322,9 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                         builder.set_position_current(
                             start, end, start_line, start_col, end_line, end_col,
                         );
-                        builder.set_data_current(&encode_code_data(
-                            lang_ref,
-                            meta_ref,
-                            StringRef::empty(),
-                            b'`',
-                        ));
-                        code_block_buf = Some(String::new());
+                        let cd = CodeData { lang: lang_ref, meta: meta_ref, value: StringRef::empty(), fence_char: b'`', _pad: [0; 3] };
+                        builder.set_data_current(&cd.to_bytes());
+                        code_block_buf = Some(String::with_capacity(256));
                         inner.tree.push();
                     }
                     ItemBody::IndentCodeBlock => {
@@ -339,13 +332,9 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                         builder.set_position_current(
                             start, end, start_line, start_col, end_line, end_col,
                         );
-                        builder.set_data_current(&encode_code_data(
-                            StringRef::empty(),
-                            StringRef::empty(),
-                            StringRef::empty(),
-                            b' ',
-                        ));
-                        code_block_buf = Some(String::new());
+                        let cd = CodeData { lang: StringRef::empty(), meta: StringRef::empty(), value: StringRef::empty(), fence_char: b' ', _pad: [0; 3] };
+                        builder.set_data_current(&cd.to_bytes());
+                        code_block_buf = Some(String::with_capacity(256));
                         inner.tree.push();
                     }
                     ItemBody::List(is_tight, c, listitem_start) => {
@@ -355,7 +344,8 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                         builder.set_position_current(
                             start, end, start_line, start_col, end_line, end_col,
                         );
-                        builder.set_data_current(&encode_list_data(ordered, start_num, !is_tight));
+                        let ld = ListData { start: start_num, ordered, spread: !is_tight, _pad: [0; 2] };
+                        builder.set_data_current(&ld.to_bytes());
                         inner.tree.push();
                     }
                     ItemBody::ListItem(_) => {
@@ -363,7 +353,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                         builder.set_position_current(
                             start, end, start_line, start_col, end_line, end_col,
                         );
-                        builder.set_data_current(&encode_list_item_data(2, false));
+                        builder.set_data_current(&ListItemData { checked: 2, spread: false }.to_bytes());
                         inner.tree.push();
                     }
                     ItemBody::Table(align_ix) => {
@@ -431,7 +421,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                         builder.set_position_current(
                             start, end, start_line, start_col, end_line, end_col,
                         );
-                        builder.set_data_current(&encode_link_data(url_ref, title_ref));
+                        builder.set_data_current(&LinkData { url: url_ref, title: title_ref }.to_bytes());
                         inner.tree.push();
                     }
                     ItemBody::Image(link_ix) => {
@@ -447,9 +437,9 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                         builder.set_position_current(
                             start, end, start_line, start_col, end_line, end_col,
                         );
-                        builder.set_data_current(&encode_image_data(url_ref, alt_ref, title_ref));
+                        builder.set_data_current(&ImageData { url: url_ref, alt: alt_ref, title: title_ref }.to_bytes());
                         if image_alt_buf.is_none() {
-                            image_alt_buf = Some(String::new());
+                            image_alt_buf = Some(String::with_capacity(64));
                         }
                         inner.tree.push();
                     }
@@ -460,7 +450,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                         builder.set_position_current(
                             start, end, start_line, start_col, end_line, end_col,
                         );
-                        builder.set_data_current(&encode_footnote_definition_data(sr, sr));
+                        builder.set_data_current(&FootnoteDefinitionData { identifier: sr, label: sr }.to_bytes());
                         inner.tree.push();
                     }
                     ItemBody::HtmlBlock => {
@@ -468,7 +458,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                         builder.set_position_current(
                             start, end, start_line, start_col, end_line, end_col,
                         );
-                        html_block_buf = Some(String::new());
+                        html_block_buf = Some(String::with_capacity(128));
                         inner.tree.push();
                     }
                     ItemBody::MetadataBlock(_) => {
@@ -476,7 +466,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                         builder.set_position_current(
                             start, end, start_line, start_col, end_line, end_col,
                         );
-                        html_block_buf = Some(String::new());
+                        html_block_buf = Some(String::with_capacity(128));
                         inner.tree.push();
                     }
                     // MDX JSX elements.
@@ -578,7 +568,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                             start_col,
                             end_line,
                             end_col,
-                            &encode_string_ref_data(sr),
+                            &sr.as_bytes(),
                         );
                         inner.tree.next_sibling(cur_ix);
                     }
@@ -593,7 +583,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                             start_col,
                             end_line,
                             end_col,
-                            &encode_string_ref_data(sr),
+                            &sr.as_bytes(),
                         );
                         inner.tree.next_sibling(cur_ix);
                     }
@@ -608,7 +598,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                             start_col,
                             end_line,
                             end_col,
-                            &encode_string_ref_data(sr),
+                            &sr.as_bytes(),
                         );
                         inner.tree.next_sibling(cur_ix);
                     }
@@ -623,7 +613,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                             start_col,
                             end_line,
                             end_col,
-                            &encode_string_ref_data(sr),
+                            &sr.as_bytes(),
                         );
                         inner.tree.next_sibling(cur_ix);
                     }
@@ -637,7 +627,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                             start_col,
                             end_line,
                             end_col,
-                            &encode_string_ref_data(sr),
+                            &sr.as_bytes(),
                         );
                         inner.tree.next_sibling(cur_ix);
                     }
@@ -651,7 +641,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                             start_col,
                             end_line,
                             end_col,
-                            &encode_string_ref_data(sr),
+                            &sr.as_bytes(),
                         );
                         inner.tree.next_sibling(cur_ix);
                     }
@@ -666,7 +656,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                             start_col,
                             end_line,
                             end_col,
-                            &encode_string_ref_data(sr),
+                            &sr.as_bytes(),
                         );
                         inner.tree.next_sibling(cur_ix);
                     }
@@ -680,7 +670,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                             start_col,
                             end_line,
                             end_col,
-                            &encode_string_ref_data(sr),
+                            &sr.as_bytes(),
                         );
                         inner.tree.next_sibling(cur_ix);
                     }
@@ -712,7 +702,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                     }
                     ItemBody::TaskListMarker(checked) => {
                         let checked_val = if checked { 1 } else { 0 };
-                        let data = encode_list_item_data(checked_val, false);
+                        let data = ListItemData { checked: checked_val, spread: false }.to_bytes();
                         let depth = builder.stack_depth();
                         for i in (0..depth).rev() {
                             if let Some(node_id) = builder.stack_node_id(i) {
@@ -729,7 +719,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                     ItemBody::FootnoteReference(cow_ix) => {
                         let cow = inner.allocs.take_cow(cow_ix);
                         let sr = builder.alloc_string(&cow);
-                        let data = tryckeri_mdast::encode_reference_data(sr, sr, 0);
+                        let data = ReferenceData { identifier: sr, label: sr, reference_kind: 0, _pad: [0; 3] }.to_bytes();
                         builder.add_leaf_full(
                             MdastNodeType::FootnoteReference as u8,
                             start,
@@ -758,7 +748,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                             start_col,
                             end_line,
                             end_col,
-                            &encode_math_data(StringRef::empty(), sr),
+                            &MathData { meta: StringRef::empty(), value: sr }.to_bytes(),
                         );
                         inner.tree.next_sibling(cur_ix);
                     }
@@ -773,7 +763,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                             start_col,
                             end_line,
                             end_col,
-                            &encode_expression_data(sr),
+                            &ExpressionData { value: sr }.to_bytes(),
                         );
                         inner.tree.next_sibling(cur_ix);
                     }
@@ -788,7 +778,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                             start_col,
                             end_line,
                             end_col,
-                            &encode_expression_data(sr),
+                            &ExpressionData { value: sr }.to_bytes(),
                         );
                         inner.tree.next_sibling(cur_ix);
                     }
@@ -803,7 +793,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                             start_col,
                             end_line,
                             end_col,
-                            &encode_expression_data(sr),
+                            &ExpressionData { value: sr }.to_bytes(),
                         );
                         inner.tree.next_sibling(cur_ix);
                     }
@@ -827,7 +817,7 @@ pub fn parse(source: &str, options: Options) -> (Arena, Vec<(usize, String)>) {
                             start_col,
                             end_line,
                             end_col,
-                            &encode_string_ref_data(sr),
+                            &sr.as_bytes(),
                         );
                         inner.tree.next_sibling(cur_ix);
                     }

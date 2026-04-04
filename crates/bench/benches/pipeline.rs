@@ -187,3 +187,4 @@ fn mdx_step3_hast_to_js(bencher: divan::Bencher) {
 
     bencher.bench(|| tryckeri_mdxjs::compile_hast_arena(&hast_arena, &opts).unwrap());
 }
+

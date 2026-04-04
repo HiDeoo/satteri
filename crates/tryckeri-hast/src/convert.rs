@@ -5,27 +5,29 @@ use tryckeri_arena::{
 };
 use tryckeri_mdast::{decode_code_data, decode_definition_data, decode_expression_data, decode_heading_data, decode_image_data, decode_link_data, decode_list_data, decode_list_item_data, decode_math_data, decode_mdx_jsx_attr, decode_mdx_jsx_attr_count, decode_mdx_jsx_element_name, decode_reference_data, MdastNodeType};
 
-use crate::codec::encode_text_data;
+use crate::codec::encode_element_data_into;
 use crate::node_types::*;
 use tryckeri_mdast::encode_mdx_jsx_element_data;
 
 /// Convert an MDAST arena directly to a HAST arena.
 pub fn mdast_arena_to_hast_arena(source: &dyn ReadArena) -> Arena {
+    let src = source.source();
+    let mut builder = ArenaBuilder::new(src.to_string());
+    // Pre-allocate based on source arena size.
     let n = source.len();
-    let mut builder = ArenaBuilder::new(source.source().to_string());
-    // Pre-allocate based on source arena size
     builder.arena_mut().nodes.reserve(n);
     builder.arena_mut().children.reserve(n);
-    builder.arena_mut().type_data.reserve(n * 16);
+    builder.arena_mut().type_data.reserve(n * 20);
     let defs = collect_definitions(source);
     convert_node(0, source, &mut builder, &defs);
     builder.finish()
 }
 
+/// Definition data stored as StringRefs into the MDAST source — avoids cloning strings.
 struct Definition {
-    identifier: String,
-    url: String,
-    title: Option<String>,
+    identifier: StringRef,
+    url: StringRef,
+    title: StringRef, // empty = no title
 }
 
 fn collect_definitions(view: &dyn ReadArena) -> Vec<Definition> {
@@ -36,17 +38,10 @@ fn collect_definitions(view: &dyn ReadArena) -> Vec<Definition> {
             let data = view.get_type_data(id);
             if data.len() >= 32 {
                 let dd = decode_definition_data(data);
-                let identifier = view.get_str(dd.identifier).to_string();
-                let url = view.get_str(dd.url).to_string();
-                let title = if dd.title.len > 0 {
-                    Some(view.get_str(dd.title).to_string())
-                } else {
-                    None
-                };
                 defs.push(Definition {
-                    identifier,
-                    url,
-                    title,
+                    identifier: dd.identifier,
+                    url: dd.url,
+                    title: dd.title,
                 });
             }
         }
@@ -54,8 +49,8 @@ fn collect_definitions(view: &dyn ReadArena) -> Vec<Definition> {
     defs
 }
 
-fn find_def<'a>(defs: &'a [Definition], identifier: &str) -> Option<&'a Definition> {
-    defs.iter().find(|d| d.identifier == identifier)
+fn find_def<'a>(defs: &'a [Definition], view: &dyn ReadArena, identifier: &str) -> Option<&'a Definition> {
+    defs.iter().find(|d| view.get_str(d.identifier) == identifier)
 }
 
 /// Pre-built property data: refs already interned in the builder's string pool.
@@ -79,60 +74,58 @@ fn build_props(builder: &mut ArenaBuilder, specs: &[(&str, u8, StringRef)]) -> V
         .collect()
 }
 
+fn write_element_data(builder: &mut ArenaBuilder, tag_ref: StringRef, props: &[PropData]) {
+    let writer = builder.begin_data_current();
+    let tuples: Vec<(StringRef, u8, StringRef)> = props
+        .iter()
+        .map(|p| (p.name_ref, p.value_kind, p.value_ref))
+        .collect();
+    encode_element_data_into(tag_ref, &tuples, &mut builder.arena_mut().type_data);
+    builder.finish_data_current(writer);
+}
+
 fn open_element(builder: &mut ArenaBuilder, tag: &str) -> u32 {
     let id = builder.open_node_raw(HAST_ELEMENT);
     let tag_ref = builder.alloc_string(tag);
-    let encoded = crate::codec::encode_element_data(tag_ref, &[]);
-    builder.set_data_current(&encoded);
+    let writer = builder.begin_data_current();
+    encode_element_data_into(tag_ref, &[], &mut builder.arena_mut().type_data);
+    builder.finish_data_current(writer);
     id
 }
 
 fn open_element_with_props(builder: &mut ArenaBuilder, tag: &str, props: &[PropData]) -> u32 {
     let id = builder.open_node_raw(HAST_ELEMENT);
     let tag_ref = builder.alloc_string(tag);
-    let prop_tuples: Vec<(StringRef, u8, StringRef)> = props
-        .iter()
-        .map(|p| (p.name_ref, p.value_kind, p.value_ref))
-        .collect();
-    let encoded = crate::codec::encode_element_data(tag_ref, &prop_tuples);
-    builder.set_data_current(&encoded);
+    write_element_data(builder, tag_ref, props);
     id
 }
 
 fn add_void_element(builder: &mut ArenaBuilder, tag: &str) {
     builder.open_node_raw(HAST_ELEMENT);
     let tag_ref = builder.alloc_string(tag);
-    let encoded = crate::codec::encode_element_data(tag_ref, &[]);
-    builder.set_data_current(&encoded);
+    let writer = builder.begin_data_current();
+    encode_element_data_into(tag_ref, &[], &mut builder.arena_mut().type_data);
+    builder.finish_data_current(writer);
     builder.close_node();
 }
 
 fn add_void_element_with_props(builder: &mut ArenaBuilder, tag: &str, props: &[PropData]) {
     builder.open_node_raw(HAST_ELEMENT);
     let tag_ref = builder.alloc_string(tag);
-    let prop_tuples: Vec<(StringRef, u8, StringRef)> = props
-        .iter()
-        .map(|p| (p.name_ref, p.value_kind, p.value_ref))
-        .collect();
-    let encoded = crate::codec::encode_element_data(tag_ref, &prop_tuples);
-    builder.set_data_current(&encoded);
+    write_element_data(builder, tag_ref, props);
     builder.close_node();
 }
 
 fn add_text_node(builder: &mut ArenaBuilder, text: &str) {
     let text_ref = builder.alloc_string(text);
     let leaf_id = builder.add_leaf_raw(HAST_TEXT);
-    builder
-        .arena_mut()
-        .set_type_data(leaf_id, &encode_text_data(text_ref));
+    builder.arena_mut().set_type_data(leaf_id, &text_ref.as_bytes());
 }
 
 fn add_raw_node(builder: &mut ArenaBuilder, html: &str) {
     let html_ref = builder.alloc_string(html);
     let leaf_id = builder.add_leaf_raw(HAST_RAW);
-    builder
-        .arena_mut()
-        .set_type_data(leaf_id, &encode_text_data(html_ref));
+    builder.arena_mut().set_type_data(leaf_id, &html_ref.as_bytes());
 }
 
 /// Encode lang and meta as a JSON object for the code element's node_data.
@@ -460,10 +453,11 @@ fn convert_node(
             if data.len() >= 20 {
                 let rd = decode_reference_data(data);
                 let identifier = view.get_str(rd.identifier);
-                if let Some(def) = find_def(defs, identifier) {
-                    let url_ref = builder.alloc_string(&def.url);
-                    if let Some(ref title) = def.title {
-                        let title_ref = builder.alloc_string(title);
+                if let Some(def) = find_def(defs, view, identifier) {
+                    // StringRefs from MDAST source are valid in HAST builder (same source).
+                    let url_ref = def.url;
+                    if !def.title.is_empty() {
+                        let title_ref = def.title;
                         let props = build_props(
                             builder,
                             &[
@@ -490,12 +484,12 @@ fn convert_node(
             if data.len() >= 20 {
                 let rd = decode_reference_data(data);
                 let identifier = view.get_str(rd.identifier);
-                if let Some(def) = find_def(defs, identifier) {
+                if let Some(def) = find_def(defs, view, identifier) {
                     let alt = extract_text_content(node_id, view);
-                    let url_ref = builder.alloc_string(&def.url);
+                    let url_ref = def.url;
                     let alt_ref = builder.alloc_string(&alt);
-                    if let Some(ref title) = def.title {
-                        let title_ref = builder.alloc_string(title);
+                    if !def.title.is_empty() {
+                        let title_ref = def.title;
                         let props = build_props(
                             builder,
                             &[
@@ -539,7 +533,7 @@ fn convert_node(
             let leaf_id = builder.add_leaf_raw(HAST_MDX_FLOW_EXPRESSION);
             builder
                 .arena_mut()
-                .set_type_data(leaf_id, &encode_text_data(value_ref));
+                .set_type_data(leaf_id, &value_ref.as_bytes());
             let mdast_node = view.get_node(node_id);
             builder.arena_mut().set_position(
                 leaf_id,
@@ -564,7 +558,7 @@ fn convert_node(
             let leaf_id = builder.add_leaf_raw(HAST_MDX_TEXT_EXPRESSION);
             builder
                 .arena_mut()
-                .set_type_data(leaf_id, &encode_text_data(value_ref));
+                .set_type_data(leaf_id, &value_ref.as_bytes());
             let mdast_node = view.get_node(node_id);
             builder.arena_mut().set_position(
                 leaf_id,
@@ -589,7 +583,7 @@ fn convert_node(
             let leaf_id = builder.add_leaf_raw(HAST_MDX_ESM);
             builder
                 .arena_mut()
-                .set_type_data(leaf_id, &encode_text_data(value_ref));
+                .set_type_data(leaf_id, &value_ref.as_bytes());
             let mdast_node = view.get_node(node_id);
             builder.arena_mut().set_position(
                 leaf_id,

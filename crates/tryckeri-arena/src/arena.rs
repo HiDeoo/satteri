@@ -93,6 +93,20 @@ impl Arena {
         node.data_len = data.len() as u32;
     }
 
+    /// Begin writing variable-length type data for a node.
+    /// Returns the start offset; call `finish_type_data` when done.
+    pub fn begin_type_data(&mut self, node_id: u32) -> TypeDataWriter {
+        let offset = self.type_data.len() as u32;
+        self.nodes[node_id as usize].data_offset = offset;
+        TypeDataWriter { node_id, start: offset }
+    }
+
+    /// Finish writing variable-length type data started by `begin_type_data`.
+    pub fn finish_type_data(&mut self, writer: TypeDataWriter) {
+        let len = self.type_data.len() as u32 - writer.start;
+        self.nodes[writer.node_id as usize].data_len = len;
+    }
+
     pub fn get_node(&self, node_id: u32) -> &ArenaNode {
         &self.nodes[node_id as usize]
     }
@@ -153,6 +167,12 @@ impl Arena {
         let end = start + node.data_len as usize;
         &self.type_data[start..end]
     }
+}
+
+/// Handle for tracking in-progress variable-length type data writes.
+pub struct TypeDataWriter {
+    node_id: u32,
+    start: u32,
 }
 
 #[cfg(test)]

@@ -17,7 +17,7 @@ pub mod node;
 pub mod raw_buffer;
 pub mod read_arena;
 
-pub use arena::Arena;
+pub use arena::{Arena, TypeDataWriter};
 pub use builder::ArenaBuilder;
 pub use codec::{decode_string_ref_data, encode_string_ref_data};
 pub use line_index::{LineIndex, LineIndexCursor};
