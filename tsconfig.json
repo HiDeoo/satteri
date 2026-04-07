@@ -17,6 +17,6 @@
     "erasableSyntaxOnly": true,
     "skipLibCheck": true
   },
-  "include": ["packages/**/*"],
+  "include": ["packages/**/*", "examples/*"],
   "exclude": ["node_modules", "dist", "vendor", "target"]
 }

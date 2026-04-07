@@ -6,7 +6,6 @@ import {
   walkMdastHandle,
   serializeMdastHandle,
   getNodeData as napiGetNodeData,
-  setNodeData,
   mdastTextContentHandle,
 } from "../../index.js";
 import type {
@@ -159,6 +158,15 @@ export class MdastVisitorContext {
     key: K,
     value: N[K],
   ): void {
+    if (key === "data") {
+      // data is stored as JSON in the arena, serialize it for the command buffer
+      this.#commandBuffer.setProperty(
+        nid(node as MdastNode),
+        key,
+        value != null ? JSON.stringify(value) : null,
+      );
+      return;
+    }
     this.#commandBuffer.setProperty(nid(node as MdastNode), key, value);
   }
 
@@ -385,7 +393,6 @@ function readMdastMatchedNode(
   dataOffset: number,
   nodeId: number,
   nodeType: number,
-  dirtyData: Map<number, Record<string, unknown>>,
   resolver: MdastLazyChildResolver,
 ): MdastNode {
   let pos = dataOffset;
@@ -636,27 +643,9 @@ function readMdastMatchedNode(
 
   mdastNodeIdMap.set(node as object, nodeId);
 
-  // Read inline node_data JSON from the end of the data section.
-  // The Rust serializer always appends [json_len: u32][json_bytes...] at the end.
-  // We need to find it by reading from dataEnd backwards.
-  // Actually, we read it at `dataOffset + dataLen - (4 + jsonDataLen)` but we don't
-  // know jsonDataLen yet. Instead, the data section ends with [len: u32][bytes...],
-  // so we scan from the current end of type-specific data.
-  // For simplicity, we'll handle this in the caller which knows the full data_len.
-
-  // Set up data getter/setter that tracks dirty entries
-  let currentData: Record<string, unknown> | null = initialData;
-  Object.defineProperty(node, "data", {
-    get() {
-      return currentData;
-    },
-    set(value: Record<string, unknown> | null) {
-      currentData = value;
-      dirtyData.set(nodeId, value!);
-    },
-    configurable: true,
-    enumerable: true,
-  });
+  if (initialData) {
+    (node as Record<string, unknown>).data = initialData;
+  }
 
   return node as unknown as MdastNode;
 }
@@ -702,7 +691,6 @@ export function visitMdastHandle(
 ): MdastVisitResult | Promise<MdastVisitResult> {
   const context = new MdastVisitorContext(handle, source, filename);
   const returnBuffer = new CommandBuffer();
-  const dirtyData = new Map<number, Record<string, unknown>>();
   const resolver = new MdastLazyChildResolver(handle);
   const rustSubs = subs.map((s) => ({ nodeType: s.nodeType, tagFilter: [] as string[] }));
   const matchBuf: Uint8Array = walkMdastHandle(handle, rustSubs);
@@ -726,7 +714,6 @@ export function visitMdastHandle(
       dataOffset,
       nodeId,
       sub.nodeType,
-      dirtyData,
       resolver,
     );
     const result = sub.visitFn.call(plugin, node, context);
@@ -748,23 +735,18 @@ export function visitMdastHandle(
       for (const { nodeId, result, originalNode } of results) {
         applyMdastVisitResult(result, nodeId, returnBuffer, originalNode);
       }
-      return finalizeMdastVisit(handle, context, returnBuffer, dirtyData);
+      return finalizeMdastVisit(handle, context, returnBuffer);
     });
   }
 
-  return finalizeMdastVisit(handle, context, returnBuffer, dirtyData);
+  return finalizeMdastVisit(handle, context, returnBuffer);
 }
 
 function finalizeMdastVisit(
   handle: MdastHandle,
   context: MdastVisitorContext,
   returnBuffer: CommandBuffer,
-  dirtyData: Map<number, Record<string, unknown>>,
 ): MdastVisitResult {
-  for (const [id, value] of dirtyData) {
-    const json = value ? JSON.stringify(value) : "";
-    setNodeData(handle, id, encoder.encode(json));
-  }
   const { merged, hasMutations } = mergeAndReset(returnBuffer, context);
   return { commandBuffer: merged, diagnostics: context.getDiagnostics(), hasMutations };
 }

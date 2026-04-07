@@ -53,11 +53,9 @@ describe("markdownToHtml", () => {
   test("MDAST plugin removes headings", () => {
     const removeHeadings = defineMdastPlugin({
       name: "remove-headings",
-      createOnce: () => ({
-        heading(node: MdastNode, ctx: { removeNode(n: MdastNode): void }) {
-          ctx.removeNode(node);
-        },
-      }),
+      heading(node, ctx) {
+        ctx.removeNode(node);
+      },
     });
 
     const html = markdownToHtml("# Title\n\nKeep this", {
@@ -71,11 +69,9 @@ describe("markdownToHtml", () => {
   test("MDAST plugin replaces text with raw markdown", () => {
     const uppercaseHeadings = defineMdastPlugin({
       name: "uppercase-headings",
-      createOnce: () => ({
-        heading(_node: MdastNode) {
-          return { raw: "# REPLACED" };
-        },
-      }),
+      heading(_node) {
+        return { raw: "# REPLACED" };
+      },
     });
 
     const html = markdownToHtml("# Original\n\npara", {
@@ -90,14 +86,12 @@ describe("markdownToHtml", () => {
   test("HAST plugin adds class to all elements", () => {
     const addClasses = defineHastPlugin({
       name: "add-classes",
-      createOnce: () => ({
-        element: {
-          filter: [],
-          visit(node, ctx) {
-            ctx.setProperty(node, "class", "styled");
-          },
+      element: {
+        filter: [],
+        visit(node, ctx) {
+          ctx.setProperty(node, "class", "styled");
         },
-      }),
+      },
     });
 
     const html = markdownToHtml("# Hello\n\nWorld", {
@@ -110,16 +104,14 @@ describe("markdownToHtml", () => {
   test("HAST plugin removes elements", () => {
     const removeHeadings = defineHastPlugin({
       name: "remove-h1",
-      createOnce: () => ({
-        element: {
-          filter: [],
-          visit(node, ctx) {
-            if (node.tagName === "h1") {
-              ctx.removeNode(node);
-            }
-          },
+      element: {
+        filter: [],
+        visit(node, ctx) {
+          if (node.tagName === "h1") {
+            ctx.removeNode(node);
+          }
         },
-      }),
+      },
     });
 
     const html = markdownToHtml("# Gone\n\nStays", {
@@ -133,20 +125,18 @@ describe("markdownToHtml", () => {
   test("HAST plugin replaces element via return value", () => {
     const replaceH1 = defineHastPlugin({
       name: "demote-h1",
-      createOnce: () => ({
-        element: {
-          filter: ["h1"],
-          visit(node) {
-            return {
-              type: "element" as const,
-              tagName: "h2",
-              properties: { class: "demoted" },
-              children: node.children,
-              data: undefined,
-            } as HastNode;
-          },
+      element: {
+        filter: ["h1"],
+        visit(node) {
+          return {
+            type: "element" as const,
+            tagName: "h2",
+            properties: { class: "demoted" },
+            children: node.children,
+            data: undefined,
+          } as HastNode;
         },
-      }),
+      },
     });
 
     const html = markdownToHtml("# Title", {
@@ -161,16 +151,14 @@ describe("markdownToHtml", () => {
   test("HAST plugin sets id on heading", () => {
     const addIds = defineHastPlugin({
       name: "add-ids",
-      createOnce: () => ({
-        element: {
-          filter: [],
-          visit(node, ctx) {
-            if (node.tagName === "h1") {
-              ctx.setProperty(node, "id", "main-title");
-            }
-          },
+      element: {
+        filter: [],
+        visit(node, ctx) {
+          if (node.tagName === "h1") {
+            ctx.setProperty(node, "id", "main-title");
+          }
         },
-      }),
+      },
     });
 
     const html = markdownToHtml("# Hello", {
@@ -182,14 +170,12 @@ describe("markdownToHtml", () => {
   test("no mutations - fast Rust path still works", () => {
     const noopPlugin = defineHastPlugin({
       name: "noop",
-      createOnce: () => ({
-        element: {
-          filter: [],
-          visit() {
-            // inspect but don't mutate
-          },
+      element: {
+        filter: [],
+        visit() {
+          // inspect but don't mutate
         },
-      }),
+      },
     });
 
     const html = markdownToHtml("# Test\n\nParagraph", {
@@ -205,23 +191,19 @@ describe("markdownToHtml", () => {
   test("MDAST plugin removes headings, HAST plugin adds class", () => {
     const removeHeadings = defineMdastPlugin({
       name: "remove-headings",
-      createOnce: () => ({
-        heading(node: MdastNode, ctx: { removeNode(n: MdastNode): void }) {
-          ctx.removeNode(node);
-        },
-      }),
+      heading(node, ctx) {
+        ctx.removeNode(node);
+      },
     });
 
     const addClasses = defineHastPlugin({
       name: "add-classes",
-      createOnce: () => ({
-        element: {
-          filter: [],
-          visit(node, ctx) {
-            ctx.setProperty(node, "class", "styled");
-          },
+      element: {
+        filter: [],
+        visit(node, ctx) {
+          ctx.setProperty(node, "class", "styled");
         },
-      }),
+      },
     });
 
     const html = markdownToHtml("# Gone\n\nKeep", {
@@ -236,28 +218,24 @@ describe("markdownToHtml", () => {
   test("multiple HAST plugins compose", () => {
     const addIds = defineHastPlugin({
       name: "add-ids",
-      createOnce: () => ({
-        element: {
-          filter: [],
-          visit(node, ctx) {
-            if (node.tagName === "h1") {
-              ctx.setProperty(node, "id", "title");
-            }
-          },
+      element: {
+        filter: [],
+        visit(node, ctx) {
+          if (node.tagName === "h1") {
+            ctx.setProperty(node, "id", "title");
+          }
         },
-      }),
+      },
     });
 
     const addClasses = defineHastPlugin({
       name: "add-classes",
-      createOnce: () => ({
-        element: {
-          filter: [],
-          visit(node, ctx) {
-            ctx.setProperty(node, "class", "styled");
-          },
+      element: {
+        filter: [],
+        visit(node, ctx) {
+          ctx.setProperty(node, "class", "styled");
         },
-      }),
+      },
     });
 
     const html = markdownToHtml("# Hello", {
@@ -285,11 +263,9 @@ describe("mdxToJs", () => {
   test("MDAST plugin affects MDX output", () => {
     const removeHeadings = defineMdastPlugin({
       name: "remove-headings",
-      createOnce: () => ({
-        heading(node: MdastNode, ctx: { removeNode(n: MdastNode): void }) {
-          ctx.removeNode(node);
-        },
-      }),
+      heading(node, ctx) {
+        ctx.removeNode(node);
+      },
     });
 
     const js = mdxToJs("# Gone\n\nKept", {
@@ -303,16 +279,14 @@ describe("mdxToJs", () => {
     const collected: unknown[] = [];
     const readAttrs = defineMdastPlugin({
       name: "read-attrs",
-      createOnce: () => ({
-        mdxJsxFlowElement(node: MdastNode) {
-          if (node.type === "mdxJsxFlowElement") {
-            collected.push({
-              name: node.name,
-              attributes: node.attributes,
-            });
-          }
-        },
-      }),
+      mdxJsxFlowElement(node) {
+        if (node.type === "mdxJsxFlowElement") {
+          collected.push({
+            name: node.name,
+            attributes: node.attributes,
+          });
+        }
+      },
     });
 
     mdxToJs('<Component foo="bar" disabled count={42} />', {
@@ -343,18 +317,16 @@ describe("mdxToJs", () => {
   test("MDAST plugin can replace JSX element with modified attributes", () => {
     const addAttr = defineMdastPlugin({
       name: "add-attr",
-      createOnce: () => ({
-        mdxJsxFlowElement(node: MdastNode) {
-          if (node.type === "mdxJsxFlowElement" && node.name === "Component") {
-            return {
-              type: "mdxJsxFlowElement",
-              name: "Component",
-              attributes: [{ type: "mdxJsxAttribute", name: "added", value: "yes" }],
-              children: [],
-            };
-          }
-        },
-      }),
+      mdxJsxFlowElement(node) {
+        if (node.type === "mdxJsxFlowElement" && node.name === "Component") {
+          return {
+            type: "mdxJsxFlowElement",
+            name: "Component",
+            attributes: [{ type: "mdxJsxAttribute", name: "added", value: "yes" }],
+            children: [],
+          };
+        }
+      },
     });
 
     const js = mdxToJs("<Component />\n", {
@@ -368,18 +340,16 @@ describe("mdxToJs", () => {
   test("MDAST plugin can replace JSX element removing all attributes", () => {
     const stripAttrs = defineMdastPlugin({
       name: "strip-attrs",
-      createOnce: () => ({
-        mdxJsxFlowElement(node: MdastNode) {
-          if (node.type === "mdxJsxFlowElement" && node.name === "Component") {
-            return {
-              type: "mdxJsxFlowElement",
-              name: "Component",
-              attributes: [],
-              children: [],
-            };
-          }
-        },
-      }),
+      mdxJsxFlowElement(node) {
+        if (node.type === "mdxJsxFlowElement" && node.name === "Component") {
+          return {
+            type: "mdxJsxFlowElement",
+            name: "Component",
+            attributes: [],
+            children: [],
+          };
+        }
+      },
     });
 
     const js = mdxToJs('<Component foo="bar" />\n', {
@@ -393,20 +363,14 @@ describe("mdxToJs", () => {
   test("HAST plugin setProperty on MDX JSX element preserves existing attributes", () => {
     const injectMeta = defineHastPlugin({
       name: "inject-meta",
-      createOnce: () => ({
-        mdxJsxTextElement: {
-          filter: [],
-          visit(node, ctx) {
-            ctx.setProperty(
-              node as unknown as HastNode,
-              "client:component-path",
-              "/absolute/path/B.jsx",
-            );
-            ctx.setProperty(node as unknown as HastNode, "client:component-export", "default");
-            ctx.setProperty(node as unknown as HastNode, "client:component-hydration", "");
-          },
+      mdxJsxTextElement: {
+        filter: [],
+        visit(node, ctx) {
+          ctx.setProperty(node, "client:component-path", "/absolute/path/B.jsx");
+          ctx.setProperty(node, "client:component-export", "default");
+          ctx.setProperty(node, "client:component-hydration", "");
         },
-      }),
+      },
     });
 
     const js = mdxToJs('import B from "./B.jsx"\n\n<B client:load foo="bar">hi</B>', {
@@ -425,20 +389,17 @@ describe("mdxToJs", () => {
   test("HAST plugin setProperty on MDX JSX element - no-op plugin preserves all attributes", () => {
     const noop = defineHastPlugin({
       name: "noop",
-      createOnce: () => ({
-        mdxJsxTextElement: {
-          filter: [],
-          visit() {
-            // do nothing
-          },
+      mdxJsxTextElement: {
+        filter: [],
+        visit() {
+          // do nothing
         },
-      }),
+      },
     });
 
-    const withPlugin = mdxToJs(
-      'import B from "./B.jsx"\n\n<B client:load foo="bar">hi</B>',
-      { hastPlugins: [noop] },
-    );
+    const withPlugin = mdxToJs('import B from "./B.jsx"\n\n<B client:load foo="bar">hi</B>', {
+      hastPlugins: [noop],
+    });
     const without = mdxToJs('import B from "./B.jsx"\n\n<B client:load foo="bar">hi</B>');
 
     expect(withPlugin).toBe(without);
@@ -447,14 +408,12 @@ describe("mdxToJs", () => {
   test("HAST plugin setProperty overwrites existing MDX JSX attribute", () => {
     const overwrite = defineHastPlugin({
       name: "overwrite-attr",
-      createOnce: () => ({
-        mdxJsxTextElement: {
-          filter: [],
-          visit(node: HastNode, ctx: HastVisitorContext) {
-            ctx.setProperty(node, "foo", "replaced");
-          },
+      mdxJsxTextElement: {
+        filter: [],
+        visit(node, ctx) {
+          ctx.setProperty(node, "foo", "replaced");
         },
-      }),
+      },
     });
 
     const js = mdxToJs('import B from "./B.jsx"\n\n<B foo="bar">hi</B>', {
@@ -513,14 +472,11 @@ describe("mdxToJs", () => {
   test("rawHtml preserves curly braces as literal text", () => {
     const plugin = defineMdastPlugin({
       name: "raw-html-braces",
-      createOnce: () => ({
-        code() {
-          return {
-            rawHtml:
-              '<pre class="shiki"><code><span style="color:red">{foo: 1}</span></code></pre>',
-          };
-        },
-      }),
+      code() {
+        return {
+          rawHtml: '<pre class="shiki"><code><span style="color:red">{foo: 1}</span></code></pre>',
+        };
+      },
     });
 
     const js = mdxToJs("```js\nconst x = {foo: 1}\n```", {
@@ -541,11 +497,9 @@ describe("mdxToJs", () => {
 
     const plugin = defineMdastPlugin({
       name: "raw-html-shiki",
-      createOnce: () => ({
-        code() {
-          return { rawHtml: shikiHtml };
-        },
-      }),
+      code() {
+        return { rawHtml: shikiHtml };
+      },
     });
 
     const js = mdxToJs("```js\nconst x = {\n  foo: 1\n}\n```", {
@@ -577,14 +531,12 @@ describe("mdxToJs", () => {
   test("sync HAST plugin works", () => {
     const plugin = defineHastPlugin({
       name: "class-adder",
-      createOnce: () => ({
-        element: {
-          filter: [],
-          visit(node: HastNode, ctx: HastVisitorContext) {
-            ctx.setProperty(node, "class", "added");
-          },
+      element: {
+        filter: [],
+        visit(node, ctx) {
+          ctx.setProperty(node, "class", "added");
         },
-      }),
+      },
     });
 
     const html = markdownToHtml("# Hello", {
@@ -598,14 +550,12 @@ describe("mdxToJs", () => {
   test("filtered element visitor - single tag", () => {
     const plugin = defineHastPlugin({
       name: "link-class",
-      createOnce: () => ({
-        element: {
-          filter: ["a"],
-          visit(node: HastNode, ctx: HastVisitorContext) {
-            ctx.setProperty(node, "class", "link");
-          },
+      element: {
+        filter: ["a"],
+        visit(node, ctx) {
+          ctx.setProperty(node, "class", "link");
         },
-      }),
+      },
     });
 
     const html = markdownToHtml("# Hello\n\n[click](https://example.com)", {
@@ -620,14 +570,12 @@ describe("mdxToJs", () => {
   test("filtered element visitor - multiple tags", () => {
     const plugin = defineHastPlugin({
       name: "heading-class",
-      createOnce: () => ({
-        element: {
-          filter: ["h1", "h2"],
-          visit(node: HastNode, ctx: HastVisitorContext) {
-            ctx.setProperty(node, "class", "heading");
-          },
+      element: {
+        filter: ["h1", "h2"],
+        visit(node, ctx) {
+          ctx.setProperty(node, "class", "heading");
         },
-      }),
+      },
     });
 
     const html = markdownToHtml("# One\n\n## Two\n\nParagraph", {
@@ -641,22 +589,20 @@ describe("mdxToJs", () => {
   test("filtered element visitor - array of filter groups", () => {
     const plugin = defineHastPlugin({
       name: "multi-filter",
-      createOnce: () => ({
-        element: [
-          {
-            filter: ["h1"],
-            visit(node: HastNode, ctx: HastVisitorContext) {
-              ctx.setProperty(node, "id", "title");
-            },
+      element: [
+        {
+          filter: ["h1"],
+          visit(node, ctx) {
+            ctx.setProperty(node, "id", "title");
           },
-          {
-            filter: ["a"],
-            visit(node: HastNode, ctx: HastVisitorContext) {
-              ctx.setProperty(node, "target", "_blank");
-            },
+        },
+        {
+          filter: ["a"],
+          visit(node, ctx) {
+            ctx.setProperty(node, "target", "_blank");
           },
-        ],
-      }),
+        },
+      ],
     });
 
     const html = markdownToHtml("# Title\n\n[link](https://example.com)", {
@@ -671,17 +617,15 @@ describe("mdxToJs", () => {
     // fall back to the JS walk path, but still produce correct results.
     const plugin = defineHastPlugin({
       name: "mixed",
-      createOnce: () => ({
-        element: {
-          filter: ["h1"],
-          visit(node: HastNode, ctx: HastVisitorContext) {
-            ctx.setProperty(node, "class", "heading");
-          },
+      element: {
+        filter: ["h1"],
+        visit(node, ctx) {
+          ctx.setProperty(node, "class", "heading");
         },
-        text(node: HastNode, _ctx: HastVisitorContext) {
-          // noop, but being a bare function forces JS-walk fallback
-        },
-      }),
+      },
+      text(node, _ctx) {
+        // noop, but being a bare function forces JS-walk fallback
+      },
     });
 
     const html = markdownToHtml("# Hello", {
@@ -696,12 +640,10 @@ describe("mdxToJs", () => {
   test("async MDAST visitor - replaces code block after await", async () => {
     const plugin = defineMdastPlugin({
       name: "async-code",
-      createOnce: () => ({
-        async code(node: MdastNode) {
-          await new Promise((r) => setTimeout(r, 1));
-          return { rawHtml: "<pre>async-highlighted</pre>" };
-        },
-      }),
+      async code(node) {
+        await new Promise((r) => setTimeout(r, 1));
+        return { rawHtml: "<pre>async-highlighted</pre>" };
+      },
     });
 
     const result = mdxToJs("```js\ncode\n```", { mdastPlugins: [plugin] });
@@ -713,11 +655,9 @@ describe("mdxToJs", () => {
   test("sync MDAST plugins return string not Promise", () => {
     const plugin = defineMdastPlugin({
       name: "sync-mdast",
-      createOnce: () => ({
-        heading(node: MdastNode, ctx: any) {
-          ctx.setProperty(node, "depth", 2);
-        },
-      }),
+      heading(node, ctx) {
+        ctx.setProperty(node, "depth", 2);
+      },
     });
 
     const result = mdxToJs("# Title", { mdastPlugins: [plugin] });
@@ -727,16 +667,14 @@ describe("mdxToJs", () => {
   test("async HAST visitor - replaces element after await", async () => {
     const plugin = defineHastPlugin({
       name: "async-replace",
-      createOnce: () => ({
-        element: {
-          filter: ["pre"],
-          async visit(node: Element, ctx: HastVisitorContext) {
-            // Simulate async work (e.g. shiki language loading)
-            await new Promise((r) => setTimeout(r, 1));
-            ctx.replaceNode(node, { type: "raw", value: "<pre>highlighted</pre>" } as HastNode);
-          },
+      element: {
+        filter: ["pre"],
+        async visit(node, ctx) {
+          // Simulate async work (e.g. shiki language loading)
+          await new Promise((r) => setTimeout(r, 1));
+          ctx.replaceNode(node, { type: "raw", value: "<pre>highlighted</pre>" } as HastNode);
         },
-      }),
+      },
     });
 
     const result = markdownToHtml("```js\ncode\n```", { hastPlugins: [plugin] });
@@ -749,18 +687,16 @@ describe("mdxToJs", () => {
     const order: string[] = [];
     const plugin = defineHastPlugin({
       name: "async-parallel",
-      createOnce: () => ({
-        element: {
-          filter: ["h1", "h2"],
-          async visit(node: Element, ctx: HastVisitorContext) {
-            const tag = node.tagName;
-            order.push(`start:${tag}`);
-            await new Promise((r) => setTimeout(r, tag === "h1" ? 10 : 1));
-            order.push(`end:${tag}`);
-            ctx.setProperty(node, "class", "processed");
-          },
+      element: {
+        filter: ["h1", "h2"],
+        async visit(node, ctx) {
+          const tag = node.tagName;
+          order.push(`start:${tag}`);
+          await new Promise((r) => setTimeout(r, tag === "h1" ? 10 : 1));
+          order.push(`end:${tag}`);
+          ctx.setProperty(node, "class", "processed");
         },
-      }),
+      },
     });
 
     const html = await markdownToHtml("# One\n\n## Two", { hastPlugins: [plugin] });
@@ -773,27 +709,23 @@ describe("mdxToJs", () => {
   test("mixed sync and async plugins - sync has zero overhead", async () => {
     const syncPlugin = defineHastPlugin({
       name: "sync-class",
-      createOnce: () => ({
-        element: {
-          filter: ["h1"],
-          visit(node: Element, ctx: HastVisitorContext) {
-            ctx.setProperty(node, "id", "sync");
-          },
+      element: {
+        filter: ["h1"],
+        visit(node, ctx) {
+          ctx.setProperty(node, "id", "sync");
         },
-      }),
+      },
     });
 
     const asyncPlugin = defineHastPlugin({
       name: "async-class",
-      createOnce: () => ({
-        element: {
-          filter: ["p"],
-          async visit(node: Element, ctx: HastVisitorContext) {
-            await new Promise((r) => setTimeout(r, 1));
-            ctx.setProperty(node, "class", "async");
-          },
+      element: {
+        filter: ["p"],
+        async visit(node, ctx) {
+          await new Promise((r) => setTimeout(r, 1));
+          ctx.setProperty(node, "class", "async");
         },
-      }),
+      },
     });
 
     const result = markdownToHtml("# Title\n\nParagraph", {
@@ -807,14 +739,12 @@ describe("mdxToJs", () => {
   test("sync-only plugins still return string (not Promise)", () => {
     const plugin = defineHastPlugin({
       name: "sync-only",
-      createOnce: () => ({
-        element: {
-          filter: ["h1"],
-          visit(node: Element, ctx: HastVisitorContext) {
-            ctx.setProperty(node, "id", "test");
-          },
+      element: {
+        filter: ["h1"],
+        visit(node, ctx) {
+          ctx.setProperty(node, "id", "test");
         },
-      }),
+      },
     });
 
     const result = markdownToHtml("# Hello", { hastPlugins: [plugin] });
@@ -825,14 +755,12 @@ describe("mdxToJs", () => {
   test("mdast setProperty + returning same node preserves mutation", () => {
     const plugin = defineMdastPlugin({
       name: "bump-heading",
-      createOnce: () => ({
-        heading(node, ctx) {
-          if (node.depth < 6) {
-            ctx.setProperty(node, "depth", (node.depth + 1) as 1 | 2 | 3 | 4 | 5 | 6);
-          }
-          return node; // returning same node should NOT clobber setProperty
-        },
-      }),
+      heading(node, ctx) {
+        if (node.depth < 6) {
+          ctx.setProperty(node, "depth", (node.depth + 1) as 1 | 2 | 3 | 4 | 5 | 6);
+        }
+        return node; // returning same node should NOT clobber setProperty
+      },
     });
 
     const html = markdownToHtml("# Hello", { mdastPlugins: [plugin] });
@@ -843,15 +771,9 @@ describe("mdxToJs", () => {
   test("hast setProperty on text node updates value", () => {
     const plugin = defineHastPlugin({
       name: "uppercase-text",
-      createOnce: () => ({
-        text(node: HastNode, ctx: HastVisitorContext) {
-          ctx.setProperty(
-            node,
-            "value",
-            (node as unknown as { value: string }).value.toUpperCase(),
-          );
-        },
-      }),
+      text(node, ctx) {
+        ctx.setProperty(node, "value", node.value.toUpperCase());
+      },
     });
 
     const html = markdownToHtml("hello world", { hastPlugins: [plugin] });
@@ -863,13 +785,11 @@ describe("mdxToJs", () => {
       let wordCount = 0;
       const plugin = defineMdastPlugin({
         name: "reading-time",
-        createOnce: () => ({
-          text(node: MdastNode) {
-            if (node.type === "text") {
-              wordCount += node.value.split(/\s+/).length;
-            }
-          },
-        }),
+        text(node) {
+          if (node.type === "text") {
+            wordCount += node.value.split(/\s+/).length;
+          }
+        },
       });
       return {
         plugin,
@@ -895,11 +815,9 @@ describe("mdxToJs", () => {
   test("spread node with override replaces correctly", () => {
     const plugin = defineMdastPlugin({
       name: "spread-replace",
-      createOnce: () => ({
-        heading(node) {
-          return { ...node, depth: 2 } as typeof node;
-        },
-      }),
+      heading(node) {
+        return { ...node, depth: 2 } as typeof node;
+      },
     });
 
     const html = markdownToHtml("# Hello", { mdastPlugins: [plugin] });
@@ -911,13 +829,11 @@ describe("mdxToJs", () => {
   test("emoji shortcode replacement", () => {
     const emojis = defineMdastPlugin({
       name: "emojis",
-      createOnce: () => ({
-        text(node: MdastNode, ctx: { setProperty(n: MdastNode, k: string, v: unknown): void }) {
-          if (node.type === "text" && node.value.includes(":wave:")) {
-            ctx.setProperty(node, "value", node.value.replaceAll(":wave:", "\u{1F44B}"));
-          }
-        },
-      }),
+      text(node, ctx) {
+        if (node.type === "text" && node.value.includes(":wave:")) {
+          ctx.setProperty(node, "value", node.value.replaceAll(":wave:", "\u{1F44B}"));
+        }
+      },
     });
 
     const html = markdownToHtml("Hello :wave: world :wave:", {
@@ -933,17 +849,15 @@ describe("mdxToJs", () => {
 
     const asyncHighlight = defineMdastPlugin({
       name: "async-highlight",
-      createOnce: () => ({
-        async code(node: MdastNode) {
-          if (node.type === "code") {
-            const html = await highlighter.codeToHtml(node.value, {
-              lang: node.lang ?? "text",
-              theme: "github-dark",
-            });
-            return { rawHtml: html };
-          }
-        },
-      }),
+      async code(node) {
+        if (node.type === "code") {
+          const html = await highlighter.codeToHtml(node.value, {
+            lang: node.lang ?? "text",
+            theme: "github-dark",
+          });
+          return { rawHtml: html };
+        }
+      },
     });
 
     const result = markdownToHtml("```js\nconsole.log(1)\n```", {
@@ -959,16 +873,14 @@ describe("mdxToJs", () => {
   test("unwrap images from paragraphs", () => {
     const unwrapImages = defineMdastPlugin({
       name: "unwrap-images",
-      createOnce: () => ({
-        paragraph(node: MdastNode) {
-          if (node.type === "paragraph") {
-            const child = node.children[0];
-            if (node.children.length === 1 && child?.type === "image") {
-              return child;
-            }
+      paragraph(node) {
+        if (node.type === "paragraph") {
+          const child = node.children[0];
+          if (node.children.length === 1 && child?.type === "image") {
+            return child;
           }
-        },
-      }),
+        }
+      },
     });
 
     const html = markdownToHtml("![alt text](https://example.com/img.png)", {
@@ -1007,7 +919,7 @@ describe("markdownToMdast", () => {
 
 describe("mdxToMdast", () => {
   test("parses JSX elements", () => {
-    const tree = mdxToMdast("<MyComponent foo=\"bar\" />");
+    const tree = mdxToMdast('<MyComponent foo="bar" />');
     expect(tree.type).toBe("root");
     if (tree.type !== "root") return;
     const jsx = tree.children[0]!;

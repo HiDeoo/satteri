@@ -72,7 +72,11 @@ export interface HastVisitorContext {
   setProperty(node: Readonly<HastNode>, key: string, value: unknown): void;
   /** Collect the concatenated text of all descendant text nodes (like DOM textContent). */
   textContent(node: Readonly<HastNode>): string;
-  report(opts: { message: string; node?: Readonly<HastNode>; severity?: "error" | "warning" | "info" }): void;
+  report(opts: {
+    message: string;
+    node?: Readonly<HastNode>;
+    severity?: "error" | "warning" | "info";
+  }): void;
   getDiagnostics(): HastDiagnostic[];
 }
 

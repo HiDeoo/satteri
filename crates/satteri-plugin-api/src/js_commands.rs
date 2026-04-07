@@ -166,6 +166,16 @@ fn apply_set_property(
         return result;
     }
 
+    // "data" is stored as JSON bytes in the arena's node_data map, not as a typed field.
+    if prop_name == "data" {
+        if value_type == PROP_NULL {
+            arena.set_node_data(node_id, Vec::new());
+        } else {
+            arena.set_node_data(node_id, value_str.as_bytes().to_vec());
+        }
+        return Ok(());
+    }
+
     // MDAST node, resolve name to field and apply
     let node_type = arena.get_node(node_id).node_type;
     let field_id =

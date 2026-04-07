@@ -14,7 +14,7 @@ import { visitHastHandle, resolveSubscriptions } from "../src/hast/hast-visitor.
 import { markdownToHtml, defineMdastPlugin } from "../src/index.js";
 import type { MdastNode } from "../src/types.js";
 import type { HastNode } from "../src/hast/hast-materializer.js";
-import type { HastVisitorContext } from "../src/hast/hast-visitor.js";
+import type { HastVisitorContext, HastVisitorInstance } from "../src/hast/hast-visitor.js";
 import type { MdastPluginInstance } from "../src/mdast/mdast-visitor.js";
 
 // Helpers
@@ -34,9 +34,7 @@ function markdownToHtmlWithMdastPlugins(
   source: string,
   plugins: { instance: MdastPluginInstance; name: string }[],
 ): string {
-  const mdastPlugins = plugins.map((p) =>
-    defineMdastPlugin({ name: p.name, createOnce: () => p.instance }),
-  );
+  const mdastPlugins = plugins.map((p) => defineMdastPlugin({ name: p.name, ...p.instance }));
   return markdownToHtml(source, { mdastPlugins }) as string;
 }
 
@@ -52,8 +50,8 @@ describe("MDAST plugins affecting HTML output", () => {
   });
 
   test("MDAST plugin that removes headings - heading disappears from HTML", () => {
-    const removeHeadings = {
-      heading(_node: MdastNode, ctx: { removeNode(n: MdastNode): void }) {
+    const removeHeadings: MdastPluginInstance = {
+      heading(_node, ctx) {
         ctx.removeNode(_node);
       },
     };
@@ -67,10 +65,10 @@ describe("MDAST plugins affecting HTML output", () => {
   });
 
   test("MDAST plugin that replaces heading with paragraph - h1 becomes p in HTML", () => {
-    const replaceHeading = {
-      heading(node: MdastNode) {
+    const replaceHeading: MdastPluginInstance = {
+      heading(node) {
         if (node.type === "heading") {
-          return { type: "paragraph", children: node.children } as unknown as MdastNode;
+          return { type: "paragraph", children: node.children };
         }
       },
     };
@@ -85,13 +83,13 @@ describe("MDAST plugins affecting HTML output", () => {
 
   test("MDAST plugin chain: plugin 1 sets data, plugin 2 reads it (data persists)", () => {
     let seenIdInPlugin2: string | null = null;
-    const setId = {
-      heading(node: MdastNode) {
-        node.data = { id: "custom-id" };
+    const setId: MdastPluginInstance = {
+      heading(node, ctx) {
+        ctx.setProperty(node, "data", { id: "custom-id" });
       },
     };
-    const readId = {
-      heading(node: MdastNode) {
+    const readId: MdastPluginInstance = {
+      heading(node) {
         seenIdInPlugin2 = (node.data as { id?: string } | null)?.id ?? null;
       },
     };
@@ -105,18 +103,18 @@ describe("MDAST plugins affecting HTML output", () => {
   test("MDAST plugin chain: data survives rebuild when another node is mutated", () => {
     let seenIdInPlugin2: string | null = null;
     // Plugin 1: sets data on heading AND mutates a different node (text → bold)
-    const setDataAndMutate = {
-      heading(node: MdastNode) {
-        node.data = { id: "survives-rebuild" };
+    const setDataAndMutate: MdastPluginInstance = {
+      heading(_node, ctx) {
+        ctx.setProperty(_node, "data", { id: "survives-rebuild" });
       },
-      text(node: MdastNode, ctx: { setProperty(n: MdastNode, k: string, v: unknown): void }) {
+      text(node, ctx) {
         // Mutating text forces a rebuild, node IDs change
         ctx.setProperty(node, "value", "mutated");
       },
     };
     // Plugin 2: reads the data set by plugin 1 (after rebuild)
-    const readData = {
-      heading(node: MdastNode) {
+    const readData: MdastPluginInstance = {
+      heading(node) {
         seenIdInPlugin2 = (node.data as { id?: string } | null)?.id ?? null;
       },
     };
@@ -128,8 +126,8 @@ describe("MDAST plugins affecting HTML output", () => {
   });
 
   test("MDAST plugin removing a link - anchor disappears from HTML", () => {
-    const removeLinks = {
-      link(_node: MdastNode, ctx: { removeNode(n: MdastNode): void }) {
+    const removeLinks: MdastPluginInstance = {
+      link(_node, ctx) {
         ctx.removeNode(_node);
       },
     };
@@ -157,10 +155,10 @@ describe("HAST plugins affecting HTML output", () => {
     const handle = createHastHandle("# Title\n\n- one\n- two\n\n> quote");
     const source = getHandleSource(handle);
     const tags: string[] = [];
-    const plugin = {
+    const plugin: HastVisitorInstance = {
       element: {
         filter: [] as string[],
-        visit(node: HastNode) {
+        visit(node) {
           if (node.type === "element") tags.push(node.tagName);
         },
       },
@@ -177,10 +175,10 @@ describe("HAST plugins affecting HTML output", () => {
     const handle = createHastHandle("[click](https://example.com)");
     const source = getHandleSource(handle);
     const hrefs: string[] = [];
-    const plugin = {
+    const plugin: HastVisitorInstance = {
       element: {
         filter: ["a"],
-        visit(node: HastNode) {
+        visit(node) {
           if (node.type === "element" && node.tagName === "a" && node.properties?.href) {
             hrefs.push(node.properties.href as string);
           }
@@ -196,10 +194,10 @@ describe("HAST plugins affecting HTML output", () => {
     const handle = createHastHandle('![alt text](image.png "my title")');
     const source = getHandleSource(handle);
     let imgNode: HastNode | null = null;
-    const plugin = {
+    const plugin: HastVisitorInstance = {
       element: {
         filter: ["img"],
-        visit(node: HastNode) {
+        visit(node) {
           if (node.type === "element" && node.tagName === "img") {
             imgNode = node;
           }
@@ -220,8 +218,8 @@ describe("HAST plugins affecting HTML output", () => {
     const handle = createHastHandle("Hello **world**");
     const source = getHandleSource(handle);
     const texts: string[] = [];
-    const plugin = {
-      text(node: HastNode) {
+    const plugin: HastVisitorInstance = {
+      text(node) {
         if (node.type === "text") texts.push(node.value);
       },
     };
@@ -234,10 +232,10 @@ describe("HAST plugins affecting HTML output", () => {
   test("HAST visitor: setProperty mutation is applied to elements", () => {
     const handle = createHastHandle("# Hello");
     const source = getHandleSource(handle);
-    const plugin = {
+    const plugin: HastVisitorInstance = {
       element: {
         filter: ["h1"],
-        visit(node: HastNode, ctx: HastVisitorContext) {
+        visit(node, ctx) {
           ctx.setProperty(node, "id", "my-title");
         },
       },
@@ -251,10 +249,10 @@ describe("HAST plugins affecting HTML output", () => {
   test("HAST visitor: remove mutation removes element from result", () => {
     const handle = createHastHandle("# Keep\n\nRemove this");
     const source = getHandleSource(handle);
-    const plugin = {
+    const plugin: HastVisitorInstance = {
       element: {
         filter: ["p"],
-        visit(node: HastNode, ctx: HastVisitorContext) {
+        visit(node, ctx) {
           ctx.removeNode(node);
         },
       },
@@ -269,10 +267,10 @@ describe("HAST plugins affecting HTML output", () => {
   test("HAST visitor: replace mutation swaps an element", () => {
     const handle = createHastHandle("# Hello");
     const source = getHandleSource(handle);
-    const plugin = {
+    const plugin: HastVisitorInstance = {
       element: {
         filter: ["h1"],
-        visit(node: HastNode) {
+        visit(node) {
           if (node.type === "element" && node.tagName === "h1") {
             return {
               type: "element" as const,
@@ -297,10 +295,10 @@ describe("HAST plugins affecting HTML output", () => {
     const handle = createHastHandle("# Hello");
     const source = getHandleSource(handle);
     let diags: { message: string; severity: string }[] = [];
-    const plugin = {
+    const plugin: HastVisitorInstance = {
       element: {
         filter: ["h1"],
-        visit(node: HastNode, ctx: HastVisitorContext) {
+        visit(node, ctx) {
           ctx.report({ message: "headings should have IDs", node, severity: "warning" });
           diags = ctx.getDiagnostics();
         },
@@ -394,11 +392,9 @@ describe("combined MDAST + HAST plugin scenarios", () => {
       mdastPlugins: [
         defineMdastPlugin({
           name: "remove-headings",
-          createOnce: () => ({
-            heading(_node: MdastNode, ctx: { removeNode(n: MdastNode): void }) {
-              ctx.removeNode(_node);
-            },
-          }),
+          heading(_node, ctx) {
+            ctx.removeNode(_node);
+          },
         }),
       ],
     });
@@ -413,13 +409,11 @@ describe("combined MDAST + HAST plugin scenarios", () => {
       mdastPlugins: [
         defineMdastPlugin({
           name: "heading-to-paragraph",
-          createOnce: () => ({
-            heading(node: MdastNode) {
-              if (node.type === "heading") {
-                return { type: "paragraph", children: node.children } as unknown as MdastNode;
-              }
-            },
-          }),
+          heading(node) {
+            if (node.type === "heading") {
+              return { type: "paragraph", children: node.children };
+            }
+          },
         }),
       ],
     });
@@ -433,11 +427,9 @@ describe("combined MDAST + HAST plugin scenarios", () => {
       mdastPlugins: [
         defineMdastPlugin({
           name: "remove-links",
-          createOnce: () => ({
-            link(_node: MdastNode, ctx: { removeNode(n: MdastNode): void }) {
-              ctx.removeNode(_node);
-            },
-          }),
+          link(_node, ctx) {
+            ctx.removeNode(_node);
+          },
         }),
       ],
     });

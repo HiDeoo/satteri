@@ -53,13 +53,11 @@ MDAST plugins run on the Markdown syntax tree, allowing you to do things like re
 ```ts
 const emojis = defineMdastPlugin({
   name: "emojis",
-  createOnce: () => ({
-    text(node, ctx) {
-      if (node.value.includes(":wave:")) {
-        ctx.setProperty(node, "value", node.value.replaceAll(":wave:", "\u{1F44B}"));
-      }
-    },
-  }),
+  text(node, ctx) {
+    if (node.value.includes(":wave:")) {
+      ctx.setProperty(node, "value", node.value.replaceAll(":wave:", "\u{1F44B}"));
+    }
+  },
 });
 ```
 
@@ -68,11 +66,9 @@ Visitors can alternatively return a replacement node, raw Markdown, or raw HTML.
 ```ts
 const highlightCode = defineMdastPlugin({
   name: "highlight-code",
-  createOnce: () => ({
-    code(node) {
-      return { rawHtml: `<pre class="highlighted">${escape(node.value)}</pre>` };
-    },
-  }),
+  code(node) {
+    return { rawHtml: `<pre class="highlighted">${escape(node.value)}</pre>` };
+  },
 });
 ```
 
@@ -85,15 +81,13 @@ HAST plugins run on the HTML syntax tree after mdast-to-hast conversion, allowin
 ```ts
 const addLinkClasses = defineHastPlugin({
   name: "add-link-classes",
-  createOnce: () => ({
-    element: {
-      filter: ["a"],
-      visit(node, ctx) {
-        ctx.setProperty(node, "class", "link");
-        ctx.setProperty(node, "target", "_blank");
-      },
+  element: {
+    filter: ["a"],
+    visit(node, ctx) {
+      ctx.setProperty(node, "class", "link");
+      ctx.setProperty(node, "target", "_blank");
     },
-  }),
+  },
 });
 ```
 
@@ -102,22 +96,20 @@ Multiple filter groups on the same node type:
 ```ts
 const multiFilter = defineHastPlugin({
   name: "multi-filter",
-  createOnce: () => ({
-    element: [
-      {
-        filter: ["h1", "h2", "h3"],
-        visit(node, ctx) {
-          ctx.setProperty(node, "class", "heading");
-        },
+  element: [
+    {
+      filter: ["h1", "h2", "h3"],
+      visit(node, ctx) {
+        ctx.setProperty(node, "class", "heading");
       },
-      {
-        filter: ["a"],
-        visit(node, ctx) {
-          ctx.setProperty(node, "target", "_blank");
-        },
+    },
+    {
+      filter: ["a"],
+      visit(node, ctx) {
+        ctx.setProperty(node, "target", "_blank");
       },
-    ],
-  }),
+    },
+  ],
 });
 ```
 
@@ -126,14 +118,12 @@ An empty filter matches all elements, but can quickly become expensive when used
 ```ts
 const allElements = defineHastPlugin({
   name: "all-elements",
-  createOnce: () => ({
-    element: {
-      filter: [],
-      visit(node, ctx) {
-        ctx.setProperty(node, "data-visited", "true");
-      },
+  element: {
+    filter: [],
+    visit(node, ctx) {
+      ctx.setProperty(node, "data-visited", "true");
     },
-  }),
+  },
 });
 ```
 
@@ -142,11 +132,9 @@ Non-element visitors (`text`, `comment`, `raw`, `doctype`, MDX expression types)
 ```ts
 const uppercaseText = defineHastPlugin({
   name: "uppercase-text",
-  createOnce: () => ({
-    text(node, ctx) {
-      ctx.setProperty(node, "value", node.value.toUpperCase());
-    },
-  }),
+  text(node, ctx) {
+    ctx.setProperty(node, "value", node.value.toUpperCase());
+  },
 });
 ```
 
@@ -180,15 +168,13 @@ const highlighter = await createHighlighter({ themes: ["github-dark"], langs: ["
 
 const asyncHighlight = defineMdastPlugin({
   name: "async-highlight",
-  createOnce: () => ({
-    async code(node) {
-      const html = await highlighter.codeToHtml(node.value, {
-        lang: node.lang,
-        theme: "github-dark",
-      });
-      return { rawHtml: html };
-    },
-  }),
+  async code(node) {
+    const html = await highlighter.codeToHtml(node.value, {
+      lang: node.lang,
+      theme: "github-dark",
+    });
+    return { rawHtml: html };
+  },
 });
 
 // Returns Promise<string> when async plugins are used

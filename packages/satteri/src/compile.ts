@@ -36,17 +36,6 @@ import { HastReader } from "./hast/hast-reader.js";
 import { materializeHastTree } from "./hast/hast-materializer.js";
 import type { MdastNode, HastNode } from "./types.js";
 
-// Helpers
-
-function initPlugins<T>(
-  plugins: { name: string; createOnce(): T }[],
-): { instance: T; name: string }[] {
-  return plugins.map((def) => ({
-    instance: def.createOnce(),
-    name: def.name,
-  }));
-}
-
 // MDAST plugin runner (handle-based)
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -59,19 +48,18 @@ function runMdastPluginsOnHandle(
   plugins: MdastPluginDefinition[],
   filename: string,
 ): MdastPipelineResult | Promise<MdastPipelineResult> {
-  const instances = initPlugins(plugins);
   let pendingCommands: Uint8Array | null = null;
   const source = getHandleSource(handle);
 
   let i = 0;
   const runNext = (): MdastPipelineResult | Promise<MdastPipelineResult> => {
-    while (i < instances.length) {
+    while (i < plugins.length) {
       const idx = i++;
-      const { instance } = instances[idx]!;
-      const subs = resolveMdastSubscriptions(instance as MdastPluginInstance);
+      const plugin = plugins[idx]!;
+      const subs = resolveMdastSubscriptions(plugin as MdastPluginInstance);
       const result = visitMdastHandle(
         handle,
-        instance as MdastPluginInstance,
+        plugin as MdastPluginInstance,
         subs,
         source,
         filename,
@@ -79,12 +67,12 @@ function runMdastPluginsOnHandle(
 
       if (result instanceof Promise) {
         return result.then((r) => {
-          applyMdastResult(r, idx, instances.length, handle);
+          applyMdastResult(r, idx, plugins.length, handle);
           return runNext();
         });
       }
 
-      applyMdastResult(result, idx, instances.length, handle);
+      applyMdastResult(result, idx, plugins.length, handle);
     }
     return { handle, pendingCommands };
   };
@@ -117,16 +105,14 @@ function runHastPluginsOnHandle(
 ): void | Promise<void> {
   if (plugins.length === 0) return;
 
-  const instances = initPlugins(plugins);
-
   let i = 0;
   const runNext = (): void | Promise<void> => {
-    while (i < instances.length) {
-      const { instance } = instances[i]!;
+    while (i < plugins.length) {
+      const plugin = plugins[i]!;
       i++;
 
-      const subs = resolveSubscriptions(instance);
-      const result = visitHastHandle(handle, instance, subs, source, filename);
+      const subs = resolveSubscriptions(plugin);
+      const result = visitHastHandle(handle, plugin, subs, source, filename);
       if (result instanceof Promise) {
         return result.then(runNext);
       }
@@ -188,10 +174,7 @@ export function markdownToHtml(
   return finish(handleResult);
 }
 
-export function mdxToJs(
-  source: string,
-  options: MdxCompileOptions = {},
-): string | Promise<string> {
+export function mdxToJs(source: string, options: MdxCompileOptions = {}): string | Promise<string> {
   const { mdastPlugins = [], hastPlugins = [], optimizeStatic, filename = "<unknown>" } = options;
   const mdxOptions = optimizeStatic ? { optimizeStatic } : undefined;
 
@@ -282,4 +265,3 @@ export function mdxToHast(source: string): HastNode {
   dropHandle(handle);
   return materializeHastTree(new HastReader(buf));
 }
-

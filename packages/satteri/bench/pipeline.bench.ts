@@ -27,36 +27,30 @@ const MDX = readFileSync(new URL("./fixtures/document.mdx", import.meta.url), "u
 
 const noopHastPlugin = defineHastPlugin({
   name: "noop",
-  createOnce: () => ({
-    element: { filter: [], visit() {} },
-  }),
+  element: { filter: [], visit() {} },
 });
 
 const filteredHastPlugin = defineHastPlugin({
   name: "filtered",
-  createOnce: () => ({
-    element: {
-      filter: ["a"],
-      visit(_node: HastNode, _ctx: HastVisitorContext) {},
-    },
-  }),
+  element: {
+    filter: ["a"],
+    visit(_node: HastNode, _ctx: HastVisitorContext) {},
+  },
 });
 
 const mutatingHastPlugin = defineHastPlugin({
   name: "mutating",
-  createOnce: () => ({
-    element: {
-      filter: ["h1", "h2", "h3"],
-      visit(node: HastNode, ctx: HastVisitorContext) {
-        ctx.setProperty(node, "id", "heading");
-      },
+  element: {
+    filter: ["h1", "h2", "h3"],
+    visit(node: HastNode, ctx: HastVisitorContext) {
+      ctx.setProperty(node, "id", "heading");
     },
-  }),
+  },
 });
 
 const noopMdastPlugin = defineMdastPlugin({
   name: "noop-mdast",
-  createOnce: () => ({ heading() {} }),
+  heading() {},
 });
 
 describe("markdownToHtml", () => {

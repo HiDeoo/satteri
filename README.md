@@ -6,6 +6,8 @@ High-performance Markdown and MDX processing. Parses and compiles in Rust, runs 
 
 Check out the npm package's [documentation](./packages/satteri/README.md) for installation instructions, API reference, and usage examples.
 
+> Sätteri is an open-source project born from [Bruits](https://bruits.org/), a Rust-focused collective 💛
+
 ## Packages
 
 Sätteri is a Rust + TypeScript monorepo containing the following Rust crates:
@@ -32,16 +34,21 @@ Contributions are welcome! See our [Contributor Guide](https://github.com/bruits
 
 ## Acknowledgements
 
-Sätteri builds on the work of several open-source projects:
+Sätteri builds on the work and knowledge of several open-source projects:
 
 - [unifiedjs] -- the ecosystem of tools for processing content with syntax trees, including [remark](https://github.com/remarkjs/remark) and [rehype](https://github.com/rehypejs/rehype)
-- [pulldown-cmark] -- Rust CommonMark pull parser
-- [mdxjs-rs] -- Rust MDX compiler by Titus Wormer, forked to use pulldown-cmark and OXC
+- [pulldown-cmark] -- CommonMark pull parser
+- [mdxjs-rs] -- MDX compiler by Titus Wormer, forked to use pulldown-cmark and OXC
 
-Sätteri is an open-source project born from [Bruits](https://bruits.org/), a Rust-focused collective 💛
+Special thanks to the following projects for paving the way for high-performance Rust <-> JavaScript interop:
+
+- [oxc] -- Rust JavaScript parser and compiler by the OXC team, used for MDX compilation
+- [lightningCSS] -- Rust CSS parser with a optimized JavaScript Visitor API
 
 [unifiedjs]: https://unifiedjs.com/
 [pulldown-cmark]: https://github.com/pulldown-cmark/pulldown-cmark
+[oxc]: https://oxc.rs
+[Lightning CSS]: https://lightningcss.dev
 [mdxjs-rs]: https://github.com/wooorm/mdxjs-rs
 [npm]: https://www.npmjs.com/package/satteri
 
