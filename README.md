@@ -43,7 +43,7 @@ Sätteri builds on the work and knowledge of several open-source projects:
 Special thanks to the following projects for paving the way for high-performance Rust <-> JavaScript interop:
 
 - [oxc] -- Rust JavaScript parser and compiler by the OXC team, used for MDX compilation
-- [lightningCSS] -- Rust CSS parser with a optimized JavaScript Visitor API
+- [Lightning CSS] -- Rust CSS parser with a optimized JavaScript Visitor API
 
 [unifiedjs]: https://unifiedjs.com/
 [pulldown-cmark]: https://github.com/pulldown-cmark/pulldown-cmark
