@@ -122,6 +122,7 @@ module.exports.dropHandle = __napiModule.exports.dropHandle
 module.exports.getHandleSource = __napiModule.exports.getHandleSource
 module.exports.getNodeData = __napiModule.exports.getNodeData
 module.exports.mdastTextContentHandle = __napiModule.exports.mdastTextContentHandle
+module.exports.parseEsm = __napiModule.exports.parseEsm
 module.exports.parseExpression = __napiModule.exports.parseExpression
 module.exports.parseToHtml = __napiModule.exports.parseToHtml
 module.exports.renderHandle = __napiModule.exports.renderHandle

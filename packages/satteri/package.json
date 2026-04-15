@@ -10,11 +10,11 @@
     "satteri_napi.wasi.cjs",
     "satteri_napi.wasi-browser.js",
     "wasi-worker.mjs",
-    "wasi-worker-browser.js",
-    "satteri_napi.linux-x64-gnu.node"
+    "wasi-worker-browser.mjs"
   ],
   "type": "module",
   "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "imports": {
     "#binding": {
       "browser": "./dist/binding.browser.js",
@@ -22,11 +22,17 @@
     }
   },
   "exports": {
-    ".": "./dist/index.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "browser": "./dist/index.js",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
   },
   "scripts": {
     "build:wasm": "napi build --manifest-path ../../crates/satteri-napi-binding/Cargo.toml --output-dir . --platform --release --esm --strip --target wasm32-wasip1-threads",
     "build:native": "napi build --manifest-path ../../crates/satteri-napi-binding/Cargo.toml --output-dir . --platform --release --esm --strip",
+    "build:native:cross": "napi build --manifest-path ../../crates/satteri-napi-binding/Cargo.toml --output-dir . --platform --release --esm --strip --cross-compile",
     "build:native:debug": "napi build --manifest-path ../../crates/satteri-napi-binding/Cargo.toml --output-dir . --platform --esm",
     "build:ts": "tsc --project tsconfig.build.json",
     "build": "pnpm build:native && pnpm build:ts",

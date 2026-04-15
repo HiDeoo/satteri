@@ -457,6 +457,12 @@ pub fn parse_expression(source: String) -> Option<String> {
     satteri_mdxjs::parse_expression_to_estree_json(&source)
 }
 
+/// Parse ESM (import/export statements) and return ESTree-compatible AST as JSON.
+#[napi]
+pub fn parse_esm(source: String) -> Option<String> {
+    satteri_mdxjs::parse_esm_to_estree_json(&source)
+}
+
 /// Read the node_data JSON blob for a node. Returns null if none is set.
 #[napi]
 pub fn get_node_data(handle: &ArenaHandle, node_id: u32) -> Option<String> {

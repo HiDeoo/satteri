@@ -24,7 +24,10 @@ import {
   textContentHandle,
   getNodeData as napiGetNodeData,
   parseExpression as napiParseExpression,
+  parseEsm as napiParseEsm,
 } from "#binding";
+
+type NapiParseFn = (source: string) => string | null;
 
 // Opaque handle type from NAPI, the arena lives in Rust memory.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,13 +40,13 @@ export type EstreeProgram = Record<string, any>;
 /** Maps HastNode objects to their arena node IDs without Object.defineProperty overhead. */
 const nodeIdMap: WeakMap<object, number> = new WeakMap();
 
-/** Attach `parseExpression()` to an MDX expression node. */
-function attachParseExpression(node: HastNode): void {
+/** Attach `parseExpression()` to an MDX expression or ESM node. */
+function attachParseExpression(node: HastNode, parseFn: NapiParseFn): void {
   Object.defineProperty(node, "parseExpression", {
     value(): EstreeProgram | null {
       const value = (this as { value?: string }).value;
       if (typeof value !== "string") return null;
-      const json = napiParseExpression(value);
+      const json = parseFn(value);
       if (json == null) return null;
       return JSON.parse(json) as EstreeProgram;
     },
@@ -232,7 +235,9 @@ export interface HastVisitorInstance {
   mdxTextExpression?: HastVisitorFn<
     MdxTextExpressionHast & { parseExpression(): EstreeProgram | null }
   >;
-  mdxjsEsm?: HastVisitorFn<MdxjsEsmHast>;
+  mdxjsEsm?: HastVisitorFn<
+    MdxjsEsmHast & { parseExpression(): EstreeProgram | null }
+  >;
 }
 
 // Selective walk helpers
@@ -452,6 +457,7 @@ const TEXT_NODE_TYPES: Record<number, string> = {
   5: "raw",
   [HAST_MDX_FLOW_EXPRESSION]: "mdxFlowExpression",
   [HAST_MDX_TEXT_EXPRESSION]: "mdxTextExpression",
+  [HAST_MDX_ESM]: "mdxjsEsm",
 };
 
 function readTextFromBinary(
@@ -466,7 +472,9 @@ function readTextFromBinary(
   const node = { type: TEXT_NODE_TYPES[nodeType]!, value } as unknown as HastNode;
   nodeIdMap.set(node as object, nodeId);
   if (nodeType === HAST_MDX_FLOW_EXPRESSION || nodeType === HAST_MDX_TEXT_EXPRESSION) {
-    attachParseExpression(node);
+    attachParseExpression(node, napiParseExpression);
+  } else if (nodeType === HAST_MDX_ESM) {
+    attachParseExpression(node, napiParseEsm);
   }
   return node;
 }

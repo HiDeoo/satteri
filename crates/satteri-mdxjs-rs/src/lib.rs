@@ -61,6 +61,27 @@ pub fn parse_expression_to_estree_json(source: &str) -> Option<String> {
     ))
 }
 
+/// Parse ESM (import/export statements) and return its ESTree-compatible JSON.
+///
+/// Returns `None` if parsing fails.
+#[must_use]
+pub fn parse_esm_to_estree_json(source: &str) -> Option<String> {
+    let allocator = Allocator::default();
+    let source_type = SourceType::mjs().with_jsx(true);
+    let src = allocator.alloc_str(source);
+    let ret = Parser::new(&allocator, src, source_type)
+        .with_options(ParseOptions::default())
+        .parse();
+
+    if !ret.errors.is_empty() {
+        return None;
+    }
+
+    let mut serializer = CompactJSSerializer::new(false);
+    ret.program.serialize(&mut serializer);
+    Some(serializer.into_string())
+}
+
 /// Turn MDX into JavaScript.
 ///
 /// ## Examples

@@ -13,6 +13,7 @@ export {
   getHandleSource,
   getNodeData,
   mdastTextContentHandle,
+  parseEsm,
   parseExpression,
   parseToHtml,
   renderHandle,

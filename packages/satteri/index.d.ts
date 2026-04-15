@@ -138,6 +138,9 @@ export interface JsTextContentOptions {
  */
 export declare function mdastTextContentHandle(handle: ArenaHandle, nodeId: number, options?: JsTextContentOptions | undefined | null): string
 
+/** Parse ESM (import/export statements) and return ESTree-compatible AST as JSON. */
+export declare function parseEsm(source: string): string | null
+
 /**
  * Parse a JavaScript expression and return its ESTree-compatible AST as a JSON string.
  * Returns null if parsing fails. The JS layer calls JSON.parse (faster than serde_json → NAPI).
