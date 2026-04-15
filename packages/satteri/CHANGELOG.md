@@ -1,17 +1,10 @@
 # satteri
 
-## 0.2.1 — 2026-04-15
-
-### Patch changes
-
-- [bfb8968](https://github.com/bruits/satteri/commit/bfb89681df076d683a8c9cf6612b21195b06a566) Added `parseExpression()` to `mdxjsEsm` nodes, allowing ESM import/export statements to be parsed into ESTree ASTs. — Thanks @Princesseuh!
-
 ## 0.2.0 — 2026-04-14
 
 ### Minor changes
 
 - [893ef59](https://github.com/bruits/satteri/commit/893ef59125e5969f34650ee27c919f1fae29fe62) Fix MDX import/export and expression handling to match the behavior of the original JavaScript implementation:
-  
   - Fix `mdxjsEsm` nodes not being delivered to HAST plugin visitors
   - Fix multiline `export` blocks (e.g. objects, arrays) being truncated
   - Fix expression boundaries for edge cases involving comments, template literals, regex, and JSX
@@ -21,4 +14,3 @@
 
 - [ecaeb2c](https://github.com/bruits/satteri/commit/ecaeb2ce18cbe6a7dc46d19bc49a32aa7114a2c5) Fixes browser export still bringing in Node code by accident. — Thanks @Princesseuh!
 - [ecaeb2c](https://github.com/bruits/satteri/commit/ecaeb2ce18cbe6a7dc46d19bc49a32aa7114a2c5) Add position data to hast nodes. Position information was already stored in the Rust arena during mdast-to-hast conversion, but was never exposed to the JavaScript side. — Thanks @Princesseuh!
-
