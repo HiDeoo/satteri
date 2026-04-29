@@ -244,6 +244,43 @@ describe("markdownToHtml", () => {
     expect(html).toContain('id="title"');
     expect(html).toContain('class="styled"');
   });
+
+  test("HAST plugin chain: data set on a fresh element is visible to a later plugin", () => {
+    const tagFreshH2 = defineHastPlugin({
+      name: "tag-fresh-h2",
+      element: {
+        filter: ["h1"],
+        visit(node) {
+          return {
+            type: "element" as const,
+            tagName: "h2",
+            properties: {},
+            children: node.children,
+            data: { origin: "demoted-from-h1", depth: { from: 1, to: 2 } },
+          } as HastNode;
+        },
+      },
+    });
+
+    const consumeData = defineHastPlugin({
+      name: "consume-data",
+      element: {
+        filter: ["h2"],
+        visit(node, ctx) {
+          const origin = (node.data as { origin?: string } | undefined)?.origin;
+          if (origin === "demoted-from-h1") {
+            ctx.setProperty(node, "data-origin", origin);
+          }
+        },
+      },
+    });
+
+    const html = markdownToHtml("# Title", {
+      hastPlugins: [tagFreshH2, consumeData],
+    });
+    expect(html).toContain("<h2");
+    expect(html).toContain('data-origin="demoted-from-h1"');
+  });
 });
 
 // mdxToJs

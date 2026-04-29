@@ -402,6 +402,8 @@ fn emit_js_node(js_node: &JsNode, builder: &mut ArenaBuilder) -> Result<(), Comm
         builder.set_data_current(&type_data);
     }
 
+    write_js_node_data(js_node, builder)?;
+
     if let Some(children) = &js_node.children {
         for child in children {
             emit_js_node(child, builder)?;
@@ -409,6 +411,16 @@ fn emit_js_node(js_node: &JsNode, builder: &mut ArenaBuilder) -> Result<(), Comm
     }
 
     builder.close_node();
+    Ok(())
+}
+
+fn write_js_node_data(js_node: &JsNode, builder: &mut ArenaBuilder) -> Result<(), CommandError> {
+    let Some(data) = &js_node.data else {
+        return Ok(());
+    };
+    let id = builder.current_node_id();
+    let json = serde_json::to_vec(data).map_err(|e| CommandError::InvalidJson(e.to_string()))?;
+    builder.arena_mut().set_node_data(id, json);
     Ok(())
 }
 
@@ -678,6 +690,8 @@ fn emit_hast_js_node(js_node: &JsNode, builder: &mut ArenaBuilder) -> Result<(),
     if !type_data.is_empty() {
         builder.set_data_current(&type_data);
     }
+
+    write_js_node_data(js_node, builder)?;
 
     if let Some(children) = &js_node.children {
         for child in children {
@@ -1145,6 +1159,7 @@ mod tests {
                 properties: None,
                 is_hast: false,
                 keep_children: false,
+                data: None,
             }]),
             depth: Some(2),
             value: None,
@@ -1166,6 +1181,7 @@ mod tests {
             properties: None,
             is_hast: false,
             keep_children: false,
+            data: None,
         };
 
         let (arena, _keep) = js_node_to_arena(&js).unwrap();

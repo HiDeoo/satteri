@@ -6,6 +6,7 @@ import remarkDirective from "remark-directive";
 import remarkRehype from "remark-rehype";
 import rehypeStringify from "rehype-stringify";
 import type { Root as MdastRoot, Nodes as MdastNodes } from "mdast";
+import type { ElementContent, Properties } from "hast";
 import { markdownToHtml, defineMdastPlugin } from "../../src/index.js";
 import type { MdastPluginInstance } from "../../src/mdast/mdast-visitor.js";
 import type { MdastNode } from "../../src/types.js";
@@ -84,7 +85,7 @@ function mutateOnRemark(
   return (tree) => {
     visitMdast(tree, (node) => {
       if (predicate(node)) {
-        const data = ((node as { data?: Record<string, unknown> }).data ??= {});
+        const data = ((node as unknown as { data?: Record<string, unknown> }).data ??= {});
         if (patch.hName !== undefined) data.hName = patch.hName;
         if (patch.hProperties !== undefined) data.hProperties = patch.hProperties;
         if (patch.hChildren !== undefined) data.hChildren = patch.hChildren;
@@ -101,10 +102,8 @@ function mutateOnSatteri(
   return () => ({
     [type]: ((node: MdastNode, ctx: { setProperty: Function }) => {
       if (!predicate(node)) return;
-      const existing = ((node as { data?: Record<string, unknown> }).data ?? {}) as Record<
-        string,
-        unknown
-      >;
+      const existing = ((node as unknown as { data?: Record<string, unknown> }).data ??
+        {}) as Record<string, unknown>;
       const next = { ...existing };
       if (patch.hName !== undefined) next.hName = patch.hName;
       if (patch.hProperties !== undefined) next.hProperties = patch.hProperties;
@@ -330,6 +329,174 @@ describe("data.hName / hProperties / hChildren conformance vs remark-rehype", ()
     assertHtmlMatches("body", {
       remark: mutateOnRemark((n) => n.type === "paragraph", { hChildren: tree }),
       satteri: mutateOnSatteri("paragraph", (n) => n.type === "paragraph", { hChildren: tree }),
+    });
+  });
+});
+
+// Hints set on a *freshly emitted* node — the canonical upstream-Starlight
+// `remarkAsides` idiom. The case `setProperty` can't cover at all, since the
+// node didn't exist before the plugin ran.
+
+interface DataHints {
+  hName?: string;
+  hProperties?: Record<string, unknown>;
+  hChildren?: ElementContent[];
+}
+
+// Single laundering boundary for the asides shape: the mdast type spec
+// forbids `Paragraph` as `Paragraph["children"]`, but a paragraph rendered as
+// `<aside>` wrapping further paragraphs is exactly what we're testing.
+function mkParagraph(data: DataHints, children: readonly MdastNodes[]): MdastNodes {
+  return { type: "paragraph", data, children: [...children] } as unknown as MdastNodes;
+}
+
+function mkText(value: string): MdastNodes {
+  return { type: "text", value };
+}
+
+function mkHastElement(
+  tagName: string,
+  properties: Properties,
+  children: ElementContent[],
+): ElementContent {
+  return { type: "element", tagName, properties, children };
+}
+
+function mkHastText(value: string): ElementContent {
+  return { type: "text", value };
+}
+
+function childrenOf(node: MdastNodes): readonly MdastNodes[] {
+  if ("children" in node && Array.isArray(node.children)) return node.children;
+  return [];
+}
+
+function replaceOnRemark(
+  predicate: (node: MdastNodes) => boolean,
+  build: (node: MdastNodes) => MdastNodes,
+): RemarkPluginAndSatteri["remark"] {
+  const walk = (kids: MdastNodes[]): void => {
+    for (let i = 0; i < kids.length; i++) {
+      const child = kids[i];
+      if (!child) continue;
+      if (predicate(child)) {
+        kids[i] = build(child);
+      } else if ("children" in child && Array.isArray(child.children)) {
+        walk(child.children);
+      }
+    }
+  };
+  return (tree) => walk(tree.children as MdastNodes[]);
+}
+
+function paragraphReplacePlugin(build: (node: MdastNodes) => MdastNodes): MdastPluginFactory {
+  return () => ({
+    paragraph: (node, ctx) => {
+      ctx.replaceNode(node, build(node));
+    },
+  });
+}
+
+describe("data hints on freshly emitted mdast nodes (fresh-node path)", () => {
+  test("hName on a fresh paragraph from replaceNode swaps the tag", () => {
+    const build = (n: MdastNodes): MdastNodes =>
+      mkParagraph({ hName: "section" }, childrenOf(n));
+    assertHtmlMatches("Hello", {
+      remark: replaceOnRemark((n) => n.type === "paragraph", build),
+      satteri: paragraphReplacePlugin(build),
+    });
+  });
+
+  test("hName + hProperties on a fresh paragraph (asides shape)", () => {
+    const build = (n: MdastNodes): MdastNodes =>
+      mkParagraph({ hName: "aside", hProperties: { className: ["note"] } }, childrenOf(n));
+    assertHtmlMatches("Body text", {
+      remark: replaceOnRemark((n) => n.type === "paragraph", build),
+      satteri: paragraphReplacePlugin(build),
+    });
+  });
+
+  test("hName + hChildren on a fresh paragraph (arbitrary hast subtree)", () => {
+    const hChildren: ElementContent[] = [
+      mkHastElement("strong", {}, [mkHastText("Replaced")]),
+    ];
+    const build = (): MdastNodes =>
+      mkParagraph(
+        { hName: "aside", hProperties: { className: ["note"] }, hChildren },
+        [],
+      );
+    assertHtmlMatches("Original", {
+      remark: replaceOnRemark((n) => n.type === "paragraph", build),
+      satteri: paragraphReplacePlugin(build),
+    });
+  });
+
+  test("hChildren alone on a fresh node replaces rendered children", () => {
+    const build = (): MdastNodes =>
+      mkParagraph({ hChildren: [mkHastText("fresh")] }, []);
+    assertHtmlMatches("original body", {
+      remark: replaceOnRemark((n) => n.type === "paragraph", build),
+      satteri: paragraphReplacePlugin(build),
+    });
+  });
+
+  test("nested data hints: aside paragraph wrapping fresh paragraphs (asides full shape)", () => {
+    const build = (): MdastNodes =>
+      mkParagraph({ hName: "aside", hProperties: { className: ["note"] } }, [
+        mkParagraph({ hName: "p", hProperties: { className: ["title"] } }, [mkText("Note")]),
+        mkParagraph({ hName: "div", hProperties: { className: ["body"] } }, [mkText("Note body")]),
+      ]);
+    assertHtmlMatches("Note body", {
+      remark: replaceOnRemark((n) => n.type === "paragraph", build),
+      satteri: paragraphReplacePlugin(build),
+    });
+  });
+
+  test("hName on a fresh node inserted via prependChild", () => {
+    const fresh = (): MdastNodes => mkParagraph({ hName: "header" }, [mkText("Title")]);
+    assertHtmlMatches("> existing\n", {
+      remark: (tree) => {
+        visitMdast(tree, (node) => {
+          if (node.type !== "blockquote") return;
+          const kids = node.children as MdastNodes[];
+          kids.unshift(fresh());
+        });
+      },
+      satteri: () => ({
+        blockquote: (node, ctx) => {
+          ctx.prependChild(node, fresh());
+        },
+      }),
+    });
+  });
+
+  test("hName on a fresh node inserted via insertBefore", () => {
+    const fresh = (): MdastNodes =>
+      mkParagraph({ hName: "nav", hProperties: { className: ["toc"] } }, [mkText("TOC")]);
+    assertHtmlMatches("# Heading\n\nBody\n", {
+      remark: (tree) => {
+        const kids = tree.children as MdastNodes[];
+        for (let i = 0; i < kids.length; i++) {
+          if (kids[i]?.type === "heading") {
+            kids.splice(i, 0, fresh());
+            break;
+          }
+        }
+      },
+      satteri: () => ({
+        heading: (node, ctx) => {
+          ctx.insertBefore(node, fresh());
+        },
+      }),
+    });
+  });
+
+  test("hProperties on a fresh paragraph (no hName) merges class + id", () => {
+    const build = (n: MdastNodes): MdastNodes =>
+      mkParagraph({ hProperties: { className: ["lead"], id: "intro" } }, childrenOf(n));
+    assertHtmlMatches("Hi", {
+      remark: replaceOnRemark((n) => n.type === "paragraph", build),
+      satteri: paragraphReplacePlugin(build),
     });
   });
 });

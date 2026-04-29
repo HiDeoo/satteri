@@ -42,6 +42,9 @@ pub struct JsNode {
     /// When true, keep the original node's children instead of replacing them.
     #[serde(rename = "_keepChildren", default)]
     pub keep_children: bool,
+    /// On a fresh node, equivalent to `ctx.setProperty(node, "data", …)`.
+    #[serde(default)]
+    pub data: Option<serde_json::Map<String, serde_json::Value>>,
 }
 
 #[derive(Debug, Deserialize)]

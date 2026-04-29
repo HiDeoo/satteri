@@ -278,7 +278,11 @@ fn emit_subtree_node(
 ) {
     let node = sub_arena.get_node(node_id);
 
-    builder.open_node_raw(node.node_type);
+    let new_id = builder.open_node_raw(node.node_type);
+
+    if let Some(data) = sub_arena.get_node_data(node_id) {
+        builder.arena_mut().set_node_data(new_id, data.to_vec());
+    }
 
     builder.set_position_current(
         node.start_offset + source_base,
@@ -332,7 +336,11 @@ fn emit_subtree_with_original_children(
 
     // Emit the replacement root node's type and data
     let node = sub_arena.get_node(0);
-    builder.open_node_raw(node.node_type);
+    let new_id = builder.open_node_raw(node.node_type);
+
+    if let Some(data) = sub_arena.get_node_data(0) {
+        builder.arena_mut().set_node_data(new_id, data.to_vec());
+    }
 
     let type_data = sub_arena.get_type_data(0);
     if !type_data.is_empty() {
@@ -464,7 +472,12 @@ fn emit_wrap_node(
 
     let wrapper = parent_tree.get_node(0);
 
-    builder.open_node_raw(wrapper.node_type);
+    let new_id = builder.open_node_raw(wrapper.node_type);
+
+    if let Some(data) = parent_tree.get_node_data(0) {
+        builder.arena_mut().set_node_data(new_id, data.to_vec());
+    }
+
     builder.set_position_current(
         wrapper.start_offset,
         wrapper.end_offset,

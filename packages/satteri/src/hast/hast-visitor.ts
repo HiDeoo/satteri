@@ -92,6 +92,7 @@ function markHast(node: HastNode): Record<string, unknown> {
   if ("value" in node) obj.value = n.value;
   if ("name" in node) obj.name = n.name;
   if ("attributes" in node) obj.attributes = n.attributes;
+  if ("data" in node && n.data != null) obj.data = n.data;
   if ("children" in node) {
     obj.children = (n.children as HastNode[]).map(markHast);
   }
@@ -149,6 +150,10 @@ class HastVisitorContextImpl implements HastVisitorContext {
 
   setProperty(node: HastNode, key: string, value: unknown): void {
     const id = nid(node);
+    if (key === "data") {
+      this.#commandBuffer.setProperty(id, key, value != null ? JSON.stringify(value) : null);
+      return;
+    }
     if (node.type === "element") {
       // Fast binary path, no materialization, no JSON serialization
       this.#commandBuffer.setProperty(id, key, value);
