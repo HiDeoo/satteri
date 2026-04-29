@@ -399,8 +399,7 @@ function paragraphReplacePlugin(build: (node: MdastNodes) => MdastNodes): MdastP
 
 describe("data hints on freshly emitted mdast nodes (fresh-node path)", () => {
   test("hName on a fresh paragraph from replaceNode swaps the tag", () => {
-    const build = (n: MdastNodes): MdastNodes =>
-      mkParagraph({ hName: "section" }, childrenOf(n));
+    const build = (n: MdastNodes): MdastNodes => mkParagraph({ hName: "section" }, childrenOf(n));
     assertHtmlMatches("Hello", {
       remark: replaceOnRemark((n) => n.type === "paragraph", build),
       satteri: paragraphReplacePlugin(build),
@@ -417,14 +416,9 @@ describe("data hints on freshly emitted mdast nodes (fresh-node path)", () => {
   });
 
   test("hName + hChildren on a fresh paragraph (arbitrary hast subtree)", () => {
-    const hChildren: ElementContent[] = [
-      mkHastElement("strong", {}, [mkHastText("Replaced")]),
-    ];
+    const hChildren: ElementContent[] = [mkHastElement("strong", {}, [mkHastText("Replaced")])];
     const build = (): MdastNodes =>
-      mkParagraph(
-        { hName: "aside", hProperties: { className: ["note"] }, hChildren },
-        [],
-      );
+      mkParagraph({ hName: "aside", hProperties: { className: ["note"] }, hChildren }, []);
     assertHtmlMatches("Original", {
       remark: replaceOnRemark((n) => n.type === "paragraph", build),
       satteri: paragraphReplacePlugin(build),
@@ -432,8 +426,7 @@ describe("data hints on freshly emitted mdast nodes (fresh-node path)", () => {
   });
 
   test("hChildren alone on a fresh node replaces rendered children", () => {
-    const build = (): MdastNodes =>
-      mkParagraph({ hChildren: [mkHastText("fresh")] }, []);
+    const build = (): MdastNodes => mkParagraph({ hChildren: [mkHastText("fresh")] }, []);
     assertHtmlMatches("original body", {
       remark: replaceOnRemark((n) => n.type === "paragraph", build),
       satteri: paragraphReplacePlugin(build),

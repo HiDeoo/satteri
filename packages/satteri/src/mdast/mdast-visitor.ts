@@ -38,11 +38,7 @@ import type {
 import type { MdxJsxFlowElement, MdxJsxTextElement } from "../mdx-types.js";
 import type { MdxFlowExpression, MdxTextExpression } from "../mdx-types.js";
 import type { MdxjsEsm } from "../mdx-types.js";
-import type {
-  ContainerDirective,
-  LeafDirective,
-  TextDirective,
-} from "../directive-types.js";
+import type { ContainerDirective, LeafDirective, TextDirective } from "../directive-types.js";
 
 const MutationType = {
   Replace: "replace",

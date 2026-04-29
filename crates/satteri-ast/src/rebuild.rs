@@ -135,10 +135,7 @@ fn copy_node(
     deleted: &FxHashSet<u32>,
     visited: &mut FxHashSet<u32>,
 ) -> bool {
-    let node_patches: &[&Patch] = patch_map
-        .get(&node_id)
-        .map(Vec::as_slice)
-        .unwrap_or(&[]);
+    let node_patches: &[&Patch] = patch_map.get(&node_id).map(Vec::as_slice).unwrap_or(&[]);
     if !node_patches.is_empty() {
         visited.insert(node_id);
     }
@@ -192,7 +189,15 @@ fn copy_node(
         _ => None,
     });
     if let Some(parent_tree) = wrap_tree {
-        emit_wrap_node(parent_tree, node_id, orig, builder, patch_map, deleted, visited);
+        emit_wrap_node(
+            parent_tree,
+            node_id,
+            orig,
+            builder,
+            patch_map,
+            deleted,
+            visited,
+        );
         for patch in node_patches {
             if let Patch::InsertAfter { new_tree, .. } = patch {
                 emit_subtree(new_tree, builder);

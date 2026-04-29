@@ -5,14 +5,14 @@
 ### Minor changes
 
 - [baae3b8](https://github.com/bruits/satteri/commit/baae3b83b56bf0fb4cd0b0d2f376627ff0267b8f) MDAST plugins can now set `data.hName`, `data.hProperties`, and `data.hChildren` on a node and have Sätteri render the corresponding HAST element, matching the rehype idiom.
-  
+
   This is especially useful for rendering directives, given a `containerDirective`, an `hName` of `"aside"` and `hProperties` of `{ className: ["note"] }`, satteri will emit `<aside class="note">…</aside>`. — Thanks @Princesseuh!
 
 ### Patch changes
 
 - [baae3b8](https://github.com/bruits/satteri/commit/baae3b83b56bf0fb4cd0b0d2f376627ff0267b8f) Fixed a crash when an MDAST plugin called `ctx.setProperty(node, "data", …)` on certain specific node types (e.g. `paragraph`, `blockquote`, `delete`). The call now succeeds and the data round-trips through the conversion pipeline as expected. — Thanks @Princesseuh!
 - [baae3b8](https://github.com/bruits/satteri/commit/baae3b83b56bf0fb4cd0b0d2f376627ff0267b8f) Fixed plugins silently dropping all but the last structural change against a given node. Multiple `insertBefore`/`insertAfter` calls on the same node, or sibling inserts paired with a `removeNode` on that same node, now all apply in the order they were issued.
-  
+
   Combinations that don't have a sensible meaning, like modifying something inside a removed subtree, now report an error instead of silently dropping the change. — Thanks @Princesseuh!
 
 ## 0.2.8 — 2026-04-29
@@ -20,7 +20,7 @@
 ### Patch changes
 
 - [1f92697](https://github.com/bruits/satteri/commit/1f9269712ad4276bdbf8c9d2f205d8029bea7c43) Added visitor support for `containerDirective`, `leafDirective`, and `textDirective` nodes. Plugin authors can now subscribe to directive nodes directly (with typed `name`/`attributes` and children).
-  
+
   Removed the `root` visitor key. Plugins should subscribe to specific node types instead; a dedicated API for prepending or appending content at the document level will land separately. — Thanks @Princesseuh!
 
 ## 0.2.7 — 2026-04-27
@@ -28,11 +28,11 @@
 ### Patch changes
 
 - [f632abf](https://github.com/bruits/satteri/commit/f632abf4ac516f1c8bb3fc713f8894cab9be5d8f) Various MDX parsing fixes:
-  
   - Fixed non-ASCII content in MDX expressions/JSX inside containers (blockquotes, lists) being corrupted due to byte-by-byte char casting.
   - Fixed MDX-only paragraphs inside blockquotes not being unraveled (producing spurious `<p>` wrappers).
   - Fixed multiple JSX elements on one line only rendering the first element.
   - Multiple other cases of small inconsistencies with `@mdxjs/mdx`, notably in whitespace handling and node positions. — Thanks @Princesseuh!
+
 - [f632abf](https://github.com/bruits/satteri/commit/f632abf4ac516f1c8bb3fc713f8894cab9be5d8f) Added granular smart punctuation options (`ENABLE_SMART_QUOTES`, `ENABLE_SMART_DASHES`, `ENABLE_SMART_ELLIPSES`) that can be enabled independently instead of the entire group. — Thanks @Princesseuh!
 - [5736ca4](https://github.com/bruits/satteri/commit/5736ca45dd3eaf703e6d573f19274b42f1ca6cb9) Fixes many output inconsistencies with remark across Markdown, GFM, and MDX parsing, mostly found by extensive property-based fuzz testing. Notable areas: GFM bare-URL detection, MDX JSX flow vs inline classification, footnote numbering and section ordering, directive label inline parsing, list spread/tight handling, and reference link spans. — Thanks @Princesseuh!
 

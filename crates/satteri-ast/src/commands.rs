@@ -98,10 +98,9 @@ impl std::fmt::Display for CommandError {
                 f,
                 "prependChild/appendChild targets node {id} which is also removed"
             ),
-            Self::PatchOnRemovedSubtree(id) => write!(
-                f,
-                "patch targets node {id} inside a removed subtree"
-            ),
+            Self::PatchOnRemovedSubtree(id) => {
+                write!(f, "patch targets node {id} inside a removed subtree")
+            }
         }
     }
 }

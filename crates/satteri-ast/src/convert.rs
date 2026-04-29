@@ -51,7 +51,11 @@ impl HData {
     }
 
     fn h_properties(&self) -> Option<&serde_json::Map<String, serde_json::Value>> {
-        self.root.as_ref()?.as_object()?.get("hProperties")?.as_object()
+        self.root
+            .as_ref()?
+            .as_object()?
+            .get("hProperties")?
+            .as_object()
     }
 
     fn h_children(&self) -> Option<&[serde_json::Value]> {
@@ -1261,10 +1265,7 @@ fn convert_node(node_id: u32, view: &Arena, builder: &mut ArenaBuilder, ctx: &Co
                             ("title", PROP_STRING, def.title),
                         ]
                     } else {
-                        vec![
-                            ("src", PROP_STRING, url_ref),
-                            ("alt", PROP_STRING, alt_ref),
-                        ]
+                        vec![("src", PROP_STRING, url_ref), ("alt", PROP_STRING, alt_ref)]
                     };
                     let id = add_h_void_element(builder, view, node_id, "img", &specs);
                     copy_position_to(id, node_id, view, builder);
@@ -2088,11 +2089,7 @@ mod hast_convert_tests {
         let html_with = hast_arena_to_html(&mdast_arena_to_hast_arena(&mdast));
         assert!(html_with.contains("class=\"x y\""));
 
-        set_data(
-            &mut mdast,
-            list_id,
-            r#"{"hProperties":{"className":null}}"#,
-        );
+        set_data(&mut mdast, list_id, r#"{"hProperties":{"className":null}}"#);
         let html_without = hast_arena_to_html(&mdast_arena_to_hast_arena(&mdast));
         assert!(!html_without.contains("class="), "got {html_without}");
     }
