@@ -362,7 +362,10 @@ async function compile() {
       materializeMdastTree(new MdastReader(mdastBuf)),
     );
     overhead += mdastMatMs;
-    const mdastJson = JSON.stringify(mdastTree, null, 2);
+    const { result: mdastJson, ms: mdastJsonMs } = time(() =>
+      JSON.stringify(mdastTree, null, 2),
+    );
+    overhead += mdastJsonMs;
     tabMdast.classList.remove("error");
     const { ms: mdastDomMs } = time(() => {
       tabMdast.textContent = mdastJson;
@@ -389,7 +392,10 @@ async function compile() {
       materializeHastTree(new HastReader(hastBuf)),
     );
     overhead += hastMatMs;
-    const hastJson = JSON.stringify(hastTree, null, 2);
+    const { result: hastJson, ms: hastJsonMs } = time(() =>
+      JSON.stringify(hastTree, null, 2),
+    );
+    overhead += hastJsonMs;
     tabHast.classList.remove("error");
     const { ms: hastDomMs } = time(() => {
       tabHast.textContent = hastJson;
