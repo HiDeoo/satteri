@@ -636,6 +636,17 @@ for (const [textarea, pre, lang] of inputPairs) {
 
 updateModeUI();
 
+// Mobile-only options toggle; on desktop `hidden md:flex` keeps the fieldsets open.
+const pgSidebarToggle = document.getElementById("pg-sidebar-toggle");
+const pgSidebarContent = document.getElementById("pg-sidebar-content");
+const pgSidebarChevron = document.getElementById("pg-sidebar-chevron");
+pgSidebarToggle?.addEventListener("click", () => {
+  if (!pgSidebarContent) return;
+  const open = pgSidebarContent.classList.toggle("hidden") === false;
+  pgSidebarToggle.setAttribute("aria-expanded", open ? "true" : "false");
+  pgSidebarChevron?.classList.toggle("rotate-180", open);
+});
+
 // The WASM module loads asynchronously (top-level await in wasi-browser.js).
 // Reaching this line means the import chain resolved; hide the overlay.
 loadingOverlay.classList.add("hidden");

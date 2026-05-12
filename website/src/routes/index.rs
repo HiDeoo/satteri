@@ -25,7 +25,7 @@ impl Route for Index {
 fn hero() -> Markup {
     html! {
         section.border-b.border-border {
-            div.max-w-5xl.mx-auto.px-6.pt-20.pb-24.text-center {
+            div.max-w-5xl.mx-auto.px-6.pt-10.sm:pt-20.pb-16.sm:pb-24.text-center {
                 div.text-tertiary.mb-6.flex.justify-center."[&_svg]:h-5"."[&_svg]:w-auto" {
                     (PreEscaped(FLOURISH))
                 }

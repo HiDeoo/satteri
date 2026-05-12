@@ -58,7 +58,7 @@ impl Route for Playground {
 
 fn playground_body() -> Markup {
     html! {
-        div #playground.h-full.grid."grid-cols-[16rem_1fr_1fr]".min-h-0 {
+        div #playground.flex.flex-col."md:grid"."md:grid-cols-[16rem_1fr_1fr]"."md:h-full".min-h-0 {
             (sidebar())
             (editor_panel())
             (output_panel())
@@ -69,11 +69,23 @@ fn playground_body() -> Markup {
 
 fn sidebar() -> Markup {
     html! {
-        aside #pg-sidebar.bg-surface.border-r.border-border.overflow-y-auto.flex.flex-col.gap-4.p-4 {
-            (mode_fieldset())
-            (features_fieldset())
-            (mdx_options_fieldset())
-            (optimize_static_fieldset())
+        aside #pg-sidebar.bg-surface."md:border-r".border-b."md:border-b-0".border-border."md:overflow-y-auto".flex.flex-col {
+            button #pg-sidebar-toggle
+                type="button"
+                aria-controls="pg-sidebar-content"
+                aria-expanded="false"
+                class="md:hidden flex items-center justify-between px-4 py-3 text-xs uppercase tracking-widest text-tertiary font-bold cursor-pointer" {
+                span { "Playground options" }
+                svg #pg-sidebar-chevron width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="transition-transform" {
+                    path d="M6 9l6 6 6-6" {}
+                }
+            }
+            div #pg-sidebar-content .hidden."md:flex".flex-col.gap-4.p-4 {
+                (mode_fieldset())
+                (features_fieldset())
+                (mdx_options_fieldset())
+                (optimize_static_fieldset())
+            }
         }
     }
 }
@@ -186,7 +198,7 @@ fn optimize_static_fieldset() -> Markup {
 
 fn editor_panel() -> Markup {
     html! {
-        section #editor-panel.flex.flex-col.border-r.border-border.min-w-0 {
+        section #editor-panel.flex.flex-col."md:border-r".border-b."md:border-b-0".border-border."min-w-0"."min-h-[60vh]"."md:min-h-0" {
             nav #input-tabs .pg-tabbar {
                 button.pg-tab.active data-input-tab="source" { "Source" }
                 button.pg-tab data-input-tab="mdast-plugin" { "mdast plugin" }
@@ -218,7 +230,7 @@ fn editor_panel() -> Markup {
 
 fn output_panel() -> Markup {
     html! {
-        section #output-panel.flex.flex-col.overflow-hidden.min-w-0 {
+        section #output-panel.flex.flex-col.overflow-hidden."min-w-0"."min-h-[60vh]"."md:min-h-0" {
             nav #output-tabs .pg-tabbar {
                 button.pg-tab.active data-tab="mdast" { "mdast" }
                 button.pg-tab data-tab="hast" { "hast" }

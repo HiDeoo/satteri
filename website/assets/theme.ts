@@ -1,7 +1,8 @@
 // Pairs with the inline THEME_INIT in layout.rs that sets data-theme on
 // first paint. This module just handles the toggle click + persistence.
+// Multiple `.theme-toggle` buttons can exist (one per responsive nav).
 const root = document.documentElement;
-const button = document.querySelector<HTMLButtonElement>("#theme-toggle");
+const buttons = document.querySelectorAll<HTMLButtonElement>(".theme-toggle");
 
 function apply(theme: "light" | "dark") {
   root.dataset.theme = theme;
@@ -10,8 +11,10 @@ function apply(theme: "light" | "dark") {
   } catch {}
 }
 
-button?.addEventListener("click", () => {
-  apply(root.dataset.theme === "dark" ? "light" : "dark");
+buttons.forEach((button) => {
+  button.addEventListener("click", () => {
+    apply(root.dataset.theme === "dark" ? "light" : "dark");
+  });
 });
 
 // Follow the OS preference until the user makes an explicit choice.

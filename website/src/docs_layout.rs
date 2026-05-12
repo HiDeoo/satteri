@@ -14,11 +14,47 @@ pub fn docs_layout(
     seo: Option<SeoMeta>,
 ) -> Result<Markup, Box<dyn std::error::Error>> {
     ctx.assets.include_script("assets/docs.ts")?;
+    ctx.assets.include_script("assets/docs-sidebar.ts")?;
     let sidebar = render_sidebar(ctx);
     layout(
         html! {
-            div.max-w-6xl.mx-auto.px-6.py-12.grid."grid-cols-1"."md:grid-cols-[14rem_1fr]".gap-x-12.gap-y-8 {
-                aside."md:sticky"."md:top-8"."md:self-start" {
+            div."md:hidden".sticky.top-0.z-30.bg-paper.border-b.border-border {
+                button #docs-sidebar-toggle
+                    type="button"
+                    aria-label="Open docs navigation"
+                    aria-controls="docs-mobile-sidebar"
+                    aria-expanded="false"
+                    class="flex items-center gap-2 px-6 py-3 text-base text-ink font-medium" {
+                    svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" {
+                        path d="M4 6h16M4 12h10M4 18h16" {}
+                    }
+                    span { "Docs menu" }
+                }
+            }
+
+            div #docs-mobile-sidebar
+                class="md:hidden fixed inset-0 z-40 opacity-0 pointer-events-none transition-opacity bg-ink/40" {
+                div #docs-mobile-sidebar-panel
+                    class="w-80 max-w-[85%] h-full bg-paper border-r border-border overflow-y-auto -translate-x-full transition-transform" {
+                    div.flex.items-center.justify-between.px-4.py-3.border-b.border-border {
+                        span.text-xs.uppercase.tracking-widest.text-tertiary.font-bold { "Documentation" }
+                        button #docs-sidebar-close
+                            type="button"
+                            aria-label="Close docs navigation"
+                            class="grid place-items-center w-9 h-9 rounded-sm text-secondary hover:text-ink hover:bg-surface cursor-pointer" {
+                            svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" {
+                                path d="M6 6l12 12M18 6L6 18" {}
+                            }
+                        }
+                    }
+                    div.px-4.py-4 {
+                        (sidebar)
+                    }
+                }
+            }
+
+            div.max-w-6xl.mx-auto.px-6.py-8.md:py-12.grid."grid-cols-1"."md:grid-cols-[14rem_1fr]".gap-x-12.gap-y-8 {
+                aside.hidden."md:block"."md:sticky"."md:top-8"."md:self-start" {
                     (sidebar)
                 }
                 article.prose.max-w-3xl.text-lg.leading-relaxed {

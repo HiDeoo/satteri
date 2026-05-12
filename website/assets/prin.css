@@ -538,12 +538,15 @@ pre#demo-highlight code {
   color: var(--color-secondary);
 }
 
-.pg-loading-overlay.hidden {
+/* Scoped overrides so toggling `.hidden` on these elements beats their own
+   custom `display` rule. Kept narrow because an unlayered `.hidden { display:
+   none }` would always beat Tailwind's `md:flex` (utilities layer) and break
+   responsive show/hide. */
+.pg-loading-overlay.hidden,
+.pg-fieldset.hidden,
+.pg-subfieldset.hidden,
+#optimize-static-fields.hidden {
   display: none;
-}
-
-.hidden {
-  display: none !important;
 }
 
 /* ---------- Theme toggle ---------- */

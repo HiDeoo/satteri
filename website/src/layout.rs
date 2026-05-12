@@ -58,13 +58,17 @@ pub fn layout_with_options(
         format!("{} — Sätteri", seo.title)
     };
 
+    // Fullscreen locks to the viewport on desktop so the playground's editor
+    // can fill the screen, but on mobile we let the page scroll so the
+    // stacked panels (sidebar / editor / output) are all reachable.
     let body_class = if opts.fullscreen {
-        "h-screen flex flex-col overflow-hidden"
+        "min-h-screen md:h-screen flex flex-col md:overflow-hidden"
     } else {
         "min-h-screen flex flex-col"
     };
 
     ctx.assets.include_script("assets/theme.ts")?;
+    ctx.assets.include_script("assets/mobile-menu.ts")?;
 
     Ok(html! {
         (DOCTYPE)
@@ -92,19 +96,65 @@ pub fn layout_with_options(
     })
 }
 
+const NAV_LINKS: &[(&str, &str)] = &[
+    ("/docs/", "Docs"),
+    ("/playground/", "Playground"),
+    ("/chat/", "Discord"),
+    ("https://github.com/bruits/satteri", "GitHub"),
+];
+
 fn header() -> Markup {
     html! {
-        header.border-b.border-border.bg-paper {
+        header.border-b.border-border.bg-paper.relative.z-40 {
             div.max-w-5xl.mx-auto.px-6.py-5.flex.items-center.justify-between {
                 a.no-underline.text-ink.font-logo.text-3xl.leading-none.transition-opacity.hover:opacity-70 href="/" {
                     "Sätteri"
                 }
-                nav.flex.items-center.gap-6.text-base.text-secondary.relative."top-px" {
-                    a.no-underline.transition-colors.hover:text-ink.hover:underline.decoration-current.underline-offset-4 href="/docs/" { "Docs" }
-                    a.no-underline.transition-colors.hover:text-ink.hover:underline.decoration-current.underline-offset-4 href="/playground/" { "Playground" }
-                    a.no-underline.transition-colors.hover:text-ink.hover:underline.decoration-current.underline-offset-4 href="/chat/" { "Discord" }
-                    a.no-underline.transition-colors.hover:text-ink.hover:underline.decoration-current.underline-offset-4 href="https://github.com/bruits/satteri" { "GitHub" }
+                nav.hidden."md:flex".items-center.gap-6.text-base.text-secondary.relative."top-px" {
+                    @for (href, label) in NAV_LINKS {
+                        a.no-underline.transition-colors.hover:text-ink.hover:underline.decoration-current.underline-offset-4 href=(href) { (label) }
+                    }
                     (theme_toggle())
+                }
+                div."md:hidden".flex.items-center.gap-3 {
+                    (theme_toggle())
+                    (mobile_menu_button())
+                }
+            }
+            (mobile_menu_panel())
+        }
+    }
+}
+
+fn mobile_menu_button() -> Markup {
+    html! {
+        button #mobile-menu-button
+            type="button"
+            aria-label="Toggle menu"
+            aria-controls="mobile-menu-panel"
+            aria-expanded="false"
+            class="grid place-items-center w-11 h-11 rounded-sm text-secondary hover:text-ink hover:bg-surface transition-colors cursor-pointer -translate-y-1" {
+            span #mobile-menu-icon-open {
+                svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" {
+                    path d="M4 7h16M4 12h16M4 17h16" {}
+                }
+            }
+            span #mobile-menu-icon-close .hidden {
+                svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" {
+                    path d="M6 6l12 12M18 6L6 18" {}
+                }
+            }
+        }
+    }
+}
+
+fn mobile_menu_panel() -> Markup {
+    html! {
+        div #mobile-menu-panel
+            class="md:hidden absolute top-full left-0 right-0 bg-paper border-b border-border opacity-0 -translate-y-2 pointer-events-none transition-all" {
+            nav.flex.flex-col {
+                @for (href, label) in NAV_LINKS {
+                    a class="no-underline text-ink text-xl px-6 py-4 border-b border-border last:border-b-0 hover:bg-surface" href=(href) { (label) }
                 }
             }
         }
@@ -113,18 +163,18 @@ fn header() -> Markup {
 
 fn theme_toggle() -> Markup {
     html! {
-        button #theme-toggle
+        button
             type="button"
             aria-label="Toggle theme"
             title="Toggle theme"
-            class="theme-toggle relative -my-2 ml-1 grid place-items-center w-8 h-8 rounded-sm text-secondary hover:text-ink hover:bg-surface transition-colors cursor-pointer -translate-y-1" {
+            class="theme-toggle relative -my-2 ml-1 grid place-items-center w-11 h-11 rounded-sm text-secondary hover:text-ink hover:bg-surface transition-colors cursor-pointer -translate-y-1" {
             // Sun (shown in dark mode → click to go light)
-            svg.theme-icon-sun width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" {
+            svg.theme-icon-sun width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" {
                 circle cx="12" cy="12" r="4" {}
                 path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" {}
             }
             // Moon (shown in light mode → click to go dark)
-            svg.theme-icon-moon width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" {
+            svg.theme-icon-moon width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" {
                 path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z" {}
             }
         }
