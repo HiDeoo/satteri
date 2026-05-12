@@ -1,14 +1,14 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from "node:fs";
 
-const bindingPath = new URL('./index.js', import.meta.url);
-let content = readFileSync(bindingPath, 'utf-8');
+const bindingPath = new URL("./index.js", import.meta.url);
+let content = readFileSync(bindingPath, "utf-8");
 
-if (content.includes('webcontainer-fallback')) {
+if (content.includes("webcontainer-fallback")) {
   process.exit(0);
 }
 
 content = content.replace(
-  '\nif (!nativeBinding) {',
+  "\nif (!nativeBinding) {",
   (s) =>
     `
 if (!nativeBinding && globalThis.process?.versions?.['webcontainer']) {

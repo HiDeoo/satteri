@@ -345,13 +345,7 @@ export function markdownToHtml(
   const { mdastPlugins = [], hastPlugins = [], features, filename = "<unknown>" } = options;
   const nativeFeatures = featuresToNative(features);
 
-  const result = createHastHandleFromMdast(
-    source,
-    mdastPlugins,
-    false,
-    filename,
-    nativeFeatures,
-  );
+  const result = createHastHandleFromMdast(source, mdastPlugins, false, filename, nativeFeatures);
 
   const renderAndDrop = (h: HastHandle, frontmatter: Frontmatter | null): MarkdownToHtmlResult => {
     try {
@@ -406,13 +400,7 @@ export function mdxToJs(
   const mdxOptions = mdxOptionsToNative(mdxFields);
   const nativeFeatures = featuresToNative(features);
 
-  const result = createHastHandleFromMdast(
-    source,
-    mdastPlugins,
-    true,
-    filename,
-    nativeFeatures,
-  );
+  const result = createHastHandleFromMdast(source, mdastPlugins, true, filename, nativeFeatures);
 
   const compileAndDrop = (h: HastHandle, frontmatter: Frontmatter | null): MdxToJsResult => {
     try {
@@ -423,9 +411,7 @@ export function mdxToJs(
     }
   };
 
-  const runHastThenCompile = (
-    r: HastWithFrontmatter,
-  ): MdxToJsResult | Promise<MdxToJsResult> => {
+  const runHastThenCompile = (r: HastWithFrontmatter): MdxToJsResult | Promise<MdxToJsResult> => {
     let hastResult: void | Promise<void>;
     try {
       hastResult = runHastPluginsOnHandle(r.hastHandle, hastPlugins, source, filename);

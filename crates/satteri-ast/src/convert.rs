@@ -11,8 +11,7 @@ use crate::mdast::{
     decode_image_reference_alt, decode_link_data, decode_list_data, decode_list_item_data,
     decode_math_data, decode_mdx_jsx_attr, decode_mdx_jsx_attr_count, decode_mdx_jsx_element_name,
     decode_mdx_jsx_explicit, decode_reference_data, decode_table_alignments,
-    encode_mdx_jsx_element_data, ColumnAlign,
-    ListItemData, MdastNodeType,
+    encode_mdx_jsx_element_data, ColumnAlign, ListItemData, MdastNodeType,
 };
 use crate::shared::{PROP_BOOL_FALSE, PROP_BOOL_TRUE, PROP_INT, PROP_SPACE_SEP, PROP_STRING};
 

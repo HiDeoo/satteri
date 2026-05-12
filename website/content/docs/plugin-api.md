@@ -18,8 +18,12 @@ want to handle:
 ```js
 const plugin = defineMdastPlugin({
   name: "my-plugin",
-  heading(node, ctx) { /* ... */ },
-  link(node, ctx) { /* ... */ },
+  heading(node, ctx) {
+    /* ... */
+  },
+  link(node, ctx) {
+    /* ... */
+  },
 });
 ```
 
@@ -31,7 +35,7 @@ per-document state.
 
 ```ts
 type MdastPluginInput = MdastPluginDefinition | (() => MdastPluginDefinition);
-type HastPluginInput  = HastPluginDefinition  | (() => HastPluginDefinition);
+type HastPluginInput = HastPluginDefinition | (() => HastPluginDefinition);
 ```
 
 Factories are called once per `markdownToHtml` invocation, so closures
@@ -49,10 +53,12 @@ type MdastVisitor<N> = (
 ) => MdastVisitorResult | Promise<MdastVisitorResult>;
 
 type MdastVisitorResult =
-  | MdastNode               // replace with this node
-  | { raw: string }         // splice in raw Markdown (re-parsed)
-  | { rawHtml: string }     // splice in raw HTML (passed through)
-  | undefined | null | void; // keep node, apply ctx mutations
+  | MdastNode // replace with this node
+  | { raw: string } // splice in raw Markdown (re-parsed)
+  | { rawHtml: string } // splice in raw HTML (passed through)
+  | undefined
+  | null
+  | void; // keep node, apply ctx mutations
 ```
 
 ### Supported visitor keys
@@ -114,8 +120,7 @@ visitors take an explicit filter and only run for matching nodes.
 ```ts
 type HastFilteredVisitor<N> = {
   filter: string[];
-  visit(node: Readonly<N>, ctx: HastVisitorContext):
-    HastNode | void | Promise<HastNode | void>;
+  visit(node: Readonly<N>, ctx: HastVisitorContext): HastNode | void | Promise<HastNode | void>;
 };
 ```
 
@@ -124,11 +129,11 @@ for `element` and against `name` for MDX JSX nodes (case-sensitive). To
 register multiple filtered visitors for the same node type, pass an
 array.
 
-| Key                 | Filtered on    |
-| ------------------- | -------------- |
-| `element`           | `tagName`      |
-| `mdxJsxFlowElement` | `name` (JSX)   |
-| `mdxJsxTextElement` | `name` (JSX)   |
+| Key                 | Filtered on  |
+| ------------------- | ------------ |
+| `element`           | `tagName`    |
+| `mdxJsxFlowElement` | `name` (JSX) |
+| `mdxJsxTextElement` | `name` (JSX) |
 
 ### Bare visitors
 
@@ -142,15 +147,15 @@ type HastVisitor<N> = (
 ) => HastNode | void | Promise<HastNode | void>;
 ```
 
-| Key                 | Notes                                       |
-| ------------------- | ------------------------------------------- |
-| `text`              | —                                           |
-| `comment`           | —                                           |
-| `raw`               | Pass-through HTML chunks                    |
-| `doctype`           | —                                           |
-| `mdxFlowExpression` | Has `.parseExpression()` helper             |
-| `mdxTextExpression` | Has `.parseExpression()` helper             |
-| `mdxjsEsm`          | Has `.parseExpression()` helper             |
+| Key                 | Notes                           |
+| ------------------- | ------------------------------- |
+| `text`              | —                               |
+| `comment`           | —                               |
+| `raw`               | Pass-through HTML chunks        |
+| `doctype`           | —                               |
+| `mdxFlowExpression` | Has `.parseExpression()` helper |
+| `mdxTextExpression` | Has `.parseExpression()` helper |
+| `mdxjsEsm`          | Has `.parseExpression()` helper |
 
 ### MDX expression helper
 
@@ -176,23 +181,23 @@ after the visit completes, so it's safe to mutate while iterating.
 
 ### Properties
 
-| Property   | Type     | Notes                                          |
-| ---------- | -------- | ---------------------------------------------- |
-| `source`   | `string` | Original markdown source.                      |
-| `filename` | `string` | Filename hint, used in diagnostics.            |
+| Property   | Type     | Notes                               |
+| ---------- | -------- | ----------------------------------- |
+| `source`   | `string` | Original markdown source.           |
+| `filename` | `string` | Filename hint, used in diagnostics. |
 
 ### Tree mutation
 
-| Method                                  | Effect                                            |
-| --------------------------------------- | ------------------------------------------------- |
-| `removeNode(node)`                      | Drop the node from its parent                     |
-| `replaceNode(node, newNode)`            | Swap the node for a different one                 |
-| `insertBefore(node, newNode)`           | Insert a sibling before the node                  |
-| `insertAfter(node, newNode)`            | Insert a sibling after the node                   |
-| `wrapNode(node, parentNode)`            | Wrap the node in `parentNode` (becomes its child) |
-| `prependChild(node, childNode)`         | Insert `childNode` as the first child of `node`   |
-| `appendChild(node, childNode)`          | Insert `childNode` as the last child of `node`    |
-| `setProperty(node, key, value)`         | Replace one field on the node                     |
+| Method                          | Effect                                            |
+| ------------------------------- | ------------------------------------------------- |
+| `removeNode(node)`              | Drop the node from its parent                     |
+| `replaceNode(node, newNode)`    | Swap the node for a different one                 |
+| `insertBefore(node, newNode)`   | Insert a sibling before the node                  |
+| `insertAfter(node, newNode)`    | Insert a sibling after the node                   |
+| `wrapNode(node, parentNode)`    | Wrap the node in `parentNode` (becomes its child) |
+| `prependChild(node, childNode)` | Insert `childNode` as the first child of `node`   |
+| `appendChild(node, childNode)`  | Insert `childNode` as the last child of `node`    |
+| `setProperty(node, key, value)` | Replace one field on the node                     |
 
 For MDAST, `key` must be a field of the node type and `value` must
 match that field's type. For HAST, `key` is a `string` and `value` is
@@ -205,30 +210,30 @@ For HAST elements, `setProperty` takes a HAST property key (e.g.
 
 ### Inspection
 
-| Method                  | Effect                                                |
-| ----------------------- | ----------------------------------------------------- |
+| Method                                | Effect                                                                                                                             |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | `textContent(node, options?)` (MDAST) | Concatenated text of the subtree. Options: `{ includeImageAlt?: boolean, includeHtml?: boolean }`. Mirrors `mdast-util-to-string`. |
-| `textContent(node)` (HAST)            | Concatenated text of the subtree. Mirrors DOM `textContent`. |
+| `textContent(node)` (HAST)            | Concatenated text of the subtree. Mirrors DOM `textContent`.                                                                       |
 
 ### Diagnostics
 
-| Method                                            | Effect                                |
-| ------------------------------------------------- | ------------------------------------- |
-| `report({ message, node?, severity? })`           | Push a diagnostic. `severity` defaults to `"error"`; allowed values are `"error" \| "warning" \| "info"`. |
-| `getDiagnostics()`                                | Return all diagnostics collected so far. |
+| Method                                  | Effect                                                                                                    |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `report({ message, node?, severity? })` | Push a diagnostic. `severity` defaults to `"error"`; allowed values are `"error" \| "warning" \| "info"`. |
+| `getDiagnostics()`                      | Return all diagnostics collected so far.                                                                  |
 
 `report` doesn't abort the plugin; diagnostics are collected and
 returned with the compile result.
 
 ## Return value semantics
 
-| Returned                | MDAST                       | HAST                |
-| ----------------------- | --------------------------- | ------------------- |
+| Returned                      | MDAST                            | HAST          |
+| ----------------------------- | -------------------------------- | ------------- |
 | `undefined` / `null` / `void` | Keep node, apply `ctx` mutations | Same          |
-| The same node object    | Same (no-op replace)        | Same                |
-| A different node        | Replace the visited node    | Replace             |
-| `{ raw: string }`       | Splice raw Markdown (re-parsed) | Not supported  |
-| `{ rawHtml: string }`   | Splice raw HTML (passthrough)   | Not supported  |
+| The same node object          | Same (no-op replace)             | Same          |
+| A different node              | Replace the visited node         | Replace       |
+| `{ raw: string }`             | Splice raw Markdown (re-parsed)  | Not supported |
+| `{ rawHtml: string }`         | Splice raw HTML (passthrough)    | Not supported |
 
 ## Async plugins
 

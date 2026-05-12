@@ -133,9 +133,7 @@ impl<'a> BufReader<'a> {
 
 /// Whether a plugin-supplied `data` blob carries the `_mdxExplicitJsx: true`
 /// marker — used to set the matching fast-path bit in `MdxJsxElementData`.
-fn js_data_is_mdx_explicit(
-    data: &Option<serde_json::Map<String, serde_json::Value>>,
-) -> bool {
+fn js_data_is_mdx_explicit(data: &Option<serde_json::Map<String, serde_json::Value>>) -> bool {
     data.as_ref()
         .and_then(|m| m.get("_mdxExplicitJsx"))
         .and_then(serde_json::Value::as_bool)

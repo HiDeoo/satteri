@@ -9,4 +9,3 @@
 ### Patch changes
 
 - Updated dependencies: satteri (npm)@0.5.0
-
