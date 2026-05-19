@@ -364,24 +364,19 @@ describe("MDX conformance: ESM", () => {
   // binding rather than being destructured out of `props.components` (which
   // would shadow it to `undefined` and throw `_missingMdxReference`).
   test("export const used as JSX component resolves to module binding", async () => {
-    await assertMdxConformance(
-      "export const Comp = () => <span>local</span>\n\n<Comp />",
-    );
+    await assertMdxConformance("export const Comp = () => <span>local</span>\n\n<Comp />");
   });
 
   test("export function used as JSX component resolves to module binding", async () => {
-    await assertMdxConformance(
-      "export function FnComp() { return <span>fn</span> }\n\n<FnComp />",
-    );
+    await assertMdxConformance("export function FnComp() { return <span>fn</span> }\n\n<FnComp />");
   });
 
   // Only the identifier without a module-scope binding should fall through
   // to `props.components`.
   test("mixed module-bound and prop-provided JSX components", async () => {
-    const Provided = (props: any) =>
-      createElement("em", null, `provided:${props.label ?? ""}`);
+    const Provided = (props: any) => createElement("em", null, `provided:${props.label ?? ""}`);
     await assertMdxConformance(
-      "export const Local = () => <span>local</span>\n\n<Local /> then <Provided label=\"x\" />",
+      'export const Local = () => <span>local</span>\n\n<Local /> then <Provided label="x" />',
       { Provided },
     );
   });

@@ -1121,7 +1121,10 @@ fn module_scope_exported_function_component_not_destructured()
         MDX_OPTS,
     )?;
     assert!(!result.contains("{ FnComp }"), "{result}");
-    assert!(!result.contains("_missingMdxReference(\"FnComp\""), "{result}");
+    assert!(
+        !result.contains("_missingMdxReference(\"FnComp\""),
+        "{result}"
+    );
     Ok(())
 }
 
@@ -1134,15 +1137,17 @@ fn module_scope_exported_class_component_not_destructured()
         MDX_OPTS,
     )?;
     assert!(!result.contains("{ ClassComp }"), "{result}");
-    assert!(!result.contains("_missingMdxReference(\"ClassComp\""), "{result}");
+    assert!(
+        !result.contains("_missingMdxReference(\"ClassComp\""),
+        "{result}"
+    );
     Ok(())
 }
 
 // Only identifiers without a module-scope binding should be destructured.
 // `Comp` is exported locally; `Other` is imported; `NotInScope` has no binding.
 #[test]
-fn mixed_module_scope_and_dynamic_components()
--> Result<(), satteri_arena::mdx_types::Message> {
+fn mixed_module_scope_and_dynamic_components() -> Result<(), satteri_arena::mdx_types::Message> {
     let result = compile(
         "import Other from './other.jsx'\nexport const Comp = () => <span>Comp</span>\n\n<Comp /> and <Other /> and <NotInScope />\n",
         &Options::default(),
