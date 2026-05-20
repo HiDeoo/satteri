@@ -48,6 +48,18 @@ export type {
   MdxJsxExpressionAttributeNode,
   MdxJsxAttributeValueExpressionNode,
   MdxJsxAttributeUnion,
+  // MDX mdast node types (mdast plugin visitors hand these)
+  MdxJsxFlowElement,
+  MdxJsxTextElement,
+  MdxFlowExpression,
+  MdxTextExpression,
+  MdxjsEsm,
+  // MDX hast node types (hast plugin visitors hand these)
+  MdxJsxFlowElementHast,
+  MdxJsxTextElementHast,
+  MdxFlowExpressionHast,
+  MdxTextExpressionHast,
+  MdxjsEsmHast,
 } from "./types.js";
 
 // Visitor pipeline (for manual plugin execution)

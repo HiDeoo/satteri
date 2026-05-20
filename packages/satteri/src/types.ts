@@ -17,6 +17,11 @@ export type {
   MdxFlowExpression,
   MdxTextExpression,
   MdxjsEsm,
+  MdxJsxFlowElementHast,
+  MdxJsxTextElementHast,
+  MdxFlowExpressionHast,
+  MdxTextExpressionHast,
+  MdxjsEsmHast,
 } from "./mdx-types.js";
 
 // Re-export directive types (also augments the mdast content maps).

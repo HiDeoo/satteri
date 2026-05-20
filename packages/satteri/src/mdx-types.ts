@@ -27,9 +27,7 @@ export interface MdxJsxAttributeValueExpression extends Node {
   data?: MdxJsxAttributeValueExpressionData | undefined;
 }
 
-export interface MdxJsxAttributeValueExpressionData extends Data {
-  estree?: unknown;
-}
+export interface MdxJsxAttributeValueExpressionData extends Data {}
 
 export interface MdxJsxExpressionAttribute extends Node {
   type: "mdxJsxExpressionAttribute";
@@ -37,9 +35,7 @@ export interface MdxJsxExpressionAttribute extends Node {
   data?: MdxJsxExpressionAttributeData | undefined;
 }
 
-export interface MdxJsxExpressionAttributeData extends Data {
-  estree?: unknown;
-}
+export interface MdxJsxExpressionAttributeData extends Data {}
 
 export interface MdxJsxAttribute extends Node {
   type: "mdxJsxAttribute";
@@ -95,54 +91,42 @@ export interface MdxFlowExpression extends MdastLiteral {
   data?: MdxFlowExpressionData | undefined;
 }
 
-export interface MdxFlowExpressionData extends MdastData {
-  estree?: unknown;
-}
+export interface MdxFlowExpressionData extends MdastData {}
 
 export interface MdxTextExpression extends MdastLiteral {
   type: "mdxTextExpression";
   data?: MdxTextExpressionData | undefined;
 }
 
-export interface MdxTextExpressionData extends MdastData {
-  estree?: unknown;
-}
+export interface MdxTextExpressionData extends MdastData {}
 
 export interface MdxFlowExpressionHast extends HastLiteral {
   type: "mdxFlowExpression";
   data?: MdxFlowExpressionHastData | undefined;
 }
 
-export interface MdxFlowExpressionHastData extends HastData {
-  estree?: unknown;
-}
+export interface MdxFlowExpressionHastData extends HastData {}
 
 export interface MdxTextExpressionHast extends HastLiteral {
   type: "mdxTextExpression";
   data?: MdxTextExpressionHastData | undefined;
 }
 
-export interface MdxTextExpressionHastData extends HastData {
-  estree?: unknown;
-}
+export interface MdxTextExpressionHastData extends HastData {}
 
 export interface MdxjsEsm extends MdastLiteral {
   type: "mdxjsEsm";
   data?: MdxjsEsmData | undefined;
 }
 
-export interface MdxjsEsmData extends MdastData {
-  estree?: unknown;
-}
+export interface MdxjsEsmData extends MdastData {}
 
 export interface MdxjsEsmHast extends HastLiteral {
   type: "mdxjsEsm";
   data?: MdxjsEsmHastData | undefined;
 }
 
-export interface MdxjsEsmHastData extends HastData {
-  estree?: unknown;
-}
+export interface MdxjsEsmHastData extends HastData {}
 
 declare module "mdast" {
   interface BlockContentMap {
