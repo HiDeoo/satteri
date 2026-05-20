@@ -1297,4 +1297,15 @@ describe("smartPunctuation options", () => {
     expect(js).toContain("--");
     expect(js).toContain("\u2026");
   });
+
+  test("curls quotes that surround an MDX expression", () => {
+    // Documented divergence: remark-smartypants curls each text node in
+    // isolation, so an expression between the quotes leaves them straight.
+    // satteri pairs across the expression.
+    const { code: js } = mdxToJs('exports: "{value}"\n', {
+      features: { smartPunctuation: true },
+    });
+    expect(js).toContain("\u201c");
+    expect(js).toContain("\u201d");
+  });
 });
