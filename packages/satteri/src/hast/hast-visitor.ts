@@ -1,6 +1,7 @@
 import { materializeHastNode, type HastNode } from "./hast-materializer.js";
 import type { HastNodeInternal, HastRaw, MdxJsxAttributeUnion } from "../types.js";
 import type { Element, Text, Comment, Doctype } from "hast";
+import type { Program } from "estree-jsx";
 import type { MdxJsxFlowElementHast, MdxJsxTextElementHast } from "../mdx-types.js";
 import type { MdxFlowExpressionHast, MdxTextExpressionHast } from "../mdx-types.js";
 import type { MdxjsEsmHast } from "../mdx-types.js";
@@ -34,8 +35,7 @@ type NapiParseFn = (source: string) => string | null;
 export type HastHandle = any;
 
 /** ESTree-compatible Program node returned by `parseExpression()`. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type EstreeProgram = Record<string, any>;
+export type EstreeProgram = Program;
 
 /** Maps HastNode objects to their arena node IDs without Object.defineProperty overhead. */
 const nodeIdMap: WeakMap<object, number> = new WeakMap();
