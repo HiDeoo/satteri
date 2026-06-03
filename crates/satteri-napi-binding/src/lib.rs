@@ -106,12 +106,12 @@ fn features_to_options(features: Option<JsFeatures>, mdx: bool) -> satteri_pulld
         opts |= Options::ENABLE_YAML_STYLE_METADATA_BLOCKS
             | Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS;
     }
-    // Math: the umbrella `math` toggle decides "any math on?", and
-    // `math_options.single_dollar_text_math` picks between umbrella-mode
-    // (single + multi) and multi-only. When users granularly opt out of
-    // single-dollar, we set the multi-dollar sub-flag directly so the parser
-    // skips lone `$` entirely.
-    if f.math.unwrap_or(false) {
+    // Math is on when `math: true` or when a granular options object is passed
+    // (the object overrides the umbrella toggle). `single_dollar_text_math`
+    // then picks between umbrella-mode (single + multi) and multi-only: opting
+    // out of single-dollar sets the multi-dollar sub-flag directly so the
+    // parser skips lone `$` entirely.
+    if f.math_options.is_some() || f.math.unwrap_or(false) {
         match f
             .math_options
             .as_ref()
