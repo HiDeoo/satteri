@@ -687,9 +687,12 @@ pub fn walk_handle(handle: &HastHandle, subscriptions: Vec<JsSubscription>) -> R
     Ok(Uint8Array::new(satteri_ast::walk::walk_hast(&arena, &subs)))
 }
 
-/// Apply a command buffer to a HAST handle's arena in-place.
+/// Apply a command buffer to a HAST handle's arena in-place. Returns how many
+/// patches were dropped because their target lived inside a subtree this pass
+/// removed or replaced (see the lenient note below); the JS pipeline warns when
+/// non-zero. Mirrors `apply_commands_to_mdast_handle`.
 #[napi]
-pub fn apply_commands_to_handle(handle: &HastHandle, command_buf: Uint8Array) -> Result<()> {
+pub fn apply_commands_to_handle(handle: &HastHandle, command_buf: Uint8Array) -> Result<u32> {
     let mut arena = handle
         .lock()
         .map_err(|e| napi::Error::from_reason(format!("lock: {e}")))?;
@@ -698,10 +701,14 @@ pub fn apply_commands_to_handle(handle: &HastHandle, command_buf: Uint8Array) ->
         &mut *arena,
         satteri_arena::Arena::<Hast>::new(String::new()),
     );
-    let new_arena = satteri_plugin_api::apply_hast_commands(owned, &command_buf)
+    // Lenient: a patch stranded inside a subtree the same pass replaced or
+    // removed is dropped rather than fatal — the plugin discarded that subtree,
+    // so a transform queued on a node within it is moot. A passed-through child
+    // keeps its identity (via `_ref`) and so is never stranded this way.
+    let (new_arena, dropped) = satteri_plugin_api::apply_hast_commands_lenient(owned, &command_buf)
         .map_err(|e| napi::Error::from_reason(format!("command error: {e}")))?;
     *arena = new_arena;
-    Ok(())
+    Ok(dropped.len() as u32)
 }
 
 /// Render a HAST handle's arena to HTML. Does not consume the handle.

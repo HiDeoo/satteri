@@ -124,6 +124,63 @@ describe("visitHastHandle - mutations", () => {
     expect(html).not.toContain("<h1>");
   });
 
+  // Regression: returning a wrapper whose children include the visited node
+  // re-parents it. The node is spliced back by reference, and the rebuild must
+  // splice it once rather than re-applying the replacement and recursing.
+  test("element() may re-parent the visited node into its replacement", () => {
+    const { handle, source } = setup("# Hello");
+    const plugin = {
+      element: {
+        filter: ["h1"],
+        visit(node: HastNode) {
+          return {
+            type: "element" as const,
+            tagName: "div",
+            properties: {},
+            children: [node],
+          } as unknown as HastNode;
+        },
+      },
+    };
+    const subs = resolveSubscriptions(plugin);
+    visitHastHandle(handle, plugin, subs, source, undefined);
+    const html = renderHandle(handle);
+    expect(html.trim()).toBe("<div><h1>Hello</h1></div>");
+  });
+
+  // The real Starlight autolink-headings shape: wrap each heading in a <div>
+  // holding the original heading plus a freshly built anchor-link sibling.
+  test("element() re-parents the visited node alongside a freshly built sibling", () => {
+    const { handle, source } = setup("# Hello");
+    const plugin = {
+      element: {
+        filter: ["h1"],
+        visit(node: HastNode) {
+          return {
+            type: "element" as const,
+            tagName: "div",
+            properties: { className: ["heading-wrapper"] },
+            children: [
+              node,
+              {
+                type: "element" as const,
+                tagName: "a",
+                properties: { href: "#hello" },
+                children: [{ type: "text", value: "#" }],
+              },
+            ],
+          } as unknown as HastNode;
+        },
+      },
+    };
+    const subs = resolveSubscriptions(plugin);
+    visitHastHandle(handle, plugin, subs, source, undefined);
+    const html = renderHandle(handle);
+    expect(html).toContain('<div class="heading-wrapper">');
+    expect(html).toContain("<h1>Hello</h1>");
+    expect(html).toContain('<a href="#hello">#</a>');
+  });
+
   test("context.removeNode() removes a node", () => {
     const { handle, source } = setup();
     const plugin = {
@@ -211,6 +268,39 @@ describe("visitHastHandle - mutations", () => {
     visitHastHandle(handle, plugin, subs, source, undefined);
     const html = renderHandle(handle);
     expect(html).toContain("<div><h1>Hello</h1></div>");
+  });
+
+  // A wrapper may declare its own children; they are kept as siblings after the
+  // wrapped node. The Starlight autolink shape (heading + anchor link),
+  // expressed without re-parenting the visited node into a replacement.
+  test("context.wrapNode() keeps the wrapper's own children after the wrapped node", () => {
+    const { handle, source } = setup("# Hello");
+    const plugin = {
+      element: {
+        filter: ["h1"],
+        visit(node: HastNode, ctx: HastVisitorContext) {
+          ctx.wrapNode(node, {
+            type: "element",
+            tagName: "div",
+            properties: { className: ["heading-wrapper"] },
+            children: [
+              {
+                type: "element",
+                tagName: "a",
+                properties: { href: "#hello" },
+                children: [{ type: "text", value: "#" }],
+              },
+            ],
+          } as unknown as HastNode);
+        },
+      },
+    };
+    const subs = resolveSubscriptions(plugin);
+    visitHastHandle(handle, plugin, subs, source, undefined);
+    const html = renderHandle(handle);
+    expect(html).toContain(
+      '<div class="heading-wrapper"><h1>Hello</h1><a href="#hello">#</a></div>',
+    );
   });
 
   test("context.appendChild() adds a child to an element", () => {

@@ -150,6 +150,10 @@ export class MdastVisitorContext {
     this.#commandBuffer.insertAfter(nid(node as MdastNode), newNode);
   }
 
+  /**
+   * Wrap `node` in `parentNode`, making it `parentNode`'s first child. Any
+   * children `parentNode` declares are kept after it.
+   */
   wrapNode(node: Readonly<MdastNode>, parentNode: MdastNode): void {
     this.#commandBuffer.wrapNode(nid(node as MdastNode), parentNode);
   }

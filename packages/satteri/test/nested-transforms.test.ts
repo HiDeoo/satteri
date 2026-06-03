@@ -1,6 +1,7 @@
 import { test, expect, vi } from "vitest";
-import { markdownToHtml, defineMdastPlugin } from "../src/index.js";
+import { markdownToHtml, defineMdastPlugin, defineHastPlugin } from "../src/index.js";
 import type { MdastNode } from "../src/types.js";
+import type { HastNode } from "../src/hast/hast-materializer.js";
 
 // Nested transforms compose in a SINGLE pass: when a plugin replaces a node and
 // passes its children through, those children keep their identity, so a patch
@@ -79,6 +80,45 @@ test("dropping a stranded transform warns, naming the plugin", () => {
     expect(warn).toHaveBeenCalledTimes(1);
     const message = warn.mock.calls[0]?.[0] as string;
     expect(message).toContain('plugin "remove-outer"');
+    expect(message).toContain("dropped");
+  } finally {
+    warn.mockRestore();
+  }
+});
+
+// HAST behaves like MDAST: a transform stranded under a node removed earlier in
+// the same pass is dropped with a warning, not a fatal error.
+test("a stranded HAST transform is dropped with a warning, like MDAST", () => {
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  try {
+    // `# *Hi*` -> <h1><em>Hi</em></h1>. Removing the h1 strands the em transform
+    // queued in the same pass.
+    const plugin = defineHastPlugin({
+      name: "remove-heading",
+      element: {
+        filter: ["h1", "em"],
+        visit(node, ctx) {
+          if (node.tagName === "h1") {
+            ctx.removeNode(node);
+            return;
+          }
+          if (node.tagName === "em") {
+            return {
+              type: "element",
+              tagName: "strong",
+              properties: {},
+              children: node.children,
+            } as unknown as HastNode;
+          }
+        },
+      },
+    });
+    const { html } = markdownToHtml("# *Hi*", { hastPlugins: [plugin] });
+    expect(html.trim()).toBe(""); // heading + its em gone, no throw
+    expect(warn).toHaveBeenCalledTimes(1);
+    const message = warn.mock.calls[0]?.[0] as string;
+    expect(message).toContain('plugin "remove-heading"');
+    expect(message).toContain("hast");
     expect(message).toContain("dropped");
   } finally {
     warn.mockRestore();

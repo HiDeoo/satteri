@@ -1194,3 +1194,223 @@ fn replace_with_empty_root_removes_slot() {
         MdastNodeType::Heading as u8
     );
 }
+
+/// Regression: a `Replace` whose subtree references the replaced node itself
+/// must splice the original once, not recurse forever. This is the "wrap a
+/// heading in a div containing the heading" shape (Starlight autolink) that
+/// previously overflowed the stack.
+#[test]
+fn replace_with_ref_to_self_splices_once() {
+    use satteri_arena::StringRef;
+    use satteri_ast::hast::codec::encode_element_data;
+    use satteri_ast::rebuild::REF_NODE_TYPE;
+
+    // Root > Element(h2) > Text "Heading"
+    let mut b = ArenaBuilder::<Hast>::new("Heading".to_string());
+    b.open_node(HastNodeType::Root as u8);
+    b.open_node(HastNodeType::Element as u8);
+    let tag = b.alloc_string("h2");
+    b.set_data_current(&encode_element_data(tag, &[]));
+    b.open_node(HastNodeType::Text as u8);
+    b.set_data_current(&satteri_ast::hast::codec::encode_text_data(StringRef::new(
+        0, 7,
+    )));
+    b.close_node(); // text
+    b.close_node(); // element
+    b.close_node(); // root
+    let orig = b.finish();
+
+    let heading_id = orig.get_children(0)[0];
+
+    // Replacement subtree: <div>{ REF -> heading_id }</div>
+    let mut sub = ArenaBuilder::<Hast>::new(String::new());
+    sub.open_node(HastNodeType::Element as u8);
+    let div_tag = sub.alloc_string("div");
+    sub.set_data_current(&encode_element_data(div_tag, &[]));
+    sub.open_node_raw(REF_NODE_TYPE);
+    sub.set_data_current(&heading_id.to_le_bytes());
+    sub.close_node(); // ref
+    sub.close_node(); // div
+    let new_tree = sub.finish();
+
+    let rebuilt = rebuild_hast(
+        &orig,
+        &[Patch::Replace {
+            node_id: heading_id,
+            new_tree,
+            keep_children: false,
+        }],
+    );
+
+    // Expect: Root > div > h2 > text, no runaway duplication.
+    let root_children = rebuilt.get_children(0);
+    assert_eq!(root_children.len(), 1, "root holds the single wrapper div");
+    let div = root_children[0];
+    assert_eq!(rebuilt.get_node(div).node_type, HastNodeType::Element as u8);
+
+    let div_children = rebuilt.get_children(div);
+    assert_eq!(
+        div_children.len(),
+        1,
+        "div wraps exactly the original heading"
+    );
+    let inner = div_children[0];
+    assert_eq!(
+        rebuilt.get_node(inner).node_type,
+        HastNodeType::Element as u8,
+        "the re-parented node is the original heading element"
+    );
+    assert_eq!(
+        rebuilt.get_children(inner).len(),
+        1,
+        "heading keeps its original text child"
+    );
+    assert_eq!(
+        rebuilt.get_node(rebuilt.get_children(inner)[0]).node_type,
+        HastNodeType::Text as u8
+    );
+}
+
+/// `Wrap` keeps the wrapper's own declared children, with the wrapped node
+/// emitted first: `div > [anchor]` wrapping a heading yields
+/// `div > [heading, anchor]` rather than dropping the anchor.
+#[test]
+fn wrap_keeps_wrapper_children_after_wrapped_node() {
+    use satteri_arena::StringRef;
+    use satteri_ast::hast::codec::{encode_element_data, encode_text_data};
+
+    // Root > Element(h2) > Text "Hello"
+    let mut b = ArenaBuilder::<Hast>::new("Hello".to_string());
+    b.open_node(HastNodeType::Root as u8);
+    b.open_node(HastNodeType::Element as u8);
+    let h2 = b.alloc_string("h2");
+    b.set_data_current(&encode_element_data(h2, &[]));
+    b.open_node(HastNodeType::Text as u8);
+    b.set_data_current(&encode_text_data(StringRef::new(0, 5)));
+    b.close_node(); // text
+    b.close_node(); // h2
+    b.close_node(); // root
+    let orig = b.finish();
+    let heading_id = orig.get_children(0)[0];
+
+    // Wrapper: div > a (the anchor sibling), built as a sub-arena
+    let mut w = ArenaBuilder::<Hast>::new(String::new());
+    w.open_node(HastNodeType::Element as u8);
+    let div = w.alloc_string("div");
+    w.set_data_current(&encode_element_data(div, &[]));
+    w.open_node(HastNodeType::Element as u8);
+    let a = w.alloc_string("a");
+    w.set_data_current(&encode_element_data(a, &[]));
+    w.close_node(); // a (no children)
+    w.close_node(); // div
+    let parent_tree = w.finish();
+
+    let rebuilt = rebuild_hast(
+        &orig,
+        &[Patch::Wrap {
+            node_id: heading_id,
+            parent_tree,
+        }],
+    );
+
+    // Root > div > [h2(>text), a]
+    let div_id = rebuilt.get_children(0)[0];
+    assert_eq!(
+        rebuilt.get_node(div_id).node_type,
+        HastNodeType::Element as u8
+    );
+    let kids = rebuilt.get_children(div_id);
+    assert_eq!(kids.len(), 2, "wrapped node plus the wrapper's own child");
+
+    // First child is the wrapped heading (keeps its text child).
+    assert_eq!(
+        rebuilt.get_node(kids[0]).node_type,
+        HastNodeType::Element as u8
+    );
+    assert_eq!(
+        rebuilt.get_children(kids[0]).len(),
+        1,
+        "wrapped node is first and keeps its original children"
+    );
+    assert_eq!(
+        rebuilt.get_node(rebuilt.get_children(kids[0])[0]).node_type,
+        HastNodeType::Text as u8
+    );
+
+    // Second child is the wrapper's declared anchor (childless).
+    assert_eq!(
+        rebuilt.get_node(kids[1]).node_type,
+        HastNodeType::Element as u8
+    );
+    assert_eq!(
+        rebuilt.get_children(kids[1]).len(),
+        0,
+        "wrapper's declared child follows the wrapped node"
+    );
+}
+
+/// A wrapped node keeps `PrependChild`/`AppendChild` patches queued on it in
+/// the same pass: wrapping must not discard child patches on the node it wraps.
+/// Prepend lands before the node's original children, append after.
+#[test]
+fn wrap_applies_prepend_and_append_child_on_wrapped_node() {
+    use satteri_ast::hast::codec::encode_element_data;
+
+    fn single(node_type: HastNodeType) -> Arena<Hast> {
+        let mut b = ArenaBuilder::<Hast>::new(String::new());
+        b.open_node(node_type as u8);
+        b.close_node();
+        b.finish()
+    }
+
+    // Root > Element(h2) > Element(em) — original child is an element.
+    let mut b = ArenaBuilder::<Hast>::new(String::new());
+    b.open_node(HastNodeType::Root as u8);
+    b.open_node(HastNodeType::Element as u8);
+    let h2 = b.alloc_string("h2");
+    b.set_data_current(&encode_element_data(h2, &[]));
+    b.open_node(HastNodeType::Element as u8);
+    let em = b.alloc_string("em");
+    b.set_data_current(&encode_element_data(em, &[]));
+    b.close_node(); // em
+    b.close_node(); // h2
+    b.close_node(); // root
+    let orig = b.finish();
+    let heading_id = orig.get_children(0)[0];
+
+    let rebuilt = rebuild_hast(
+        &orig,
+        &[
+            Patch::Wrap {
+                node_id: heading_id,
+                parent_tree: single(HastNodeType::Element), // <div>-shaped wrapper
+            },
+            Patch::PrependChild {
+                node_id: heading_id,
+                child_tree: single(HastNodeType::Text),
+            },
+            Patch::AppendChild {
+                node_id: heading_id,
+                child_tree: single(HastNodeType::Comment),
+            },
+        ],
+    );
+
+    // Root > wrapper > h2 > [Text(prepend), Element(em), Comment(append)]
+    let wrapper = rebuilt.get_children(0)[0];
+    let h2_id = rebuilt.get_children(wrapper)[0];
+    let kids = rebuilt.get_children(h2_id);
+    assert_eq!(kids.len(), 3, "prepend + original + append, none dropped");
+    assert_eq!(
+        rebuilt.get_node(kids[0]).node_type,
+        HastNodeType::Text as u8
+    );
+    assert_eq!(
+        rebuilt.get_node(kids[1]).node_type,
+        HastNodeType::Element as u8
+    );
+    assert_eq!(
+        rebuilt.get_node(kids[2]).node_type,
+        HastNodeType::Comment as u8
+    );
+}

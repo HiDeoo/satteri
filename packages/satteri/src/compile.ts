@@ -100,11 +100,15 @@ type MdastHandle = any;
 
 type MdastPipelineResult = { handle: MdastHandle };
 
-function warnDroppedTransforms(plugin: MdastPluginInstance, dropped: number): void {
-  const name = (plugin as { name?: string }).name ?? "<anonymous>";
+function warnDroppedTransforms(
+  plugin: { name?: string },
+  dropped: number,
+  kind: "mdast" | "hast",
+): void {
+  const name = plugin.name ?? "<anonymous>";
   const noun = dropped === 1 ? "transform" : "transforms";
   console.warn(
-    `satteri: plugin "${name}" queued ${dropped} mdast ${noun} on node(s) that were removed or ` +
+    `satteri: plugin "${name}" queued ${dropped} ${kind} ${noun} on node(s) that were removed or ` +
       `replaced earlier in the same pass; ${dropped === 1 ? "it was" : "they were"} dropped.`,
   );
 }
@@ -125,7 +129,7 @@ function runMdastPluginsOnHandle(
     const apply = (r: { commandBuffer: Uint8Array; hasMutations: boolean }): void => {
       if (!r.hasMutations) return;
       const dropped = applyCommandsToMdastHandle(handle, r.commandBuffer);
-      if (dropped) warnDroppedTransforms(plugin, dropped);
+      if (dropped) warnDroppedTransforms(plugin as { name?: string }, dropped, "mdast");
     };
     return result instanceof Promise ? result.then(apply) : apply(result);
   };
@@ -161,9 +165,16 @@ function runHastPluginsOnHandle(
 
       const subs = resolveSubscriptions(plugin);
       const result = visitHastHandle(handle, plugin, subs, source, fileURL);
+      const warnIfDropped = (dropped: number): void => {
+        if (dropped) warnDroppedTransforms(plugin, dropped, "hast");
+      };
       if (result instanceof Promise) {
-        return result.then(runNext);
+        return result.then((dropped) => {
+          warnIfDropped(dropped);
+          return runNext();
+        });
       }
+      warnIfDropped(result);
     }
   };
 

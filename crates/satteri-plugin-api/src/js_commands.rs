@@ -1119,7 +1119,8 @@ pub fn apply_mdast_commands_lenient(
 
 /// Apply a command buffer to a HAST arena. Set-property mutations are
 /// applied in-place; structural mutations are collected as `Patch<Hast>`
-/// objects and applied via `rebuild()`.
+/// objects and applied via `rebuild()`. Errors if a patch is stranded inside a
+/// removed/replaced subtree; [`apply_hast_commands_lenient`] drops it instead.
 ///
 /// HAST plugins inject sub-trees via `PAYLOAD_SERDE_JSON` only — there is
 /// no `parse_markdown` callback because HAST has no source-level grammar.
@@ -1134,11 +1135,27 @@ pub fn apply_mdast_commands_lenient(
 /// let _ = apply_hast_commands(arena, &[]);
 /// ```
 pub fn apply_hast_commands(
-    mut arena: Arena<Hast>,
+    arena: Arena<Hast>,
     command_buf: &[u8],
 ) -> Result<Arena<Hast>, CommandError> {
+    let (arena, dropped) = apply_hast_commands_lenient(arena, command_buf)?;
+    if let Some(anchor) = dropped.first() {
+        return Err(CommandError::PatchOnRemovedSubtree(*anchor));
+    }
+    Ok(arena)
+}
+
+/// Like [`apply_hast_commands`], but rather than erroring when a patch targets a
+/// node inside a removed/replaced subtree, drops it and returns the dropped
+/// anchors — mirroring [`apply_mdast_commands_lenient`]. Such a patch is moot:
+/// the plugin discarded that subtree. A passed-through child keeps its identity
+/// (via `_ref`) and so is never stranded this way.
+pub fn apply_hast_commands_lenient(
+    mut arena: Arena<Hast>,
+    command_buf: &[u8],
+) -> Result<(Arena<Hast>, Vec<u32>), CommandError> {
     if command_buf.is_empty() {
-        return Ok(arena);
+        return Ok((arena, Vec::new()));
     }
 
     let mut patches: Vec<Patch<Hast>> = Vec::new();
@@ -1217,9 +1234,10 @@ pub fn apply_hast_commands(
     }
 
     if patches.is_empty() {
-        Ok(arena)
+        Ok((arena, Vec::new()))
     } else {
-        satteri_ast::rebuild::rebuild(&arena, &patches)
+        let result = satteri_ast::rebuild::rebuild_lenient(&arena, &patches)?;
+        Ok((result.arena, result.dropped))
     }
 }
 

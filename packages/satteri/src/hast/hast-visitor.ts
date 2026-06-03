@@ -74,6 +74,11 @@ export interface HastVisitorContext {
   replaceNode(node: Readonly<HastNode>, newNode: HastNode): void;
   insertBefore(node: Readonly<HastNode>, newNode: HastNode): void;
   insertAfter(node: Readonly<HastNode>, newNode: HastNode): void;
+  /**
+   * Wrap `node` in `parentNode`, making it `parentNode`'s first child. Any
+   * children `parentNode` declares are kept after it, so a `div` with an anchor
+   * child wraps a heading as `div > [heading, anchor]`.
+   */
   wrapNode(node: Readonly<HastNode>, parentNode: HastNode): void;
   prependChild(node: Readonly<HastNode>, childNode: HastNode): void;
   appendChild(node: Readonly<HastNode>, childNode: HastNode): void;
@@ -786,7 +791,9 @@ function mergeAndReset(
  * Walk a handle's arena in Rust, dispatch matched nodes to JS visitor functions,
  * and apply mutations back to the handle. No arena buffers cross NAPI.
  *
- * Returns void if all visitors are sync, or a Promise if any visitor is async.
+ * Returns the number of patches dropped because their target was removed or
+ * replaced earlier in the same pass (the caller warns when non-zero), or a
+ * Promise of that count if any visitor is async.
  */
 export function visitHastHandle(
   handle: HastHandle,
@@ -794,7 +801,7 @@ export function visitHastHandle(
   subs: ResolvedSubscription[],
   source: string | (() => string),
   fileURL: URL | undefined,
-): void | Promise<void> {
+): number | Promise<number> {
   const getSource = typeof source === "function" ? source : () => source;
   const ctx = new HastVisitorContextImpl(handle, getSource, fileURL);
   const returnBuffer = new CommandBuffer();
@@ -813,20 +820,22 @@ export function visitHastHandle(
           returnBuffer.replaceRawJson(nodeId, JSON.stringify(markHast(result)));
         }
       }
-      applyMutations(handle, returnBuffer, ctx);
+      return applyMutations(handle, returnBuffer, ctx);
     });
   }
 
-  applyMutations(handle, returnBuffer, ctx);
+  return applyMutations(handle, returnBuffer, ctx);
 }
 
+/** Returns the number of patches dropped as stranded (0 when none). */
 function applyMutations(
   handle: HastHandle,
   returnBuffer: CommandBuffer,
   ctx: HastVisitorContextImpl,
-): void {
+): number {
   const { merged, hasMutations } = mergeAndReset(returnBuffer, ctx);
   if (hasMutations) {
-    applyCommandsToHandle(handle, merged);
+    return applyCommandsToHandle(handle, merged);
   }
+  return 0;
 }
