@@ -5627,6 +5627,14 @@ fn delim_run_can_open(
                 && (prev_char.is_whitespace() || is_punctuation(prev_char)));
     }
 
+    // Double quotes can open after a non-space word character. For example, `에"About Me"` has
+    // quoted text attached directly after Korean text.
+    if delim == b'"' {
+        return !is_punctuation(next_char)
+            || prev_char.is_whitespace()
+            || is_punctuation(prev_char);
+    }
+
     prev_char.is_whitespace()
         || is_punctuation(prev_char) && (delim != b'\'' || ![']', ')'].contains(&prev_char))
 }
@@ -5680,6 +5688,14 @@ fn delim_run_can_close(
         return !is_punctuation(prev_char)
             || (is_punctuation(prev_char)
                 && (next_char.is_whitespace() || is_punctuation(next_char)));
+    }
+
+    // Double quotes can close before a non-space word character. For example, `"About Me"로` has
+    // Korean text attached directly after the quoted phrase.
+    if delim == b'"' {
+        return !is_punctuation(prev_char)
+            || next_char.is_whitespace()
+            || is_punctuation(next_char);
     }
 
     next_char.is_whitespace() || is_punctuation(next_char)
