@@ -322,6 +322,48 @@ describe("markdownToHtml", () => {
 
   // with MDAST plugins only
 
+  test("rawHtml preserves Mermaid curly braces in rendered HTML", () => {
+    const plugin = defineMdastPlugin({
+      name: "raw-html-mermaid-braces",
+      code(node) {
+        if (node.type === "code" && node.lang === "mermaid") {
+          return {
+            rawHtml: `<pre class="mermaid">${node.value}</pre>`,
+          };
+        }
+      },
+    });
+
+    const { html } = markdownToHtml("```mermaid\nflowchart TD\n    C{JWT valid?}\n```", {
+      features: { gfm: true },
+      mdastPlugins: [plugin],
+    });
+
+    expect(html).toContain("C{JWT valid?}");
+    expect(html).not.toContain("{'{'}");
+    expect(html).not.toContain("{'}'}");
+  });
+
+  test("rawHtml preserves Shiki-like curly braces in rendered HTML", () => {
+    const plugin = defineMdastPlugin({
+      name: "raw-html-shiki-braces",
+      code() {
+        return {
+          rawHtml: '<pre class="shiki"><code><span style="color:red">{foo: 1}</span></code></pre>',
+        };
+      },
+    });
+
+    const { html } = markdownToHtml("```js\nconst x = {foo: 1}\n```", {
+      mdastPlugins: [plugin],
+    });
+
+    expect(html).toContain("{foo: 1}");
+    expect(html).not.toContain("{'{'}");
+    expect(html).not.toContain("{'}'}");
+    expect(html).toContain("shiki");
+  });
+
   test("MDAST plugin removes headings", () => {
     const removeHeadings = defineMdastPlugin({
       name: "remove-headings",
@@ -702,6 +744,30 @@ describe("mdxToJs", () => {
     });
     expect(js).not.toContain("Gone");
     expect(js).toContain("Kept");
+  });
+
+  test("rawHtml braces survive MDX reparse as escaped literals", () => {
+    const plugin = defineMdastPlugin({
+      name: "raw-html-mermaid-braces",
+      code(node) {
+        if (node.type === "code" && node.lang === "mermaid") {
+          return {
+            rawHtml: `<pre class="mermaid">${node.value}</pre>`,
+          };
+        }
+      },
+    });
+
+    // Unlike markdownToHtml, the MDX pipeline must escape braces so the reparse
+    // does not read `{JWT valid?}` as a (broken) expression. The escape compiles
+    // to literal `{` / `}` string children, preserving the Mermaid source.
+    const { code: js } = mdxToJs("```mermaid\nflowchart TD\n    C{JWT valid?}\n```", {
+      mdastPlugins: [plugin],
+    });
+
+    expect(js).toContain('"{"');
+    expect(js).toContain('"}"');
+    expect(js).toContain("JWT valid?");
   });
 
   test("MDAST plugin can read JSX attributes", () => {
