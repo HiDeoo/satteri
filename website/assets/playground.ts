@@ -60,6 +60,8 @@ const outputTabButton = $<HTMLButtonElement>('[data-tab="output"]');
 const renderedTabButton = $<HTMLButtonElement>('[data-tab="rendered"]');
 const alertBar = $<HTMLElement>("#alert-bar");
 const alertBarMessage = $<HTMLElement>("#alert-bar-message");
+const alertBarRunScripts = $<HTMLButtonElement>("#alert-bar-run-scripts");
+const alertBarResetScripts = $<HTMLButtonElement>("#alert-bar-reset-scripts");
 const alertBarDismiss = $<HTMLButtonElement>("#alert-bar-dismiss");
 const statusBar = $<HTMLElement>("#status-bar");
 const shareButton = $<HTMLButtonElement>("#pg-share");
@@ -397,7 +399,21 @@ async function loadSharedState(): Promise<PlaygroundState | null> {
   }
 }
 
-async function applySharedStateFromHash(): Promise<boolean> {
+const defaultMdastPluginSource = inputMdastPlugin.value;
+const defaultHastPluginSource = inputHastPlugin.value;
+let hasPendingScripts = false;
+
+function sharedStateHasUnsafePlugins(state: PlaygroundState): boolean {
+  const mdastPlugin = state.mdastPlugin ?? "";
+  const hastPlugin = state.hastPlugin ?? "";
+
+  return (
+    (mdastPlugin.trim() !== "" && mdastPlugin !== defaultMdastPluginSource) ||
+    (hastPlugin.trim() !== "" && hastPlugin !== defaultHastPluginSource)
+  );
+}
+
+async function applySharedState(): Promise<boolean> {
   if (!location.hash.startsWith(SHARE_HASH_PREFIX)) return false;
 
   const shared = await loadSharedState();
@@ -408,12 +424,38 @@ async function applySharedStateFromHash(): Promise<boolean> {
 
   if (!shared) return false;
 
+  hasPendingScripts = sharedStateHasUnsafePlugins(shared);
+  if (hasPendingScripts) compileGeneration++;
+
   applyState(shared);
-  hideAlert();
   highlightAllInputs();
-  compile();
+
+  if (hasPendingScripts) {
+    showUnsafePluginAlert();
+  } else {
+    dismissAlert();
+    compile();
+  }
 
   return true;
+}
+
+function runPendingPlugins() {
+  hasPendingScripts = false;
+  dismissAlert();
+  compile();
+}
+
+function resetPendingPlugins() {
+  hasPendingScripts = false;
+  dismissAlert();
+
+  inputMdastPlugin.value = defaultMdastPluginSource;
+  inputHastPlugin.value = defaultHastPluginSource;
+  highlightInput(inputMdastPlugin, highlightMdastPlugin, "typescript");
+  highlightInput(inputHastPlugin, highlightHastPlugin, "typescript");
+
+  compile();
 }
 
 // TODO(HiDeoo) still needed
@@ -429,7 +471,7 @@ function flashShareLabel(label: string) {
 }
 
 async function shareCurrentState() {
-  hideAlert();
+  if (!hasPendingScripts) dismissAlert();
   let url: string;
   try {
     url = await buildShareUrl();
@@ -449,21 +491,41 @@ async function shareCurrentState() {
 }
 
 shareButton.addEventListener("click", () => void shareCurrentState());
-alertBarDismiss.addEventListener("click", hideAlert);
+alertBarRunScripts.addEventListener("click", runPendingPlugins);
+alertBarResetScripts.addEventListener("click", resetPendingPlugins);
+alertBarDismiss.addEventListener("click", dismissAlert);
 
 function showAlert(message: string, opts?: { html?: boolean; dismissible?: boolean }) {
+  if (hasPendingScripts) return;
+
   if (opts?.html) {
     alertBarMessage.innerHTML = message;
   } else {
     alertBarMessage.textContent = message;
   }
+  alertBarRunScripts.hidden = true;
+  alertBarResetScripts.hidden = true;
   alertBarDismiss.hidden = opts?.dismissible !== true;
   alertBar.hidden = false;
 }
 
-function hideAlert() {
+function showUnsafePluginAlert() {
+  statusBar.innerHTML = `<span class="error">Review plugin scripts before running the playground.</span>`;
+
+  alertBarMessage.textContent =
+    "The shared playground link includes plugin scripts. Please review them before running the playground.";
+
+  alertBarDismiss.hidden = true;
+  alertBarRunScripts.hidden = false;
+  alertBarResetScripts.hidden = false;
+  alertBar.hidden = false;
+}
+
+function dismissAlert() {
   alertBar.hidden = true;
   alertBarMessage.textContent = "";
+  alertBarRunScripts.hidden = true;
+  alertBarResetScripts.hidden = true;
   alertBarDismiss.hidden = true;
 }
 
@@ -551,6 +613,11 @@ async function getHastPlugins(): Promise<HastPluginDefinition[]> {
 }
 
 async function compile() {
+  if (hasPendingScripts) {
+    compileGeneration++;
+    return;
+  }
+
   const gen = ++compileGeneration;
   const source = input.value;
   const isMdx = currentMode === "mdx";
@@ -565,6 +632,9 @@ async function compile() {
     statusBar.innerHTML = `<span class="error">mdast plugin: ${escapeHtml(String(e))}</span>`;
     return;
   }
+
+  if (gen !== compileGeneration || hasPendingScripts) return;
+
   try {
     hastPlugins = await getHastPlugins();
   } catch (e) {
@@ -572,7 +642,7 @@ async function compile() {
     return;
   }
 
-  if (gen !== compileGeneration) return;
+  if (gen !== compileGeneration || hasPendingScripts) return;
 
   const activeMdastCount = mdastPlugins.filter(
     (p) => resolveMdastSubscriptions(p).length > 0,
@@ -905,10 +975,10 @@ pgSidebarToggle?.addEventListener("click", () => {
 loadingOverlay.classList.add("hidden");
 
 window.addEventListener("hashchange", () => {
-  void applySharedStateFromHash();
+  void applySharedState();
 });
 
-void applySharedStateFromHash().then((applied) => {
+void applySharedState().then((applied) => {
   if (!applied) {
     highlightAllInputs();
     compile();
