@@ -85,6 +85,7 @@ fn sidebar() -> Markup {
                 (features_fieldset())
                 (mdx_options_fieldset())
                 (optimize_static_fieldset())
+                (share_button())
             }
         }
     }
@@ -196,6 +197,17 @@ fn optimize_static_fieldset() -> Markup {
     }
 }
 
+fn share_button() -> Markup {
+    html! {
+        button #pg-share
+            type="button"
+            title="Copy a shareable link to your clipboard with the current playground content"
+            class="pg-input pg-input-button pt-3.5 pb-2.5" {
+            "Share"
+        }
+    }
+}
+
 fn editor_panel() -> Markup {
     html! {
         section #editor-panel.flex.flex-col."md:border-r".border-b."md:border-b-0".border-border."min-w-0"."min-h-[60vh]"."md:min-h-0" {
@@ -203,7 +215,6 @@ fn editor_panel() -> Markup {
                 button.pg-tab.active data-input-tab="source" { "Source" }
                 button.pg-tab data-input-tab="mdast-plugin" { "mdast plugin" }
                 button.pg-tab data-input-tab="hast-plugin" { "hast plugin" }
-                button #pg-share.pg-tab.ml-auto type="button" title="Copy a shareable link with the current playground state" { "Share" }
             }
             div #input-content .relative.flex-1.min-h-0.overflow-hidden {
                 div.input-pane.active data-input-pane="source" {
