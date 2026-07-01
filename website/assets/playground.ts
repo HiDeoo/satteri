@@ -362,11 +362,41 @@ async function compress(text: string): Promise<Uint8Array> {
 
 async function decompress(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
   const stream = new DecompressionStream("deflate-raw");
-  const read = new Response(stream.readable).arrayBuffer();
+  const reader = stream.readable.getReader();
   const writer = stream.writable.getWriter();
-  await writer.write(bytes);
-  await writer.close();
-  return new TextDecoder().decode(await read);
+  const decoder = new TextDecoder();
+
+  let result = "";
+  let size = 0;
+
+  const read = async () => {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      size += value.byteLength;
+      if (size > MAX_SHARE_STATE_BYTES) {
+        await reader.cancel();
+        throw new ShareStateTooLargeError();
+      }
+
+      result += decoder.decode(value, { stream: true });
+    }
+
+    result += decoder.decode();
+  };
+
+  const write = async () => {
+    await writer.write(bytes);
+    await writer.close();
+  };
+
+  const [readResult, writeResult] = await Promise.allSettled([read(), write()]);
+
+  if (readResult.status === "rejected") throw readResult.reason;
+  if (writeResult.status === "rejected") throw writeResult.reason;
+
+  return result;
 }
 
 function bytesToBase64Url(bytes: Uint8Array): string {
@@ -384,20 +414,35 @@ function base64UrlToBytes(value: string): Uint8Array<ArrayBuffer> {
 }
 
 const SHARE_HASH_PREFIX = "#s=";
+// Keep share links far below browser URL length limits but still in a reasonable range.
+// https://source.chromium.org/chromium/chromium/src/+/main:url/mojom/url.mojom;l=14?q=url%2Fmojom%2Furl.mojom&ss=chromium%2Fchromium%2Fsrc
+const MAX_SHARE_URL_LENGTH = 64 * 1024;
+// Limit decompressed state size to a 4:1 ratio of the URL length limit.
+const MAX_SHARE_STATE_BYTES = 256 * 1024;
+
+class ShareUrlTooLongError extends Error {}
+class ShareStateTooLargeError extends Error {}
 
 async function buildShareUrl(): Promise<string> {
   const payload = bytesToBase64Url(await compress(JSON.stringify(getState())));
-  return `${location.origin}${location.pathname}${SHARE_HASH_PREFIX}${payload}`;
+  const url = `${location.origin}${location.pathname}${SHARE_HASH_PREFIX}${payload}`;
+  if (url.length > MAX_SHARE_URL_LENGTH) throw new ShareUrlTooLongError();
+  return url;
 }
 
 async function loadSharedState(): Promise<PlaygroundState | null> {
   if (!location.hash.startsWith(SHARE_HASH_PREFIX)) return null;
   try {
+    if (location.href.length > MAX_SHARE_URL_LENGTH) throw new ShareStateTooLargeError();
     const json = await decompress(base64UrlToBytes(location.hash.slice(SHARE_HASH_PREFIX.length)));
     return JSON.parse(json) as PlaygroundState;
-  } catch {
+  } catch (error) {
     showAlert(
-      "Could not restore the shared playground state. Using the default playground instead.",
+      `${
+        error instanceof ShareStateTooLargeError
+          ? "This shared playground link is too large to restore."
+          : "Could not restore the shared playground state."
+      } Using the default playground instead.`,
       { dismissible: true },
     );
     return null;
@@ -484,8 +529,12 @@ async function shareCurrentState() {
   let url: string;
   try {
     url = await buildShareUrl();
-  } catch {
-    showAlert("Could not create a share link with the current playground state.");
+  } catch (error) {
+    showAlert(
+      error instanceof ShareUrlTooLongError
+        ? "This playground state is too large to share as a link."
+        : "Could not create a share link with the current playground state.",
+    );
     return;
   }
   try {
