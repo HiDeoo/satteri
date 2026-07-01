@@ -461,6 +461,19 @@ pre#demo-highlight code {
   padding: 0;
 }
 
+.pg-input-button {
+  cursor: pointer;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--tracking-widest);
+  padding-block: calc(var(--spacing) * 2) calc(var(--spacing) * 1.5);
+  text-transform: uppercase;
+}
+
+.pg-input-button:hover {
+  background: color-mix(in srgb, var(--color-paper) 65%, var(--color-surface));
+  border-color: var(--color-secondary);
+}
+
 /* Output tab panes (mdast / hast / html JSON dump). */
 .tab-pane {
   position: absolute;
