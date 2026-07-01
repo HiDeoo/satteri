@@ -80,7 +80,7 @@ fn sidebar() -> Markup {
                     path d="M6 9l6 6 6-6" {}
                 }
             }
-            div #pg-sidebar-content .hidden."md:flex".flex-col.gap-4.p-4 {
+            div #pg-sidebar-content .hidden.flex."md:flex".flex-col.gap-4.p-4 {
                 (mode_fieldset())
                 (features_fieldset())
                 (mdx_options_fieldset())
