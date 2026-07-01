@@ -45,6 +45,7 @@
     --color-secondary: #5c5446;
     --color-body: #2a2620;
     --color-ink: #14110c;
+    --color-error: #b53737;
 
     color-scheme: light;
   }
@@ -57,6 +58,7 @@
     --color-secondary: #b5ab95;
     --color-body: #d8d0be;
     --color-ink: #f2ead3;
+    --color-error: #e66a6a;
 
     color-scheme: dark;
   }
@@ -531,11 +533,11 @@ pre#demo-highlight code {
 }
 
 .pg-status-bar .error {
-  color: #b53737;
+  color: var(--color-error);
 }
 
 .tab-pane.error {
-  color: #b53737;
+  color: var(--color-error);
 }
 
 .pg-loading-overlay {
