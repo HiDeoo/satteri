@@ -58,12 +58,15 @@ impl Route for Playground {
 
 fn playground_body() -> Markup {
     html! {
-        div #playground.flex.flex-col."md:grid"."md:grid-cols-[16rem_1fr_1fr]"."md:h-full".min-h-0 {
-            (sidebar())
-            (editor_panel())
-            (output_panel())
+        div .flex.flex-col."min-h-0"."md:h-full" {
+            div #alert-bar.pg-alert-bar.hidden role="status" aria-live="polite" {}
+            div #playground.flex.flex-col."md:grid"."md:grid-cols-[16rem_1fr_1fr]"."flex-1".min-h-0 {
+                (sidebar())
+                (editor_panel())
+                (output_panel())
+            }
+            (loading_overlay())
         }
-        (loading_overlay())
     }
 }
 

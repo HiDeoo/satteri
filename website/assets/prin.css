@@ -46,6 +46,7 @@
     --color-body: #2a2620;
     --color-ink: #14110c;
     --color-error: #b53737;
+    --color-error-bg: color-mix(in srgb, var(--color-paper) 96%, var(--color-error));
 
     color-scheme: light;
   }
@@ -59,6 +60,7 @@
     --color-body: #d8d0be;
     --color-ink: #f2ead3;
     --color-error: #e66a6a;
+    --color-error-bg: color-mix(in srgb, var(--color-paper) 88%, var(--color-error));
 
     color-scheme: dark;
   }
@@ -294,6 +296,28 @@ pre#demo-highlight code {
 }
 
 /* ---------- Playground ---------- */
+
+.pg-alert-bar {
+  background-color: var(--color-error-bg);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-paper) 65%, var(--color-error));
+  color: var(--color-error);
+
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 4);
+}
+
+.pg-alert-bar a {
+  color: inherit;
+  font-weight: var(--font-weight-bold);
+  text-decoration-color: currentColor;
+}
+
+.pg-alert-bar a:hover {
+  color: var(--color-ink);
+  text-decoration-color: currentColor;
+}
 
 /* Sidebar form controls. The playground sticks to mono everywhere because
    the form labels and tab labels are technical (feature names, option keys)

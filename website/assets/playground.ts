@@ -58,6 +58,7 @@ const osWrapPropValue = $<HTMLInputElement>("#os-wrap-prop-value");
 const osIgnoreElements = $<HTMLInputElement>("#os-ignore-elements");
 const outputTabButton = $<HTMLButtonElement>('[data-tab="output"]');
 const renderedTabButton = $<HTMLButtonElement>('[data-tab="rendered"]');
+const alertBar = $<HTMLElement>("#alert-bar");
 const statusBar = $<HTMLElement>("#status-bar");
 const shareButton = $<HTMLButtonElement>("#pg-share");
 const mdastPluginTab = $<HTMLButtonElement>('[data-input-tab="mdast-plugin"]');
@@ -390,6 +391,25 @@ async function loadSharedState(): Promise<PlaygroundState | null> {
   }
 }
 
+async function applySharedStateFromHash(): Promise<boolean> {
+  const shared = await loadSharedState();
+  if (!shared) return false;
+
+  applyState(shared);
+
+  const url = new URL(location.href);
+  url.hash = "";
+  history.replaceState(null, "", url);
+
+  hideAlert();
+  highlightAllInputs();
+  compile();
+
+  return true;
+}
+
+// TODO(HiDeoo) still needed
+// TODO(HiDeoo) better flash
 let shareResetTimer: ReturnType<typeof setTimeout> | null = null;
 function flashShareLabel(label: string) {
   shareButton.textContent = label;
@@ -401,24 +421,40 @@ function flashShareLabel(label: string) {
 }
 
 async function shareCurrentState() {
+  hideAlert();
   let url: string;
   try {
     url = await buildShareUrl();
   } catch {
-    flashShareLabel("Error");
+    showAlert("Could not create a share link with the current playground state.");
     return;
   }
-  // Reflect the state in the address bar so a plain refresh keeps it too.
-  history.replaceState(null, "", url);
   try {
     await navigator.clipboard.writeText(url);
     flashShareLabel("Copied!");
   } catch {
-    flashShareLabel("URL updated");
+    showAlert(
+      `Could not copy the <a href="${escapeHtml(url)}" rel="noopener noreferrer">share link</a> to the clipboard. You can still copy it manually.`,
+      { html: true },
+    );
   }
 }
 
 shareButton.addEventListener("click", () => void shareCurrentState());
+
+function showAlert(message: string, opts?: { html?: boolean }) {
+  if (opts?.html) {
+    alertBar.innerHTML = message;
+  } else {
+    alertBar.textContent = message;
+  }
+  alertBar.classList.remove("hidden");
+}
+
+function hideAlert() {
+  alertBar.textContent = "";
+  alertBar.classList.add("hidden");
+}
 
 function updateModeUI() {
   currentMode = getMode();
@@ -660,7 +696,12 @@ function updatePluginBadges(mdastCount: number, hastCount: number) {
 }
 
 function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function scheduleCompile() {
@@ -852,8 +893,13 @@ pgSidebarToggle?.addEventListener("click", () => {
 // Reaching this line means the import chain resolved; hide the overlay.
 loadingOverlay.classList.add("hidden");
 
-void loadSharedState().then((shared) => {
-  if (shared) applyState(shared);
-  highlightAllInputs();
-  compile();
+window.addEventListener("hashchange", () => {
+  void applySharedStateFromHash();
+});
+
+void applySharedStateFromHash().then((applied) => {
+  if (!applied) {
+    highlightAllInputs();
+    compile();
+  }
 });
