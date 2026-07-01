@@ -11,10 +11,6 @@
     "browser.js",
     "index.js",
     "index.d.ts",
-    "satteri_napi.wasi.cjs",
-    "satteri_napi.wasi-browser.js",
-    "wasi-worker.mjs",
-    "wasi-worker-browser.mjs",
     "webcontainer-fallback.cjs"
   ],
   "type": "module",
