@@ -298,14 +298,34 @@ pre#demo-highlight code {
 /* ---------- Playground ---------- */
 
 .pg-alert-bar {
+  align-items: flex-start;
   background-color: var(--color-error-bg);
   border-bottom: 1px solid color-mix(in srgb, var(--color-paper) 65%, var(--color-error));
   color: var(--color-error);
-
+  display: flex;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
+  gap: calc(var(--spacing) * 3);
   line-height: 1.5;
-  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 4);
+}
+
+.pg-alert-message {
+  flex: 1;
+  min-width: 0;
+  padding: calc(var(--spacing) * 2) 0 calc(var(--spacing) * 2) calc(var(--spacing) * 4);
+}
+
+.pg-alert-dismiss {
+  cursor: pointer;
+  flex: none;
+  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 4) calc(var(--spacing) * 2)
+    calc(var(--spacing) * 2);
+}
+
+.pg-alert-dismiss svg {
+  display: block;
+  height: calc(var(--spacing) * 5);
+  width: calc(var(--spacing) * 5);
 }
 
 .pg-alert-bar a {
@@ -314,7 +334,7 @@ pre#demo-highlight code {
   text-decoration-color: currentColor;
 }
 
-.pg-alert-bar a:hover {
+.pg-alert-bar :is(a, button):hover {
   color: var(--color-ink);
   text-decoration-color: currentColor;
 }
