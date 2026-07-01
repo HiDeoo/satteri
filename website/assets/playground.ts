@@ -59,6 +59,8 @@ const osIgnoreElements = $<HTMLInputElement>("#os-ignore-elements");
 const outputTabButton = $<HTMLButtonElement>('[data-tab="output"]');
 const renderedTabButton = $<HTMLButtonElement>('[data-tab="rendered"]');
 const alertBar = $<HTMLElement>("#alert-bar");
+const alertBarMessage = $<HTMLElement>("#alert-bar-message");
+const alertBarDismiss = $<HTMLButtonElement>("#alert-bar-dismiss");
 const statusBar = $<HTMLElement>("#status-bar");
 const shareButton = $<HTMLButtonElement>("#pg-share");
 const mdastPluginTab = $<HTMLButtonElement>('[data-input-tab="mdast-plugin"]');
@@ -387,20 +389,26 @@ async function loadSharedState(): Promise<PlaygroundState | null> {
     const json = await decompress(base64UrlToBytes(location.hash.slice(SHARE_HASH_PREFIX.length)));
     return JSON.parse(json) as PlaygroundState;
   } catch {
+    showAlert(
+      "Could not restore the shared playground state. Using the default playground instead.",
+      { dismissible: true },
+    );
     return null;
   }
 }
 
 async function applySharedStateFromHash(): Promise<boolean> {
-  const shared = await loadSharedState();
-  if (!shared) return false;
+  if (!location.hash.startsWith(SHARE_HASH_PREFIX)) return false;
 
-  applyState(shared);
+  const shared = await loadSharedState();
 
   const url = new URL(location.href);
   url.hash = "";
   history.replaceState(null, "", url);
 
+  if (!shared) return false;
+
+  applyState(shared);
   hideAlert();
   highlightAllInputs();
   compile();
@@ -441,19 +449,22 @@ async function shareCurrentState() {
 }
 
 shareButton.addEventListener("click", () => void shareCurrentState());
+alertBarDismiss.addEventListener("click", hideAlert);
 
-function showAlert(message: string, opts?: { html?: boolean }) {
+function showAlert(message: string, opts?: { html?: boolean; dismissible?: boolean }) {
   if (opts?.html) {
-    alertBar.innerHTML = message;
+    alertBarMessage.innerHTML = message;
   } else {
-    alertBar.textContent = message;
+    alertBarMessage.textContent = message;
   }
-  alertBar.classList.remove("hidden");
+  alertBarDismiss.hidden = opts?.dismissible !== true;
+  alertBar.hidden = false;
 }
 
 function hideAlert() {
-  alertBar.textContent = "";
-  alertBar.classList.add("hidden");
+  alertBar.hidden = true;
+  alertBarMessage.textContent = "";
+  alertBarDismiss.hidden = true;
 }
 
 function updateModeUI() {
