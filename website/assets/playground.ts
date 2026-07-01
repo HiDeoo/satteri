@@ -551,7 +551,7 @@ async function compile() {
           plugin,
           subs,
           handleSource,
-          "<playground>",
+          undefined,
         );
         if (gen !== compileGeneration) return;
         if (result.hasMutations) {
@@ -583,7 +583,7 @@ async function compile() {
       const pluginStart = performance.now();
       for (const plugin of hastPlugins) {
         const subs = resolveHastSubscriptions(plugin);
-        await visitHastHandle(hastHandle, plugin, subs, source, "<playground>");
+        await visitHastHandle(hastHandle, plugin, subs, source, undefined);
         if (gen !== compileGeneration) return;
       }
       timings.push(`hast plugins <span>${fmt(performance.now() - pluginStart)}</span>`);
